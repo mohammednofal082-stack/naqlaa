@@ -1,0 +1,9 @@
+export { SmoothScroll } from "./smooth-scroll";
+export { HeroJourney } from "./hero-journey";
+export { HowItWorks } from "./how-it-works";
+export { OpportunityEcosystem } from "./ecosystem";
+export { FeaturesGrid } from "./features";
+export { SuccessJourneys } from "./success-journeys";
+export { StatsSection } from "./stats";
+export { Testimonials } from "./testimonials";
+export { FinalCTA } from "./final-cta";

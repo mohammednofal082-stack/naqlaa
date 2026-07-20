@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "نقلة",
+    "slug": "naqlah",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "careerlink",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0B1F3A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.naqlah.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0B1F3A"
+      },
+      "package": "com.naqlah.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization"
+    ]
+  }
+}

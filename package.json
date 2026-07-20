@@ -1,0 +1,16 @@
+{
+  "name": "naqlah",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=@careerlink/web",
+    "dev:mobile": "npm run start --workspace=@careerlink/mobile",
+    "build:web": "npm run build --workspace=@careerlink/web"
+  },
+  "devDependencies": {
+    "pdfkit": "^0.19.1"
+  }
+}
