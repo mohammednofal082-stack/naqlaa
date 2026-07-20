@@ -54,3 +54,15 @@ apps/mobile   → Expo
 packages/shared → أنواع وخوارزميات مشتركة
 supabase/     → SQL migrations
 ```
+
+## النشر على Vercel (للعرض)
+
+راجع الخطوات الكاملة: [`docs/VERCEL.md`](docs/VERCEL.md)
+
+باختصار: Root Directory = `apps/web`، والمتغيرات:
+
+```
+NEXT_PUBLIC_DATA_PROVIDER=mock
+NEXT_PUBLIC_AUTH_PROVIDER=mock
+JWT_SECRET=...
+```
