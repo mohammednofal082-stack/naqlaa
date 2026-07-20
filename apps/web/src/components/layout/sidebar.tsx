@@ -16,7 +16,6 @@ import { Menu, X } from "lucide-react";
 import { AppTopBar } from "@/components/layout/app-top-bar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { RoleStrip } from "@/components/layout/role-strip";
-import { getRoleExperience } from "@/components/role/role-experience";
 
 function isLinkActive(pathname: string, href: string, role: UserRole) {
   const dashboardRoot = `/dashboard/${role}`;
@@ -31,7 +30,6 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useI18n();
   const role = user?.role ?? "student";
   const groups = getNavForRole(role, t);
-  const roleMeta = getRoleExperience(role, t);
 
   const handleLogout = async () => {
     await logout();
@@ -46,12 +44,6 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           <Link href={usesFluidShell(role) ? "/feed" : `/dashboard/${role}`} onClick={onNavigate}>
             <Logo size="sm" />
           </Link>
-          {user && (
-            <div className={`mt-4 p-3 rounded-xl bg-gradient-to-l ${roleMeta.gradient} border border-border`}>
-              <p className="text-xs font-semibold text-text">{roleMeta.icon} {roleMeta.label}</p>
-              <p className="text-[11px] text-text-muted mt-0.5 leading-relaxed">{roleMeta.tagline}</p>
-            </div>
-          )}
         </div>
         <button
           type="button"
