@@ -416,8 +416,48 @@ export const supabaseRepositories: DataRepositories = {
     return { emailNotifications: true, pushNotifications: true, profilePublic: true };
   },
 
-  async getInternshipRequests() { return []; },
-  async getWeeklyReports() { return []; },
+  async getInternshipRequests() {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from('internship_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      id: String(row.id),
+      studentId: String(row.student_id),
+      universityId: String(row.university_id),
+      companyId: String(row.company_id),
+      jobId: String(row.job_id ?? row.internship_id ?? ''),
+      supervisorId: row.supervisor_id ? String(row.supervisor_id) : undefined,
+      status: row.status as import('@careerlink/shared').InternshipStatus,
+      startDate: String(row.start_date ?? ''),
+      endDate: String(row.end_date ?? ''),
+    }));
+  },
+
+  async getWeeklyReports() {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from('weekly_reports')
+      .select('*')
+      .order('submitted_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      id: String(row.id),
+      internshipId: String(row.internship_request_id),
+      weekNumber: Number(row.week_number),
+      title: String(row.title ?? ''),
+      tasksDone: String(row.tasks_done ?? ''),
+      skillsUsed: (row.skills_used as string[]) ?? [],
+      challenges: String(row.challenges ?? ''),
+      status: row.status as 'pending' | 'approved' | 'rejected',
+      submittedAt: String(row.submitted_at),
+    }));
+  },
+
   async getAuditLogs() {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
@@ -453,8 +493,41 @@ export const supabaseRepositories: DataRepositories = {
       };
     });
   },
-  async getPartnerships() { return []; },
-  async getAssessments() { return []; },
+  async getPartnerships() {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from('partnerships')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      id: String(row.id),
+      universityId: String(row.university_id),
+      companyId: String(row.company_id),
+      status: row.status as 'pending' | 'active' | 'expired',
+      startDate: String(row.start_date),
+      endDate: row.end_date ? String(row.end_date) : undefined,
+    }));
+  },
+
+  async getAssessments() {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from('assessments')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      id: String(row.id),
+      jobId: String(row.job_id),
+      title: String(row.title),
+      type: row.type as 'mcq' | 'coding' | 'upload' | 'video',
+      deadline: String(row.deadline ?? ''),
+      status: String(row.status ?? 'active'),
+    }));
+  },
 
   async getMarketAnalysis() {
     const jobs = await this.getJobs();
@@ -600,14 +673,42 @@ export const supabaseRepositories: DataRepositories = {
   async registerForEvent(eventId) {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
     const { data, error } = await supabase.from('events').select('*').eq('id', eventId).single();
     if (error || !data) throw new Error('NOT_FOUND');
+    if (user) {
+      await supabase.from('event_registrations').upsert({
+        event_id: eventId,
+        user_id: user.id,
+      }, { onConflict: 'event_id,user_id' });
+    }
     await supabase.from('events').update({ registered_count: Number(data.registered_count ?? 0) + 1 }).eq('id', eventId);
     return (await this.getEvents()).find((e) => e.id === eventId)!;
   },
 
   async submitWeeklyReport(input) {
-    throw new Error('WEEKLY_REPORTS_TABLE_PENDING');
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.from('weekly_reports').insert({
+      internship_request_id: input.internshipRequestId,
+      week_number: input.weekNumber,
+      title: `Week ${input.weekNumber}`,
+      tasks_done: input.tasksCompleted,
+      challenges: input.challenges ?? '',
+      status: 'pending',
+    }).select().single();
+    if (error) throw error;
+    return {
+      id: String(data.id),
+      internshipId: String(data.internship_request_id),
+      weekNumber: Number(data.week_number),
+      title: String(data.title ?? ''),
+      tasksDone: String(data.tasks_done ?? ''),
+      skillsUsed: (data.skills_used as string[]) ?? [],
+      challenges: String(data.challenges ?? ''),
+      status: data.status as 'pending' | 'approved' | 'rejected',
+      submittedAt: String(data.submitted_at),
+    };
   },
 
   async verifyEntity(input) {

@@ -13,14 +13,17 @@
 ## 2. تشغيل الـ Schema
 
 1. افتح **SQL Editor** في لوحة Supabase.
-2. الصق محتوى الملفات بالترتيب:
+2. الصق محتوى الملفات بالترتيب ثم Run:
    ```
    supabase/migrations/001_initial_schema.sql
    supabase/migrations/002_talent_pools.sql
+   supabase/migrations/003_operations.sql
+   supabase/migrations/004_rls_demo.sql
+   supabase/seed.sql
    ```
-3. نفّذ السكربتات (Run).
+3. الدليل المختصر للجنة: [`docs/GO-LIVE.md`](./GO-LIVE.md)
 
-> الجداول الأساسية: `profiles`, `student_profiles`, `companies`, `jobs`, `internships`, `applications`, `courses`, `events`, `notifications`, `feed_posts`, `conversations`, `messages`, وغيرها مع RLS.
+> الجداول: profiles، jobs، applications، talent_pools، internship_requests، weekly_reports، partnerships، assessments، event_registrations، وغيرها مع RLS.
 
 ## 3. إعداد البيئة
 
@@ -79,6 +82,7 @@ Supabase ← supabase.ts              (بعد الربط)
 
 - **لا تغيّر الكود** للربط — فقط `.env.local` + migration.
 - بعض الكيانات المرجعية (جامعات، أقسام) ما زالت ثابتة في `@careerlink/shared` حتى إضافة جداول لها لاحقاً.
-- `talent_pools` + `talent_pool_members` موجودة في migration رقم 002.
-- جداول `partnerships`, `assessments`, `weekly_reports` غير موجودة بعد — الـ adapter يرجع `[]` أو يحتاج migration إضافي.
-- **تحليل سوق العمل** (`/market`) يُحسب لحظياً من جدولي `jobs` و`internships` — لا يحتاج جداول إضافية.
+- `talent_pools` + `talent_pool_members` في migration رقم 002.
+- `internship_requests`, `weekly_reports`, `partnerships`, `assessments`, `event_registrations` في migration رقم 003.
+- **تحليل سوق العمل** (`/market`) يُحسب لحظياً من جدولي `jobs` و`internships`.
+- بعد الربط راجع [`GO-LIVE.md`](./GO-LIVE.md).
