@@ -12,7 +12,7 @@ import { useApp } from "@/contexts/app-context";
 import { Plus, Briefcase, X } from "lucide-react";
 import { useI18n } from "@/i18n";
 
-const COMPANY_FALLBACK = "a3333333-3333-3333-3333-333333333333";
+const COMPANY_FALLBACK = "comp-1";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

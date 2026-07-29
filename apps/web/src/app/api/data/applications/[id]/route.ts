@@ -1,11 +1,12 @@
 import { NextRequest } from 'next/server';
-import { mutationResponse, getRepo, requireAuth } from '@/backend/data/api';
 import type { ApplicationStatus } from '@careerlink/shared';
+import { mutationResponse, getRepo } from '@/backend/data/api';
+import { requirePermission } from '@/backend/auth/rbac';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return mutationResponse(async () => {
-    await requireAuth();
+    await requirePermission('application.review');
     const { status } = await req.json();
     return getRepo().updateApplicationStatus(id, status as ApplicationStatus);
   });

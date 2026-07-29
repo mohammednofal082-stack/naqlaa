@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { dataResponse, mutationResponse, getRepo, requireAuth } from '@/backend/data/api';
 import { getCurrentUser } from '@/backend/auth/provider';
+import { requirePermission } from '@/backend/auth/rbac';
 
 const ALL_SCOPE_ROLES = new Set(['hr', 'company', 'admin', 'university']);
 
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   return mutationResponse(async () => {
-    await requireAuth();
+    await requirePermission('job.apply');
     const body = await req.json();
     return getRepo().apply({
       jobId: body.jobId,

@@ -24,11 +24,27 @@ const typeIcons: Record<NotificationType, typeof Bell> = {
   verification: Shield,
 };
 
+async function markRead(id: string) {
+  await fetch(`/api/data/notifications/${id}`, { method: "PATCH" });
+}
+
 export default function NotificationsPage() {
   const { t } = useI18n();
-  const { data, loading } = useNotifications();
+  const { data, loading, refetch } = useNotifications();
   const notifications = data ?? [];
   const unread = notifications.filter((n) => !n.read);
+
+  const markAll = async () => {
+    await Promise.all(unread.map((n) => markRead(n.id)));
+    await refetch();
+  };
+
+  const onOpen = async (id: string, read: boolean) => {
+    if (!read) {
+      await markRead(id);
+      await refetch();
+    }
+  };
 
   if (loading) {
     return (
@@ -60,7 +76,11 @@ export default function NotificationsPage() {
         ) : (
           <>
             <div className="flex justify-end mb-4">
-              <button className="flex items-center gap-2 text-sm font-medium text-blue hover:underline">
+              <button
+                type="button"
+                onClick={() => void markAll()}
+                className="flex items-center gap-2 text-sm font-medium text-blue hover:underline"
+              >
                 <CheckCheck className="w-4 h-4" />
                 {t("تحديد الكل كمقروء", "Mark all as read")}
               </button>
@@ -70,7 +90,12 @@ export default function NotificationsPage() {
               {notifications.map((notif) => {
                 const Icon = typeIcons[notif.type];
                 return (
-                  <Link key={notif.id} href={notif.link || "#"} className="block">
+                  <Link
+                    key={notif.id}
+                    href={notif.link || "#"}
+                    className="block"
+                    onClick={() => void onOpen(notif.id, notif.read)}
+                  >
                     <Card
                       hover
                       className={`nq-lift flex items-start gap-4 ${!notif.read ? "border-blue/20 bg-blue/5" : ""}`}

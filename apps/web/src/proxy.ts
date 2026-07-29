@@ -8,15 +8,16 @@ const SECRET = new TextEncoder().encode(
 );
 const COOKIE_NAME = 'naqlah_session';
 
-function useSupabaseAuth() {
-  return (
-    process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'supabase' &&
-    Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-  );
+function isSupabaseAuthEnabled() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!url || !anon) return false;
+  // Prefer Supabase whenever keys exist (same rule as backend env)
+  return true;
 }
 
-async function refreshSupabaseSession(req: NextRequest, res: NextResponse) {
-  const supabase = createServerClient(
+function createSupabaseProxyClient(req: NextRequest, res: NextResponse) {
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -33,25 +34,41 @@ async function refreshSupabaseSession(req: NextRequest, res: NextResponse) {
       },
     }
   );
-  await supabase.auth.getUser();
-  return res;
 }
 
-const AUTH_PATHS = ['/auth/login', '/auth/register'];
-
-async function getSessionFromRequest(req: NextRequest) {
+async function getLocalJwtSession(req: NextRequest) {
   const token = req.cookies.get(COOKIE_NAME)?.value;
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, SECRET);
-    return payload as { role?: string };
+    return payload as { role?: string; userId?: string };
   } catch {
     return null;
   }
 }
 
+async function getSupabaseSession(req: NextRequest, res: NextResponse) {
+  if (!isSupabaseAuthEnabled()) return null;
+  const supabase = createSupabaseProxyClient(req, res);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('active_role, roles')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const roles = (profile?.roles as string[] | null) ?? [];
+  const role = String(profile?.active_role || roles[0] || user.user_metadata?.role || 'student');
+  return { role, userId: user.id };
+}
+
+const AUTH_PATHS = ['/auth/login', '/auth/register'];
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  let res = NextResponse.next();
 
   if (req.method === 'OPTIONS' && pathname.startsWith('/api/')) {
     return new NextResponse(null, {
@@ -69,17 +86,26 @@ export async function proxy(req: NextRequest) {
     pathname.startsWith('/api/auth/logout') ||
     pathname.includes('.')
   ) {
-    return NextResponse.next();
+    return res;
   }
 
-  const session = await getSessionFromRequest(req);
+  const localSession = await getLocalJwtSession(req);
+  const supabaseSession = localSession ? null : await getSupabaseSession(req, res);
+  const session = localSession ?? supabaseSession;
   const isAuthPage = AUTH_PATHS.some((p) => pathname.startsWith(p));
 
   if (session && isAuthPage) {
-    return NextResponse.redirect(new URL(`/dashboard/${session.role}`, req.url));
+    return NextResponse.redirect(new URL(`/dashboard/${session.role || 'student'}`, req.url));
   }
 
-  if (!session && (pathname.startsWith('/dashboard') || pathname.startsWith('/feed') || pathname.startsWith('/messages') || pathname.startsWith('/journey') || pathname.startsWith('/ai'))) {
+  if (
+    !session &&
+    (pathname.startsWith('/dashboard') ||
+      pathname.startsWith('/feed') ||
+      pathname.startsWith('/messages') ||
+      pathname.startsWith('/journey') ||
+      pathname.startsWith('/ai'))
+  ) {
     const loginUrl = new URL('/auth/login', req.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
@@ -88,14 +114,24 @@ export async function proxy(req: NextRequest) {
   if (session && pathname.startsWith('/dashboard/')) {
     const roleSegment = pathname.split('/')[2];
     if (roleSegment && roleSegment !== session.role && session.role !== 'admin') {
-      const sharedRoutes = ['jobs', 'internships', 'courses', 'events', 'messages', 'notifications', 'profile', 'settings', 'search', 'ai', 'applications', 'saved', 'projects', 'feed', 'community'];
+      const sharedRoutes = [
+        'jobs', 'internships', 'courses', 'events', 'messages', 'notifications',
+        'profile', 'settings', 'search', 'ai', 'applications', 'saved', 'projects',
+        'feed', 'community', 'market', 'mentorship', 'workflows',
+      ];
       if (!sharedRoutes.includes(roleSegment)) {
         return NextResponse.redirect(new URL(`/dashboard/${session.role}`, req.url));
       }
     }
   }
 
-  return useSupabaseAuth() ? refreshSupabaseSession(req, NextResponse.next()) : NextResponse.next();
+  // Keep Supabase cookies fresh on every request when configured
+  if (isSupabaseAuthEnabled()) {
+    const supabase = createSupabaseProxyClient(req, res);
+    await supabase.auth.getUser();
+  }
+
+  return res;
 }
 
 export const config = {

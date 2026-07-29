@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/backend/auth/session";
+import { getCurrentUser } from "@/backend/auth/provider";
 
 export async function requireAiSession() {
-  const session = await getSession();
+  const session = await getCurrentUser();
   if (!session) {
     return { session: null, error: NextResponse.json({ error: "يجب تسجيل الدخول" }, { status: 401 }) };
   }

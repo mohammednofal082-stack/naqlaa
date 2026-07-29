@@ -55,6 +55,8 @@ naqla/
    - `supabase/migrations/002_talent_pools.sql`
    - `supabase/migrations/003_operations.sql`
    - `supabase/migrations/004_rls_demo.sql`
+   - `supabase/migrations/005_jobs_write_rls.sql`
+   - `supabase/migrations/006_write_rls.sql`
    - `supabase/seed.sql`
 3. من **Project Settings → API** انسخ:
    - Project URL

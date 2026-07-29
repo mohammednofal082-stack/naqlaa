@@ -22,14 +22,18 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       user: {
+        userId: result.user!.userId,
         id: result.user!.userId,
         email: result.user!.email,
         fullName: result.user!.fullName,
         role: result.user!.role,
         roles: result.user!.roles,
         avatar: result.user!.avatar,
+        organizationId: result.user!.organizationId,
+        accessToken: result.token,
       },
       redirect: result.redirect,
+      token: result.token,
     });
   } catch {
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });

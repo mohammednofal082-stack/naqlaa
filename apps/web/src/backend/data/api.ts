@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getRepositories } from '@/backend/data';
-import { envConfig } from '@/backend/config/env';
+import { envConfig, useSupabaseData } from '@/backend/config/env';
 import { getCurrentUser } from '@/backend/auth/provider';
 
 const CORS_HEADERS: Record<string, string> = {
@@ -18,34 +18,44 @@ function withCors(res: NextResponse) {
   return res;
 }
 
+function activeProvider(): 'supabase' | 'mock' | 'unconfigured' {
+  if (useSupabaseData()) return 'supabase';
+  if (envConfig.supabase.url || envConfig.supabase.anonKey) return 'unconfigured';
+  return 'mock';
+}
+
 export async function dataResponse<T>(handler: () => Promise<T>) {
   try {
     const data = await handler();
     return withCors(
       NextResponse.json({
         data,
-        provider: envConfig.dataProvider,
+        provider: activeProvider(),
       })
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : 'DATA_ERROR';
     const status =
-      message === 'SUPABASE_NOT_CONFIGURED' ? 503 :
+      message === 'SUPABASE_NOT_CONFIGURED' || message === 'SUPABASE_REQUIRED' ? 503 :
       message === 'UNAUTHORIZED' ? 401 :
+      message === 'FORBIDDEN' ? 403 :
       message === 'NOT_FOUND' ? 404 :
       message === 'ALREADY_APPLIED' ? 409 : 500;
     return withCors(
       NextResponse.json(
         {
           error:
-            message === 'SUPABASE_NOT_CONFIGURED'
+            message === 'SUPABASE_NOT_CONFIGURED' || message === 'SUPABASE_REQUIRED'
               ? 'Supabase غير مُعدّ — أضف المفاتيح في .env.local'
               : message === 'ALREADY_APPLIED'
                 ? 'لقد تقدمت مسبقاً على هذه الفرصة'
                 : message === 'UNAUTHORIZED'
                   ? 'يجب تسجيل الدخول'
-                  : 'فشل العملية',
+                  : message === 'FORBIDDEN'
+                    ? 'ليس لديك صلاحية لهذا الإجراء'
+                    : 'فشل العملية',
           code: message,
+          provider: activeProvider(),
         },
         { status }
       )

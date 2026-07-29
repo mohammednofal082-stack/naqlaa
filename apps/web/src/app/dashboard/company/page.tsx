@@ -19,7 +19,7 @@ export default function CompanyDashboard() {
   const { t } = useI18n();
   const { user } = useApp();
   const role = getRoleExperience("company", t);
-  const companyId = user?.organizationId ?? "a3333333-3333-3333-3333-333333333333";
+  const companyId = user?.organizationId ?? "comp-1";
   const { data: applications, loading } = useAllApplications();
   const { data: jobs } = useJobs();
   const apps = applications ?? [];

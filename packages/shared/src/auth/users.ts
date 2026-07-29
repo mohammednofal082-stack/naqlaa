@@ -2,9 +2,10 @@ import type { AuthUser, UserRole } from '../types';
 
 export const DEMO_PASSWORD = 'Naqlah@2025';
 
+/** Auth IDs aligned with mock platform data (user-1, comp-1, …). Supabase uses real UUIDs from seed-demo-users. */
 export const authUsers: AuthUser[] = [
   {
-    id: 'auth-student-1',
+    id: 'user-1',
     email: 'student@naqlah.ps',
     passwordHash: '',
     fullName: 'محمد نوفل',
@@ -13,11 +14,11 @@ export const authUsers: AuthUser[] = [
     emailVerified: true,
     phone: '+970599123456',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=MohammadNofal',
-    organizationId: 'an-najah',
+    organizationId: 'uni-1',
     createdAt: '2024-09-01',
   },
   {
-    id: 'auth-graduate-1',
+    id: 'user-2',
     email: 'graduate@naqlah.ps',
     passwordHash: '',
     fullName: 'أمير أبو شمس',
@@ -25,11 +26,11 @@ export const authUsers: AuthUser[] = [
     status: 'active',
     emailVerified: true,
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ameer',
-    organizationId: 'an-najah',
+    organizationId: 'uni-1',
     createdAt: '2023-06-15',
   },
   {
-    id: 'auth-company-1',
+    id: 'user-company-1',
     email: 'company@jawwal.ps',
     passwordHash: '',
     fullName: 'Jawwal - بوابة الشركات',
@@ -37,11 +38,11 @@ export const authUsers: AuthUser[] = [
     status: 'active',
     emailVerified: true,
     avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=JW&backgroundColor=2563EB',
-    organizationId: 'a3333333-3333-3333-3333-333333333333',
+    organizationId: 'comp-1',
     createdAt: '2024-01-15',
   },
   {
-    id: 'auth-hr-1',
+    id: 'user-3',
     email: 'hr@jawwal.ps',
     passwordHash: '',
     fullName: 'محمد عبدالله - HR',
@@ -49,11 +50,11 @@ export const authUsers: AuthUser[] = [
     status: 'active',
     emailVerified: true,
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HR',
-    organizationId: 'a3333333-3333-3333-3333-333333333333',
+    organizationId: 'comp-1',
     createdAt: '2024-02-01',
   },
   {
-    id: 'auth-university-1',
+    id: 'user-university-1',
     email: 'career@birzeit.edu',
     passwordHash: '',
     fullName: 'جامعة النجاح - مركز التوظيف',
@@ -61,11 +62,11 @@ export const authUsers: AuthUser[] = [
     status: 'active',
     emailVerified: true,
     avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=NJ&backgroundColor=10B981',
-    organizationId: 'an-najah',
+    organizationId: 'uni-1',
     createdAt: '2024-01-01',
   },
   {
-    id: 'auth-trainer-1',
+    id: 'user-trainer-1',
     email: 'trainer@naqlah.ps',
     passwordHash: '',
     fullName: 'د. كريم ناصر',
@@ -76,7 +77,7 @@ export const authUsers: AuthUser[] = [
     createdAt: '2024-03-01',
   },
   {
-    id: 'auth-mentor-1',
+    id: 'user-mentor-1',
     email: 'mentor@naqlah.ps',
     passwordHash: '',
     fullName: 'لينا أبو غزالة',
@@ -87,7 +88,7 @@ export const authUsers: AuthUser[] = [
     createdAt: '2024-04-01',
   },
   {
-    id: 'auth-admin-1',
+    id: 'user-4',
     email: 'admin@naqlah.ps',
     passwordHash: '',
     fullName: 'مدير النظام',

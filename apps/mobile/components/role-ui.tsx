@@ -104,7 +104,7 @@ export function SectionTitle({ title }: { title: string }) {
   return <Text style={styles.sectionTitle}>{title}</Text>;
 }
 
-export function AccentMap: Record<string, string> = {
+export const AccentMap: Record<string, string> = {
   blue: colors.blue,
   emerald: colors.emerald,
   purple: colors.purple,

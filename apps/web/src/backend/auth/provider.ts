@@ -10,6 +10,7 @@ export interface LoginResult {
   user?: SessionPayload;
   redirect?: string;
   error?: string;
+  token?: string;
 }
 
 function toSession(user: {
@@ -38,12 +39,22 @@ async function mockLogin(email: string, password: string, role?: UserRole): Prom
 
   const activeRole = (role && user.roles.includes(role) ? role : user.roles[0]) as UserRole;
   const session = toSession(user, activeRole);
+
+  // Keep in-memory data layer scoped to the same user id as auth
+  try {
+    const { memoryStore } = await import('@/backend/data/memory-store');
+    memoryStore.currentUserId = session.userId;
+  } catch {
+    // ignore if memory store unavailable
+  }
+
   const token = await createSession(session);
   await setSessionCookie(token);
 
   return {
     user: session,
     redirect: ROLE_DASHBOARD_PATHS[activeRole],
+    token,
   };
 }
 
@@ -71,9 +82,13 @@ async function supabaseLogin(email: string, password: string, role?: UserRole): 
     organizationId: profile?.organization_id ? String(profile.organization_id) : undefined,
   };
 
+    const token = await createSession(session);
+  await setSessionCookie(token);
+
   return {
     user: session,
     redirect: ROLE_DASHBOARD_PATHS[activeRole],
+    token,
   };
 }
 
@@ -134,10 +149,29 @@ export async function logoutUser(): Promise<void> {
 }
 
 export async function getCurrentUser(): Promise<SessionPayload | null> {
+  // Bearer token (mobile / API clients)
+  try {
+    const { headers } = await import('next/headers');
+    const h = await headers();
+    const auth = h.get('authorization');
+    if (auth?.startsWith('Bearer ')) {
+      const token = auth.slice(7);
+      const { verifySession } = await import('@/backend/auth/session');
+      const payload = await verifySession(token);
+      if (payload) return payload;
+    }
+  } catch {
+    // ignore outside request context
+  }
+
   if (useSupabaseAuth()) {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) {
+      // Fall back to bridge JWT cookie if present
+      const { getSession } = await import('@/backend/auth/session');
+      return getSession();
+    }
 
     const { data: profile } = await supabase
       .from('profiles')

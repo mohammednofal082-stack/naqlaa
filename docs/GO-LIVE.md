@@ -30,7 +30,8 @@ JWT_SECRET=naqlah-mvp-change-me-please-2026
 ثم نفّذ أيضاً (مرة واحدة):
 
 1. `supabase/migrations/005_jobs_write_rls.sql`
-2. من جذر المشروع: `npm run seed:demo-users` ← ينشئ 8 حسابات Auth + طلبات تجريبية
+2. `supabase/migrations/006_write_rls.sql`
+3. من جذر المشروع: `npm run seed:demo-users` ← ينشئ 8 حسابات Auth + طلبات تجريبية
 
 ثم:
 
@@ -68,5 +69,7 @@ npm run dev
 - Storage لرفع CV
 - Push notifications على الموبايل
 - توسيع جداول الدروس/الكويز المنفصلة
+- Forgot password / email verification كامل
+- Pagination و rate limiting و اختبارات CI
 
-هذه لا تمنع عرض الـ MVP للجنة إذا الواجهات والخوارزميات شغّالة.
+هذه لا تمنع عرض الـ MVP للجنة إذا الواجهات والخوارزميات شغّالة مع Supabase.

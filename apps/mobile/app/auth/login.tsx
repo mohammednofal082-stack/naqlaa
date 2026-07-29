@@ -38,9 +38,9 @@ export default function LoginScreen() {
     }
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError("");
-    const result = login(email, password, role);
+    const result = await login(email, password, role);
     if (result.error) {
       setError(result.error);
       return;

@@ -31,7 +31,10 @@ export const supabaseRepositories: DataRepositories = {
 
     if (error) throw error;
 
-    const { data: skills } = await supabase.from('user_skills').select('*');
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: skills } = user
+      ? await supabase.from('user_skills').select('*').eq('user_id', user.id)
+      : { data: [] as Record<string, unknown>[] };
     const userSkills = (skills ?? []).map((s) => ({
       name: String(s.skill_name),
       level: Number(s.level),
