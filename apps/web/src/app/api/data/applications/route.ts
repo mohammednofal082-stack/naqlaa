@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { dataResponse, mutationResponse, getRepo, requireAuth } from '@/lib/data/api';
-import { getCurrentUser } from '@/lib/auth/provider';
+import { dataResponse, mutationResponse, getRepo, requireAuth } from '@/backend/data/api';
+import { getCurrentUser } from '@/backend/auth/provider';
 
 const ALL_SCOPE_ROLES = new Set(['hr', 'company', 'admin', 'university']);
 

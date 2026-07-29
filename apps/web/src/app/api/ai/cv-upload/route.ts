@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAiSession } from "@/lib/ai/api";
+import { requireAiSession } from "@/backend/ai/api";
 
 export async function POST(req: NextRequest) {
   const { error } = await requireAiSession();

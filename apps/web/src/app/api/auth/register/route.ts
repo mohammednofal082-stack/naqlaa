@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { registerNewUser } from '@/lib/auth/provider';
-import { validateEmail, validatePassword } from '@/lib/auth/password';
+import { registerNewUser } from '@/backend/auth/provider';
+import { validateEmail, validatePassword } from '@/backend/auth/password';
 import { type UserRole } from '@careerlink/shared';
 
 const ALLOWED_ROLES: UserRole[] = ['student', 'graduate', 'company', 'trainer', 'mentor'];

@@ -4,8 +4,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { ScreenHeader, Card, colors, spacing, radius } from "../../components/ui";
 import {
-  studentProfile,
-  skillAnalysis,
   buildUserSkills,
   analyzeSkillGap,
   analyzeCvLocally,
@@ -13,15 +11,24 @@ import {
   startInterviewQuestions,
   evaluateInterviewAnswer,
   ROLE_OPTIONS,
+  type StudentProfile,
 } from "@careerlink/shared";
 import { useI18n } from "../../i18n";
+import { useRemoteData } from "../../hooks/use-remote-data";
 
 const SAMPLE_CV = `محمد نوفل — مطور واجهات أمامية
 React, TypeScript, Next.js, Git
 خبرة في بناء لوحات تحكم وتحسين الأداء`;
 
+type ProfileBundle = { user: unknown; profile: StudentProfile; skillLevels: { skill: string; value: number }[] };
+
 export default function AIScreen() {
   const { t } = useI18n();
+  const { data: profileData } = useRemoteData<ProfileBundle>("profile");
+  const { data: jobsRemote } = useRemoteData<Array<{ matchPercentage?: number; title: string; company: { name: string } }>>("jobs");
+  const { data: internshipsRemote } = useRemoteData<Array<{ matchPercentage?: number; title: string; company: { name: string } }>>("internships");
+  const { data: coursesRemote } = useRemoteData<import("@careerlink/shared").Course[]>("courses");
+  const { data: mentorsRemote } = useRemoteData<import("@careerlink/shared").MentorProfile[]>("mentors");
   const aiTools = [
     { id: "gap", title: t("فجوة المهارات", "Skill Gap"), icon: "analytics" as const, color: colors.blue },
     { id: "rec", title: t("توصيات", "Recommendations"), icon: "bulb" as const, color: colors.emerald },
@@ -30,9 +37,18 @@ export default function AIScreen() {
   ];
   const [active, setActive] = useState("gap");
   const [targetRole, setTargetRole] = useState("Full Stack Developer");
-  const userSkills = buildUserSkills(studentProfile.skills, skillAnalysis);
+  const skills = profileData?.profile.skills ?? [];
+  const skillLevels = profileData?.skillLevels ?? [];
+  const userSkills = buildUserSkills(skills, skillLevels);
   const gap = analyzeSkillGap(targetRole, userSkills);
-  const rec = getSmartRecommendations(targetRole);
+  const rec = getSmartRecommendations({
+    targetRole,
+    userSkills,
+    jobs: (jobsRemote as never) ?? [],
+    internships: (internshipsRemote as never) ?? [],
+    courses: coursesRemote ?? [],
+    mentors: mentorsRemote ?? [],
+  });
   const cvResult = analyzeCvLocally(SAMPLE_CV, targetRole, userSkills);
 
   const [questions] = useState(() => startInterviewQuestions("مطور Frontend", "mid"));

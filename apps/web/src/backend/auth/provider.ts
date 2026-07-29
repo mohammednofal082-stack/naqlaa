@@ -1,10 +1,10 @@
 import type { UserRole } from '@careerlink/shared';
 import { ROLE_DASHBOARD_PATHS } from '@careerlink/shared';
-import { authenticateUser, registerUser, getUserById } from '@/lib/auth/store';
-import { createSession, setSessionCookie, clearSessionCookie } from '@/lib/auth/session';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { useSupabaseAuth } from '@/lib/config/env';
-import type { SessionPayload } from '@/lib/auth/session';
+import { authenticateUser, registerUser, getUserById } from '@/backend/auth/store';
+import { createSession, setSessionCookie, clearSessionCookie } from '@/backend/auth/session';
+import { createSupabaseServerClient } from '@/backend/supabase/server';
+import { useSupabaseAuth } from '@/backend/config/env';
+import type { SessionPayload } from '@/backend/auth/session';
 
 export interface LoginResult {
   user?: SessionPayload;
@@ -159,7 +159,7 @@ export async function getCurrentUser(): Promise<SessionPayload | null> {
     };
   }
 
-  const { getSession } = await import('@/lib/auth/session');
+  const { getSession } = await import('@/backend/auth/session');
   const session = await getSession();
   if (!session) return null;
 

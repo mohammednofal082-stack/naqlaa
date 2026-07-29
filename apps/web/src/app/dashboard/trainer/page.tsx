@@ -16,7 +16,7 @@ export default function TrainerDashboard() {
   const pendingAssignments = [
     { id: "a1", student: t("أمير أبو شمس", "Amir Abu Shams"), course: t("React.js من الصفر للاحتراف", "React.js from Scratch to Mastery"), task: t("مشروع Todo App", "Todo App Project"), due: "2025-06-25" },
     { id: "a2", student: t("سارة خليل", "Sara Khalil"), course: t("أساسيات UI/UX Design", "UI/UX Design Fundamentals"), task: t("تصميم Wireframe", "Wireframe Design"), due: "2025-06-26" },
-    { id: "a3", student: t("سارة محمد", "Sara Mohammed"), course: "Node.js & APIs", task: "REST API Challenge", due: "2025-06-28" },
+    { id: "a3", student: t("محمد نوفل", "Mohammed Nofal"), course: "Node.js & APIs", task: "REST API Challenge", due: "2025-06-28" },
   ];
   const { data: courses, loading: coursesLoading } = useCourses();
   const { data: users, loading: usersLoading } = useUsers();

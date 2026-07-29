@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { dataResponse, mutationResponse, getRepo, requireAuth } from '@/lib/data/api';
+import { dataResponse, mutationResponse, getRepo, requireAuth } from '@/backend/data/api';
 
 export async function GET() {
   return dataResponse(() => getRepo().getTalentPools());

@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { dataClient } from "@/lib/data/client";
+import { dataClient } from "@/backend/data/client";
 import type {
   JobWithCompany,
   InternshipWithCompany,
   ApplicationWithDetails,
   UserProfileBundle,
   UserSettings,
-} from "@/lib/data";
+} from "@/backend/data";
 import type {
   Company,
   Course,

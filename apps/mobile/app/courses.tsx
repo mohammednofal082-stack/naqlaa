@@ -2,12 +2,15 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { courses } from "@careerlink/shared";
+import type { Course } from "@careerlink/shared";
 import { useI18n } from "../i18n";
 import { colors, spacing, radius } from "../constants/theme";
+import { useRemoteData } from "../hooks/use-remote-data";
 
 export default function CoursesScreen() {
   const { t } = useI18n();
+  const { data: coursesData } = useRemoteData<Course[]>("courses");
+  const list = coursesData ?? [];
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -17,7 +20,7 @@ export default function CoursesScreen() {
         <Text style={styles.headerTitle}>{t("الكورسات", "Courses")}</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        {courses.map((c) => (
+        {list.map((c) => (
           <View key={c.id} style={styles.card}>
             <Text style={styles.title}>{c.title}</Text>
             <Text style={styles.trainer}>{c.category} · {c.level}</Text>

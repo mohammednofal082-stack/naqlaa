@@ -6,7 +6,7 @@ import { DashboardLayout, Header } from "@/components/layout/sidebar";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProgressRing } from "@/components/ui/progress";
-import { analyzeSkillGapClient } from "@/lib/ai/client-api";
+import { analyzeSkillGapClient } from "@/backend/ai/client-api";
 import {
   ROLE_OPTIONS,
   buildUserSkills,

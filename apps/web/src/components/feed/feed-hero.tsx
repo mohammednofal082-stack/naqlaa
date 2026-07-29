@@ -5,18 +5,21 @@ import { useApp } from "@/contexts/app-context";
 import { useI18n } from "@/i18n";
 import { getRoleExperience } from "@/components/role/role-experience";
 import { RoleScenarios } from "@/components/role/role-ui";
-import { dashboardStats, applications } from "@careerlink/shared";
+import { useApplications, useProfile } from "@/hooks/data";
 import { ArrowLeft, ArrowRight, Compass } from "lucide-react";
 
 export function FeedHero() {
   const { user } = useApp();
   const { t, isRTL } = useI18n();
+  const { data: profileData } = useProfile();
+  const { data: apps } = useApplications();
   if (!user) return null;
 
   const role = getRoleExperience(user.role, t);
   const firstName = user.fullName.split(" ")[0];
   const scenario = role.scenarios[0];
-  const myApps = applications.filter((a) => a.studentId === user.userId).length;
+  const myApps = (apps ?? []).length;
+  const completion = profileData?.profile.profileCompletion ?? 0;
 
   return (
     <section className="space-y-4 mb-4">
@@ -48,7 +51,7 @@ export function FeedHero() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-5 pt-5 border-t border-border/60">
           <div className="nq-stat">
             <p className="text-xs text-text-muted mb-0.5">{t("اكتمال الملف", "Profile completion")}</p>
-            <p className="text-xl font-bold text-brand tabular-nums">{dashboardStats.profileCompletion}%</p>
+            <p className="text-xl font-bold text-brand tabular-nums">{completion}%</p>
           </div>
           <div className="nq-stat">
             <p className="text-xs text-text-muted mb-0.5">{t("طلبات نشطة", "Active applications")}</p>

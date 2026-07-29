@@ -2,14 +2,19 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { getInternshipsWithCompany, internshipRequests, internshipStatusLabels } from "@careerlink/shared";
+import type { Company, Internship, InternshipRequest } from "@careerlink/shared";
 import { useI18n } from "../i18n";
 import { colors, spacing, radius } from "../constants/theme";
+import { useRemoteData } from "../hooks/use-remote-data";
+
+type InternshipWithCompany = Internship & { company: Company };
 
 export default function InternshipsScreen() {
   const { t } = useI18n();
-  const items = getInternshipsWithCompany();
-  const requests = internshipRequests;
+  const { data: itemsData } = useRemoteData<InternshipWithCompany[]>("internships");
+  const { data: requestsData } = useRemoteData<InternshipRequest[]>("internship-requests");
+  const items = itemsData ?? [];
+  const requests = requestsData ?? [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -25,7 +30,7 @@ export default function InternshipsScreen() {
         <Text style={styles.section}>{t("طلبات الاعتماد", "Accreditation requests")}</Text>
         {requests.map((r) => (
           <View key={r.id} style={styles.card}>
-            <Text style={styles.status}>{internshipStatusLabels[r.status] ?? r.status}</Text>
+            <Text style={styles.status}>{r.status}</Text>
             <Text style={styles.duration}>{r.startDate} — {r.endDate}</Text>
           </View>
         ))}

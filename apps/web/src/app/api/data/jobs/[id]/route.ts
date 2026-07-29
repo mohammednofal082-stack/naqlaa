@@ -1,4 +1,4 @@
-import { dataResponse, getRepo } from '@/lib/data/api';
+import { dataResponse, getRepo } from '@/backend/data/api';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

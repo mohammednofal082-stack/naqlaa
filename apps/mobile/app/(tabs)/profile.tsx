@@ -1,65 +1,87 @@
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ScreenHeader, Card, colors, spacing, radius } from "../../components/ui";
-import { currentUser, studentProfile } from "@careerlink/shared";
+import { Card, colors, spacing, radius } from "../../components/ui";
+import type { StudentProfile, User } from "@careerlink/shared";
+import { useApp } from "../../contexts/app-context";
 import { useI18n } from "../../i18n";
+import { useRemoteData } from "../../hooks/use-remote-data";
+
+type ProfileBundle = { user: User; profile: StudentProfile; skillLevels: { skill: string; value: number }[] };
 
 export default function ProfileScreen() {
   const { t } = useI18n();
-  const profile = studentProfile;
+  const { user: sessionUser } = useApp();
+  const { data, loading, error } = useRemoteData<ProfileBundle>("profile");
+  const profile = data?.profile;
+  const apiUser = data?.user;
+  const firstName = apiUser?.firstName ?? sessionUser?.fullName.split(" ")[0] ?? "";
+  const lastName = apiUser?.lastName ?? sessionUser?.fullName.split(" ").slice(1).join(" ") ?? "";
+  const completion = profile?.profileCompletion ?? 0;
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{currentUser.firstName[0]}{currentUser.lastName[0]}</Text>
+            <Text style={styles.avatarText}>{firstName[0] ?? "?"}{lastName[0] ?? ""}</Text>
           </View>
           <Text style={styles.name}>
-            {currentUser.firstName} {currentUser.lastName}
+            {firstName} {lastName}
           </Text>
-          <Text style={styles.headline}>{profile.headline}</Text>
-          <Text style={styles.meta}>{profile.major} · {profile.location}</Text>
+          {loading ? (
+            <Text style={styles.headline}>{t("جاري التحميل...", "Loading...")}</Text>
+          ) : error ? (
+            <Text style={styles.headline}>{t("تعذر تحميل الملف", "Could not load profile")}</Text>
+          ) : (
+            <>
+              <Text style={styles.headline}>{profile?.headline ?? ""}</Text>
+              <Text style={styles.meta}>{[profile?.major, profile?.location].filter(Boolean).join(" · ")}</Text>
+            </>
+          )}
         </View>
 
         <Card style={styles.progressCard}>
           <View style={styles.progressHeader}>
             <Text style={styles.progressLabel}>{t("اكتمال الملف", "Profile completion")}</Text>
-            <Text style={styles.progressPct}>{profile.profileCompletion}%</Text>
+            <Text style={styles.progressPct}>{completion}%</Text>
           </View>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${profile.profileCompletion}%` }]} />
+            <View style={[styles.progressFill, { width: `${completion}%` }]} />
           </View>
         </Card>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("نبذة", "About")}</Text>
-          <Card>
-            <Text style={styles.about}>{profile.about}</Text>
-          </Card>
-        </View>
+        {profile ? (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t("نبذة", "About")}</Text>
+              <Card>
+                <Text style={styles.about}>{profile.about || t("لا توجد نبذة بعد", "No about text yet")}</Text>
+              </Card>
+            </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("المهارات", "Skills")}</Text>
-          <View style={styles.skills}>
-            {profile.skills.map((skill) => (
-              <View key={skill} style={styles.skillBadge}>
-                <Text style={styles.skillText}>{skill}</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t("المهارات", "Skills")}</Text>
+              <View style={styles.skills}>
+                {profile.skills.map((skill) => (
+                  <View key={skill} style={styles.skillBadge}>
+                    <Text style={styles.skillText}>{skill}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-        </View>
+            </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("التعليم", "Education")}</Text>
-          {profile.education.map((edu) => (
-            <Card key={edu.university} style={styles.eduCard}>
-              <Text style={styles.eduUni}>{edu.university}</Text>
-              <Text style={styles.eduMajor}>{edu.major} — {edu.degree}</Text>
-              <Text style={styles.eduYear}>{edu.graduationYear}</Text>
-            </Card>
-          ))}
-        </View>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t("التعليم", "Education")}</Text>
+              {profile.education.map((edu) => (
+                <Card key={`${edu.university}-${edu.startYear}`} style={styles.eduCard}>
+                  <Text style={styles.eduUni}>{edu.university}</Text>
+                  <Text style={styles.eduMajor}>{edu.major} — {edu.degree}</Text>
+                  <Text style={styles.eduYear}>{edu.startYear} – {edu.endYear}</Text>
+                </Card>
+              ))}
+            </View>
+          </>
+        ) : null}
         <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>

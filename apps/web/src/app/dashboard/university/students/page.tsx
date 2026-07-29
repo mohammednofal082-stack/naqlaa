@@ -6,9 +6,9 @@ import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { ActivityRow, PanelCard } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { studentProfile } from "@careerlink/shared";
 import { useUsers } from "@/hooks/data";
-import { GraduationCap, MapPin, Search, Users } from "lucide-react";
+import { ROLE_LABELS } from "@careerlink/shared";
+import { Search, Users } from "lucide-react";
 import { useI18n } from "@/i18n";
 
 export default function UniversityStudentsPage() {
@@ -16,7 +16,7 @@ export default function UniversityStudentsPage() {
   const [search, setSearch] = useState("");
   const { data: users, loading } = useUsers();
   const students = (users ?? []).filter((u) => u.role === "student").filter(
-    (s) => !search || s.firstName.includes(search) || s.lastName.includes(search)
+    (s) => !search || s.firstName.includes(search) || s.lastName.includes(search) || s.email.includes(search)
   );
 
   return (
@@ -62,21 +62,9 @@ export default function UniversityStudentsPage() {
                         </div>
                       }
                       title={`${student.firstName} ${student.lastName}`}
-                      subtitle={studentProfile.major}
-                      meta={`${studentProfile.profileCompletion}%`}
-                      badge={
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="text-[11px] text-text-muted flex items-center gap-1">
-                            <GraduationCap className="w-3 h-3" />
-                            {studentProfile.graduationYear}
-                          </span>
-                          <span className="text-[11px] text-text-muted flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {studentProfile.location}
-                          </span>
-                          <Button size="sm" variant="outline">{t("عرض", "View")}</Button>
-                        </div>
-                      }
+                      subtitle={ROLE_LABELS[student.role] ?? student.role}
+                      meta={student.email}
+                      badge={<Button size="sm" variant="outline">{t("عرض", "View")}</Button>}
                     />
                   </div>
                 ))}

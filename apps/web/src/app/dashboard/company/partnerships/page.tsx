@@ -5,7 +5,6 @@ import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { ActivityRow, PanelCard } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { universities } from "@careerlink/shared";
 import { useCompanies, usePartnerships } from "@/hooks/data";
 import { Handshake, Plus } from "lucide-react";
 import { formatDate } from "@/lib/utils";
@@ -16,6 +15,7 @@ export default function CompanyPartnershipsPage() {
   const { data: partnerships, loading } = usePartnerships();
   const { data: companies } = useCompanies();
   const items = partnerships ?? [];
+  const universityLabel = t("جامعة النجاح الوطنية", "An-Najah National University");
 
   return (
     <DashboardLayout>
@@ -48,7 +48,6 @@ export default function CompanyPartnershipsPage() {
             <div className="grid lg:grid-cols-2 gap-3">
               {items.map((partnership) => {
                 const company = companies?.find((c) => c.id === partnership.companyId);
-                const university = universities.find((u) => u.id === partnership.universityId);
 
                 return (
                   <div key={partnership.id} className="nq-lift p-4 rounded-lg border border-border bg-surface-hover/40">
@@ -58,8 +57,8 @@ export default function CompanyPartnershipsPage() {
                           <Handshake className="w-4 h-4 text-brand" />
                         </div>
                       }
-                      title={university?.name ?? ""}
-                      subtitle={`${company?.name} × ${university?.city}`}
+                      title={universityLabel}
+                      subtitle={company?.name ?? partnership.universityId}
                       badge={
                         <span className={partnership.status === "active" ? "nq-chip nq-chip-emerald" : "nq-chip"}>
                           {partnership.status === "active" ? t("نشط", "Active") : t("معلق", "Pending")}

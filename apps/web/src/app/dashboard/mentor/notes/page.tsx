@@ -11,7 +11,7 @@ import { useI18n } from "@/i18n";
 export default function MentorNotesPage() {
   const { t } = useI18n();
   const notes = [
-    { id: "n1", student: t("أمين صلاحات", "Amin Salahat"), session: t("مراجعة CV", "CV Review"), date: "2025-06-22", preview: t("يحتاج تحسين قسم المشاريع وإضافة metrics...", "Needs to improve the projects section and add metrics...") },
+    { id: "n1", student: t("أمير أبو شمس", "Ameer Abu Shams"), session: t("مراجعة CV", "CV Review"), date: "2025-06-22", preview: t("يحتاج تحسين قسم المشاريع وإضافة metrics...", "Needs to improve the projects section and add metrics...") },
     { id: "n2", student: t("ليلى أحمد", "Layla Ahmed"), session: t("مسار مهني", "Career Path"), date: "2025-06-20", preview: t("التركيز على Frontend ثم الانتقال لـ Full Stack...", "Focus on Frontend first, then transition to Full Stack...") },
     { id: "n3", student: t("محمد عمر", "Mohamed Omar"), session: "Mock Interview", date: "2025-06-18", preview: t("أداء جيد في التواصل، يحتاج تحضير أكثر للأسئلة التقنية...", "Good communication skills; needs more preparation for technical questions...") },
   ];

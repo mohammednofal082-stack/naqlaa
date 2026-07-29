@@ -2,24 +2,37 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { StatCard, ScreenHeader } from "../../components/ui";
+import { StatCard } from "../../components/ui";
 import { AccentMap, JourneyStep, RoleHero, ScenarioCard, SectionTitle } from "../../components/role-ui";
 import { useApp } from "../../contexts/app-context";
 import { useI18n } from "../../i18n";
-import {
-  dashboardStats,
-  getJobsWithCompany,
-  PLATFORM_WORKFLOWS,
-} from "@careerlink/shared";
+import { PLATFORM_WORKFLOWS } from "@careerlink/shared";
+import type { Application, Company, Job, StudentProfile } from "@careerlink/shared";
 import { colors, spacing, radius } from "../../constants/theme";
+import { useRemoteData } from "../../hooks/use-remote-data";
+
+type JobWithCompany = Job & { company: Company; matchPercentage?: number };
+type ApplicationWithDetails = Application & { job?: Job; company?: Company };
+type ProfileBundle = { user: unknown; profile: StudentProfile; skillLevels: { skill: string; value: number }[] };
 
 export default function HomeScreen() {
   const { user, roleExperience, isTalentRole, role } = useApp();
   const { t } = useI18n();
+  const { data: jobsRemote, error: jobsError } = useRemoteData<JobWithCompany[]>("jobs");
+  const { data: profileData } = useRemoteData<ProfileBundle>("profile");
+  const { data: appsData } = useRemoteData<ApplicationWithDetails[]>("applications");
+
+  const jobs = (jobsRemote ?? []).slice(0, 3);
+  const apps = appsData ?? [];
+  const profileCompletion = profileData?.profile.profileCompletion ?? 0;
+  const recommendedJobs = (jobsRemote ?? []).filter((j) => (j.matchPercentage ?? 0) >= 70).length;
+  const activeApps = apps.filter((a) => a.status !== "rejected" && a.status !== "withdrawn").length;
+  const interviews = apps.filter((a) => a.status === "interview_scheduled").length;
+
   if (!user) return null;
 
   const journeySteps = [
-    { label: t("إكمال الملف الشخصي", "Complete your profile"), status: "done" as const, detail: t(`${dashboardStats.profileCompletion}% مكتمل`, `${dashboardStats.profileCompletion}% complete`) },
+    { label: t("إكمال الملف الشخصي", "Complete your profile"), status: "done" as const, detail: t(`${profileCompletion}% مكتمل`, `${profileCompletion}% complete`) },
     { label: t("تحليل المهارات", "Skills analysis"), status: "done" as const, detail: t("٣ مهارات تحتاج تطوير", "Three skills require development") },
     { label: t("التقديم على التدريب", "Apply for training"), status: "current" as const, detail: t("فرصتان مناسبتان الآن", "Two suitable opportunities available now") },
     { label: t("المقابلة الأولى", "First interview"), status: "upcoming" as const },
@@ -28,7 +41,6 @@ export default function HomeScreen() {
 
   const accent = AccentMap[roleExperience.accentKey] ?? colors.blue;
   const firstName = user.fullName.split(" ")[0];
-  const jobs = getJobsWithCompany().slice(0, 3);
 
   if (!isTalentRole) {
     return (
@@ -62,7 +74,7 @@ export default function HomeScreen() {
             <StatCard label={t("مهام اليوم", "Tasks today")} value={role === "hr" ? 8 : 5} color={accent} />
             <StatCard label={t("معلّق", "Pending")} value={role === "admin" ? 3 : 2} color={colors.amber} />
             <StatCard label={t("مكتمل", "Completed")} value={12} color={colors.emerald} />
-            <StatCard label={t("رسائل", "Messages")} value={dashboardStats.newMessages} color={colors.purple} />
+            <StatCard label={t("طلبات", "Applications")} value={activeApps} color={colors.purple} />
           </View>
 
           <TouchableOpacity
@@ -108,10 +120,10 @@ export default function HomeScreen() {
         </ScrollView>
 
         <View style={styles.statsGrid}>
-          <StatCard label={t("وظائف مقترحة", "Recommended jobs")} value={dashboardStats.recommendedJobs} color={colors.blue} />
-          <StatCard label={t("طلبات", "Applications")} value={dashboardStats.applications} color={colors.emerald} />
-          <StatCard label={t("مقابلات", "Interviews")} value={dashboardStats.upcomingInterviews} color={colors.purple} />
-          <StatCard label={t("رسائل", "Messages")} value={dashboardStats.newMessages} color={colors.amber} />
+          <StatCard label={t("وظائف مقترحة", "Recommended jobs")} value={recommendedJobs} color={colors.blue} />
+          <StatCard label={t("طلبات", "Applications")} value={activeApps} color={colors.emerald} />
+          <StatCard label={t("مقابلات", "Interviews")} value={interviews} color={colors.purple} />
+          <StatCard label={t("اكتمال الملف", "Profile")} value={`${profileCompletion}%`} color={colors.amber} />
         </View>
 
         <View style={styles.sectionPad}>
@@ -122,6 +134,9 @@ export default function HomeScreen() {
         </View>
 
         <SectionTitle title={t("وظائف مقترحة", "Recommended jobs")} />
+        {jobsError ? (
+          <Text style={styles.errorText}>{t("تعذر تحميل الوظائف", "Could not load jobs")}</Text>
+        ) : null}
         {jobs.map((job) => (
           <TouchableOpacity key={job.id} style={styles.jobCard} onPress={() => router.push(`/job/${job.id}` as never)}>
             <View style={styles.jobRow}>
@@ -188,6 +203,7 @@ const styles = StyleSheet.create({
   },
   sectionPad: { paddingHorizontal: spacing.md, marginBottom: spacing.md },
   sectionTitleInline: { fontSize: 17, fontWeight: "800", color: colors.navy, marginBottom: spacing.sm },
+  errorText: { marginHorizontal: spacing.md, marginBottom: spacing.sm, color: colors.red, fontSize: 13 },
   jobCard: {
     marginHorizontal: spacing.md,
     marginBottom: spacing.sm,

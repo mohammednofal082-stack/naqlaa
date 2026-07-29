@@ -1,5 +1,5 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { isSupabaseConfigured } from '@/lib/config/env';
+import { createSupabaseServerClient } from '@/backend/supabase/server';
+import { isSupabaseConfigured } from '@/backend/config/env';
 import { computeMatchScore, getSmartRecommendations, analyzeJobMarket } from '@careerlink/shared';
 import type { DataRepositories } from './types';
 import {
@@ -293,7 +293,27 @@ export const supabaseRepositories: DataRepositories = {
   },
 
   async getRecommendations(targetRole) {
-    return getSmartRecommendations(targetRole);
+    const [jobs, internships, courses, mentors, profile] = await Promise.all([
+      this.getJobs(),
+      this.getInternships(),
+      this.getCourses(),
+      this.getMentors(),
+      this.getProfile().catch(() => null),
+    ]);
+    const userSkills = profile
+      ? profile.profile.skills.map((name, i) => ({
+          name,
+          level: profile.skillLevels[i]?.value ?? 50,
+        }))
+      : [];
+    return getSmartRecommendations({
+      targetRole: targetRole || profile?.profile.headline,
+      userSkills,
+      jobs,
+      internships,
+      courses,
+      mentors,
+    });
   },
 
   async updateProfile(input) {

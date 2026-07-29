@@ -37,7 +37,6 @@ async function refreshSupabaseSession(req: NextRequest, res: NextResponse) {
   return res;
 }
 
-const PUBLIC_PATHS = ['/', '/auth/login', '/auth/register', '/api/auth/login', '/api/auth/register'];
 const AUTH_PATHS = ['/auth/login', '/auth/register'];
 
 async function getSessionFromRequest(req: NextRequest) {
@@ -53,6 +52,17 @@ async function getSessionFromRequest(req: NextRequest) {
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (req.method === 'OPTIONS' && pathname.startsWith('/api/')) {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
+  }
 
   if (
     pathname.startsWith('/_next') ||

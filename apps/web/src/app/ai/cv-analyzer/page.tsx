@@ -6,8 +6,8 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProgressRing } from "@/components/ui/progress";
-import { analyzeCvClient } from "@/lib/ai/client-api";
-import { uploadCvPdf } from "@/lib/ai/cv-upload";
+import { analyzeCvClient } from "@/backend/ai/client-api";
+import { uploadCvPdf } from "@/backend/ai/cv-upload";
 import type { CVAnalysis } from "@careerlink/shared";
 import { motion } from "framer-motion";
 import {

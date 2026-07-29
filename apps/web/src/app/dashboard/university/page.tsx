@@ -7,17 +7,16 @@ import { StatCard } from "@/components/dashboard/widgets";
 import { PanelCard, QuickAction, ActivityRow } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { universities } from "@careerlink/shared";
 import { useCompanies, useInternshipRequests, usePartnerships, useUsers } from "@/hooks/data";
+import { useApp } from "@/contexts/app-context";
 import { GraduationCap, Users, Handshake, TrendingUp, Building2, Briefcase } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { internshipStatusLabel } from "@/i18n/labels";
 
-const uni = universities[0];
-
 export default function UniversityDashboard() {
   const { t } = useI18n();
+  const { user } = useApp();
   const { data: users, loading: usersLoading } = useUsers();
   const { data: partnerships, loading: partnershipsLoading } = usePartnerships();
   const { data: internshipRequests, loading: requestsLoading } = useInternshipRequests();
@@ -30,6 +29,11 @@ export default function UniversityDashboard() {
   const partnershipItems = partnerships ?? [];
   const activeInternships = requests.filter((i) => i.status === "in_progress");
 
+  const uniName =
+    user?.role === "university" && user.fullName
+      ? user.fullName
+      : t("جامعة النجاح الوطنية", "An-Najah National University");
+
   const getCompany = (id: string) => companies?.find((c) => c.id === id);
   const getUser = (id: string) => users?.find((u) => u.id === id);
 
@@ -38,7 +42,7 @@ export default function UniversityDashboard() {
       <RoleDashboardShell
         role="university"
         meta={t("لوحة الجامعة", "University Dashboard")}
-        title={uni.name}
+        title={uniName}
         subtitle={t("رؤية شاملة للطلاب، التدريبات، الشراكات، ونسب التوظيف", "A comprehensive view of students, internships, partnerships, and employment rates")}
         showScenarios
         secondaryCta={{ href: "/dashboard/university/reports", label: t("التقارير", "Reports") }}

@@ -2,22 +2,27 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { ScreenHeader } from "../../components/ui";
-import { getApplicationsWithDetails, statusLabels } from "@careerlink/shared";
+import { statusLabels, type Application, type Company, type Job } from "@careerlink/shared";
 import { useI18n } from "../../i18n";
 import { colors, spacing, radius } from "../../constants/theme";
+import { useRemoteData } from "../../hooks/use-remote-data";
+
+type ApplicationWithDetails = Application & { job?: Job; company?: Company };
 
 const STATUS_COLORS: Record<string, string> = {
   applied: colors.blue,
   under_review: colors.amber,
   shortlisted: colors.purple,
   interview_scheduled: colors.cyan,
+  interview: colors.cyan,
   accepted: colors.emerald,
   rejected: colors.red,
 };
 
 export default function ApplicationsScreen() {
   const { t } = useI18n();
-  const apps = getApplicationsWithDetails();
+  const { data: appsData } = useRemoteData<ApplicationWithDetails[]>("applications");
+  const apps = appsData ?? [];
 
   return (
     <SafeAreaView style={styles.container}>

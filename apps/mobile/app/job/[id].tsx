@@ -2,16 +2,28 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { getJobsWithCompany } from "@careerlink/shared";
+import type { Company, Job } from "@careerlink/shared";
 import { useI18n } from "../../i18n";
 import { colors, spacing, radius } from "../../constants/theme";
+import { useRemoteData } from "../../hooks/use-remote-data";
+
+type JobWithCompany = Job & { company: Company; matchPercentage?: number };
 
 export default function JobDetailScreen() {
   const { t } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const job = getJobsWithCompany().find((j) => j.id === id);
+  const { data: jobs, loading, error } = useRemoteData<JobWithCompany[]>("jobs");
+  const job = (jobs ?? []).find((j) => j.id === id);
 
-  if (!job) {
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.error}>{t("جاري التحميل...", "Loading...")}</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !job) {
     return (
       <SafeAreaView style={styles.container}>
         <Text style={styles.error}>{t("الوظيفة غير موجودة", "This job was not found")}</Text>

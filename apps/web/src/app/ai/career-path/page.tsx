@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress";
-import { generateCareerPathClient } from "@/lib/ai/client-api";
+import { generateCareerPathClient } from "@/backend/ai/client-api";
 import type { CareerRoadmap, CareerRoadmapStep } from "@careerlink/shared";
 import { motion } from "framer-motion";
 import { CheckCircle, Circle, Clock, BookOpen, Loader2, Route } from "lucide-react";

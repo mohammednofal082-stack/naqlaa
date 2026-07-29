@@ -4,14 +4,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { ScreenHeader, IndustryLabel, colors, spacing, radius } from "../../components/ui";
-import { getJobsWithCompany, INDUSTRIES, matchIndustryFilter } from "@careerlink/shared";
+import { INDUSTRIES, matchIndustryFilter, type Company, type Job } from "@careerlink/shared";
 import { useI18n } from "../../i18n";
+import { useRemoteData } from "../../hooks/use-remote-data";
+
+type JobWithCompany = Job & { company: Company; matchPercentage?: number };
 
 export default function JobsScreen() {
   const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [industry, setIndustry] = useState("all");
-  const jobs = getJobsWithCompany();
+  const { data: jobsData } = useRemoteData<JobWithCompany[]>("jobs");
+  const jobs = jobsData ?? [];
 
   const filtered = jobs.filter((j) => {
     const matchSearch =

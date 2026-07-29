@@ -10,7 +10,6 @@ import {
   type ReactNode,
 } from "react";
 import type { Conversation, FeedPost, Message } from "@careerlink/shared";
-import { currentUser } from "@careerlink/shared";
 import { useApp } from "@/contexts/app-context";
 
 interface SocialContextValue {
@@ -33,7 +32,7 @@ const EXTRA_POSTS_KEY = "naqlah_extra_posts";
 
 export function SocialProvider({ children }: { children: ReactNode }) {
   const { user } = useApp();
-  const activeUserId = user?.userId ?? currentUser.id;
+  const activeUserId = user?.userId ?? "";
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [extraPosts, setExtraPosts] = useState<FeedPost[]>([]);
   const [basePosts, setBasePosts] = useState<FeedPost[]>([]);

@@ -124,16 +124,17 @@ export const mockRepositories: DataRepositories = {
 
   async getRecommendations(targetRole) {
     ensureInit();
-    const base = getSmartRecommendations(targetRole);
-    const jobs = (await this.getJobs()).slice(0, 6).map((j) => ({
-      ...j,
-      matchPercentage: j.matchPercentage ?? 0,
-    }));
-    const internships = (await this.getInternships()).slice(0, 4).map((i) => ({
-      ...i,
-      matchPercentage: i.matchPercentage ?? 0,
-    }));
-    return { ...base, jobs, internships };
+    const jobs = await this.getJobs();
+    const internships = await this.getInternships();
+    const courses = await this.getCourses();
+    const mentors = await this.getMentors();
+    return getSmartRecommendations({
+      targetRole,
+      jobs,
+      internships,
+      courses,
+      mentors,
+    });
   },
 
   async getEvents() {

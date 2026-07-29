@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { UserRole } from "@careerlink/shared";
-import type { SessionPayload } from "@/lib/auth/session";
+import type { SessionPayload } from "@/backend/auth/session";
 
 interface AppContextType {
   user: SessionPayload | null;

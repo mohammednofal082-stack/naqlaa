@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { aiErrorResponse, requireAiSession } from "@/lib/ai/api";
-import { analyzeSkillGap } from "@/lib/ai/services";
+import { aiErrorResponse, requireAiSession } from "@/backend/ai/api";
+import { analyzeSkillGap } from "@/backend/ai/services";
 
 export async function POST(req: NextRequest) {
   const { error } = await requireAiSession();

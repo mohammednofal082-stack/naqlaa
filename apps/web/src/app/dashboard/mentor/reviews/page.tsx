@@ -11,7 +11,7 @@ import { useI18n } from "@/i18n";
 export default function MentorReviewsPage() {
   const { t } = useI18n();
   const reviews = [
-    { id: "r1", student: t("سارة محمد", "Sara Mohamed"), type: t("مراجعة CV", "CV Review"), date: "2025-06-22", status: "بانتظار" },
+    { id: "r1", student: t("محمد نوفل", "Mohammed Nofal"), type: t("مراجعة CV", "CV Review"), date: "2025-06-22", status: "بانتظار" },
     { id: "r2", student: t("ليلى أحمد", "Layla Ahmed"), type: t("مراجعة Portfolio", "Portfolio Review"), date: "2025-06-21", status: "مكتمل" },
     { id: "r3", student: t("محمد عمر", "Mohamed Omar"), type: t("ملاحظات المقابلة", "Interview Feedback"), date: "2025-06-20", status: "مكتمل" },
   ];

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session";
+import { getSession } from "@/backend/auth/session";
 
 export async function requireAiSession() {
   const session = await getSession();

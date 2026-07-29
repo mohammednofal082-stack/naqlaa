@@ -7,7 +7,6 @@ import { PanelCard } from "@/components/dashboard/dashboard-shell";
 import { ProgressRing } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { dashboardStats, skillAnalysis } from "@careerlink/shared";
 import { useProfile } from "@/hooks/data";
 import Link from "next/link";
 import { Briefcase, BookOpen, Handshake, FileText, Mic, Award, Check } from "lucide-react";
@@ -17,7 +16,9 @@ export default function JourneyPage() {
   const { t } = useI18n();
   const role = getRoleExperience("student", t);
   const { data: profileData } = useProfile();
-  const profileCompletion = profileData?.profile.profileCompletion ?? dashboardStats.profileCompletion;
+  const profileCompletion = profileData?.profile.profileCompletion ?? 0;
+  const skillGaps = (profileData?.skillLevels ?? []).filter((s) => s.value < 70).length;
+  const universityDetail = [profileData?.profile.university, profileData?.profile.major].filter(Boolean).join(" · ");
 
   const milestones = [
     { icon: FileText, label: t("CV جاهز", "CV Ready"), done: true, href: "/ai/cv-analyzer" },
@@ -29,9 +30,9 @@ export default function JourneyPage() {
   ];
 
   const fullJourney = [
-    { label: t("التسجيل واختيار الجامعة", "Registration and university selection"), status: "done" as const, detail: profileData?.profile.university ?? t("بيرزيت · علوم حاسوب", "Birzeit · Computer Science") },
+    { label: t("التسجيل واختيار الجامعة", "Registration and university selection"), status: "done" as const, detail: universityDetail || t("أكمل بيانات الجامعة في ملفك", "Complete university details in your profile") },
     { label: t("بناء البروفايل والمهارات", "Building your profile and skills"), status: "done" as const, detail: t(`${profileCompletion}% اكتمال`, `${profileCompletion}% complete`) },
-    { label: t("تحليل فجوة المهارات", "Skill gap analysis"), status: "done" as const, detail: t(`${skillAnalysis.filter((s) => s.value < 70).length} مهارات للتطوير`, `${skillAnalysis.filter((s) => s.value < 70).length} skills to develop`) },
+    { label: t("تحليل فجوة المهارات", "Skill gap analysis"), status: "done" as const, detail: t(`${skillGaps} مهارات للتطوير`, `${skillGaps} skills to develop`) },
     { label: t("كورسات ومشاريع عملية", "Courses and practical projects"), status: "current" as const, detail: t("React + مشروع تخرج", "React + graduation project") },
     { label: t("تدريب عملي معتمد", "Accredited practical training"), status: "upcoming" as const, detail: t("2 فرص تدريب مناسبة", "2 suitable training opportunities") },
     { label: t("مقابلات واختبارات", "Interviews and assessments"), status: "upcoming" as const },

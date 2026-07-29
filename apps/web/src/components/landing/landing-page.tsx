@@ -74,9 +74,9 @@ function LandingNav() {
             </a>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
-          <LanguageSwitch showLabel />
-          <ThemeModeSwitch showLabel />
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <LanguageSwitch className="shrink-0" />
+          <ThemeModeSwitch className="shrink-0" />
           <Link
             href="/auth/login"
             className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-text-secondary hover:text-text transition-colors"
@@ -86,7 +86,7 @@ function LandingNav() {
           <Magnetic strength={0.2}>
             <Link
               href="/auth/register"
-              className="nq-pulse-ring inline-flex px-4 py-2.5 text-sm font-semibold rounded-xl text-white transition-all hover:brightness-110"
+              className="nq-pulse-ring inline-flex px-3 sm:px-4 py-2 sm:py-2.5 text-sm font-semibold rounded-xl text-white transition-all hover:brightness-110 whitespace-nowrap"
               style={{ background: BRAND, boxShadow: "0 0 36px rgba(29,78,216,0.4)" }}
             >
               {t("ابدأ مجاناً", "Start free")}
@@ -103,12 +103,15 @@ function LandingNav() {
           animate={{ opacity: 1, height: "auto" }}
           className="md:hidden border-t border-border px-4 py-4 space-y-1 bg-background"
         >
-          {links.slice(0, 3).map((link) => (
-            <a key={link.href} href={link.href} className="block py-2 text-sm text-text-secondary" onClick={() => setOpen(false)}>
+          {links.map((link) => (
+            <a key={link.href} href={link.href} className="block py-2.5 text-sm text-text-secondary" onClick={() => setOpen(false)}>
               {link.label}
             </a>
           ))}
-          <Link href="/auth/login" className="block py-2 text-sm text-text-secondary" onClick={() => setOpen(false)}>{t("تسجيل الدخول", "Sign in")}</Link>
+          <Link href="/workflows" className="block py-2.5 text-sm text-text-secondary" onClick={() => setOpen(false)}>
+            {t("السيناريوهات", "Scenarios")}
+          </Link>
+          <Link href="/auth/login" className="block py-2.5 text-sm text-text-secondary" onClick={() => setOpen(false)}>{t("تسجيل الدخول", "Sign in")}</Link>
           <Link href="/auth/register" className="block mt-2 py-3 text-center text-sm font-semibold rounded-xl text-white" style={{ background: BRAND }} onClick={() => setOpen(false)}>
             {t("إنشاء حساب", "Create account")}
           </Link>

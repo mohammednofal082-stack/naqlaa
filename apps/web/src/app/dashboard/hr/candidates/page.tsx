@@ -6,7 +6,6 @@ import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { ActivityRow, PanelCard } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { studentProfile } from "@careerlink/shared";
 import { useAllApplications } from "@/hooks/data";
 import { Filter, Search, Users } from "lucide-react";
 import { formatDate } from "@/lib/utils";
@@ -22,6 +21,7 @@ export default function HRCandidatesPage() {
   const candidates = apps.filter((c) =>
     !search ||
     c.student?.firstName.includes(search) ||
+    c.student?.lastName.includes(search) ||
     c.job?.title.includes(search)
   );
 
@@ -85,7 +85,8 @@ export default function HRCandidatesPage() {
                     }
                   />
                   <p className="text-xs text-text-muted mt-2 mr-12">
-                    {studentProfile.headline} · {formatDate(candidate.appliedAt)} · {studentProfile.skills.slice(0, 5).join(" · ")}
+                    {candidate.student?.email} · {formatDate(candidate.appliedAt)}
+                    {candidate.company?.name ? ` · ${candidate.company.name}` : ""}
                   </p>
                 </div>
               ))}

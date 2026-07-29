@@ -4,15 +4,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { useApp } from "@/contexts/app-context";
 import { useI18n } from "@/i18n";
-import { studentProfile, dashboardStats, applications, getJobsWithCompany } from "@careerlink/shared";
+import { useApplications, useJobs, useProfile } from "@/hooks/data";
 import { Bookmark, ClipboardList, FileUp, Compass } from "lucide-react";
 
 export function FeedProfileCard() {
   const { user } = useApp();
   const { t } = useI18n();
+  const { data: profileData } = useProfile();
+  const { data: apps } = useApplications();
   if (!user) return null;
 
-  const myApps = applications.filter((a) => a.studentId === user.userId).length;
+  const myApps = (apps ?? []).length;
+  const headline = profileData?.profile.headline ?? user.headline ?? "";
+  const completion = profileData?.profile.profileCompletion ?? 0;
 
   return (
     <div className="nq-card nq-lift li-card overflow-hidden">
@@ -33,17 +37,17 @@ export function FeedProfileCard() {
           <p className="font-semibold text-sm text-text hover:text-brand transition-colors leading-snug">
             {user.fullName}
           </p>
-          <p className="text-xs text-text-muted mt-1 line-clamp-2 leading-relaxed">{studentProfile.headline}</p>
+          <p className="text-xs text-text-muted mt-1 line-clamp-2 leading-relaxed">{headline}</p>
         </Link>
         <div className="mt-3 pt-3 border-t border-border space-y-2.5 text-xs">
           <div className="flex justify-between items-center">
             <span className="text-text-muted">{t("اكتمال الملف", "Profile completion")}</span>
-            <span className="text-brand font-semibold tabular-nums">{dashboardStats.profileCompletion}%</span>
+            <span className="text-brand font-semibold tabular-nums">{completion}%</span>
           </div>
           <div className="h-1 rounded-full bg-[var(--li-input)] overflow-hidden">
             <div
               className="h-full bg-brand rounded-full"
-              style={{ width: `${dashboardStats.profileCompletion}%` }}
+              style={{ width: `${completion}%` }}
             />
           </div>
           <div className="flex justify-between items-center pt-0.5">
@@ -74,7 +78,8 @@ export function FeedProfileCard() {
 
 export function FeedRightRail() {
   const { t } = useI18n();
-  const jobs = getJobsWithCompany()
+  const { data: jobsData } = useJobs();
+  const jobs = (jobsData ?? [])
     .filter((j) => j.matchPercentage && j.matchPercentage >= 70)
     .slice(0, 2);
 

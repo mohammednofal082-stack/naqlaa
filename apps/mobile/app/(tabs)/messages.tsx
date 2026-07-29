@@ -1,52 +1,68 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { ScreenHeader, Card, colors, spacing, radius } from "../../components/ui";
-import { conversations, getUserById, currentUser } from "@careerlink/shared";
+import { ScreenHeader, colors, spacing, radius } from "../../components/ui";
+import type { Conversation, User } from "@careerlink/shared";
 import { useI18n } from "../../i18n";
+import { useRemoteData } from "../../hooks/use-remote-data";
+import { useApp } from "../../contexts/app-context";
 
 export default function MessagesScreen() {
   const { t } = useI18n();
+  const { user } = useApp();
+  const { data: conversations, loading, error } = useRemoteData<Conversation[]>("conversations");
+  const { data: users } = useRemoteData<User[]>("users");
+  const myId = user?.userId;
+
   return (
     <SafeAreaView style={styles.container}>
       <ScreenHeader title={t("الرسائل", "Messages")} subtitle={t("تواصل مع الشركات والمرشدين", "Connect with companies and mentors")} />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {conversations.map((conv) => {
-          const otherId = conv.participantIds.find((id) => id !== currentUser.id);
-          const other = otherId ? getUserById(otherId) : null;
-          return (
-            <TouchableOpacity key={conv.id} style={styles.convCard} activeOpacity={0.85}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{other?.firstName[0]}</Text>
-              </View>
-              <View style={styles.convInfo}>
-                <View style={styles.convTop}>
-                  <Text style={styles.convName}>
-                    {other?.firstName} {other?.lastName}
-                  </Text>
-                  {conv.unreadCount > 0 && (
-                    <View style={styles.unreadBadge}>
-                      <Text style={styles.unreadText}>{conv.unreadCount}</Text>
-                    </View>
-                  )}
+      {loading ? (
+        <ActivityIndicator style={{ marginTop: 40 }} color={colors.blue} />
+      ) : error ? (
+        <Text style={styles.empty}>{t("تعذر تحميل الرسائل من الخادم", "Could not load messages from the server")}</Text>
+      ) : !(conversations ?? []).length ? (
+        <Text style={styles.empty}>{t("لا توجد محادثات بعد", "No conversations yet")}</Text>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {(conversations ?? []).map((conv) => {
+            const otherId = conv.participantIds.find((id) => id !== myId);
+            const other = users?.find((u) => u.id === otherId);
+            return (
+              <TouchableOpacity key={conv.id} style={styles.convCard} activeOpacity={0.85}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{other?.firstName?.[0] ?? "?"}</Text>
                 </View>
-                <Text style={styles.lastMsg} numberOfLines={1}>
-                  {conv.lastMessage.content}
-                </Text>
-              </View>
-              <Ionicons name="chevron-back" size={16} color={colors.textMuted} />
-            </TouchableOpacity>
-          );
-        })}
-        <View style={{ height: 32 }} />
-      </ScrollView>
+                <View style={styles.convInfo}>
+                  <View style={styles.convTop}>
+                    <Text style={styles.convName}>
+                      {other ? `${other.firstName} ${other.lastName}` : t("محادثة", "Conversation")}
+                    </Text>
+                    {conv.unreadCount > 0 && (
+                      <View style={styles.unreadBadge}>
+                        <Text style={styles.unreadText}>{conv.unreadCount}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.lastMsg} numberOfLines={1}>
+                    {conv.lastMessage?.content ?? ""}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-back" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+            );
+          })}
+          <View style={{ height: 32 }} />
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
+  empty: { textAlign: "center", marginTop: 40, color: colors.textMuted, paddingHorizontal: 24 },
   convCard: {
     flexDirection: "row",
     alignItems: "center",

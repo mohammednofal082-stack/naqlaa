@@ -5,10 +5,6 @@ import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { PanelCard } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import {
-  weeklyReports,
-} from "@careerlink/shared";
 import { useCompanies, useInternshipRequests, useUsers } from "@/hooks/data";
 import { Briefcase, Calendar, FileText } from "lucide-react";
 import { formatDate, cn } from "@/lib/utils";
@@ -17,11 +13,6 @@ import { internshipStatusLabel } from "@/i18n/labels";
 
 export default function UniversityInternshipsPage() {
   const { t } = useI18n();
-  const reportStatusLabels: Record<string, string> = {
-    approved: t("معتمد", "Approved"),
-    pending: t("بانتظار المراجعة", "Awaiting Review"),
-    rejected: t("مرفوض", "Rejected"),
-  };
   const { data: internshipRequests, loading: requestsLoading } = useInternshipRequests();
   const { data: companies, loading: companiesLoading } = useCompanies();
   const { data: users, loading: usersLoading } = useUsers();
@@ -29,7 +20,6 @@ export default function UniversityInternshipsPage() {
   const requests = internshipRequests ?? [];
   const [selectedInternship, setSelectedInternship] = useState<string | undefined>(undefined);
   const activeId = selectedInternship ?? requests[0]?.id;
-  const reports = weeklyReports.filter((r) => r.internshipId === activeId);
 
   const getCompany = (id: string) => companies?.find((c) => c.id === id);
   const getUser = (id: string) => users?.find((u) => u.id === id);
@@ -94,54 +84,15 @@ export default function UniversityInternshipsPage() {
 
             <div className="lg:col-span-2">
               <PanelCard title={t("التقارير الأسبوعية", "Weekly Reports")}>
-                {reports.length === 0 ? (
-                  <EmptyState
-                    icon={FileText}
-                    title={t("لا تقارير", "No Reports")}
-                    description={t("اختر تدريباً لعرض تقاريره الأسبوعية.", "Select an internship to view its weekly reports.")}
-                  />
-                ) : (
-                  <div className="space-y-4">
-                    {reports.map((report) => (
-                      <div key={report.id} className="nq-lift p-4 rounded-lg border border-border bg-surface-hover/40">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-brand-muted border border-border flex items-center justify-center">
-                              <FileText className="w-4 h-4 text-brand" />
-                            </div>
-                            <p className="font-medium text-sm text-text">{t("الأسبوع", "Week")} {report.weekNumber}: {report.title}</p>
-                          </div>
-                          <span className={report.status === "approved" ? "nq-chip nq-chip-emerald" : "nq-chip"}>
-                            {reportStatusLabels[report.status]}
-                          </span>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          <div>
-                            <p className="text-text-secondary font-medium">{t("المهام المنجزة", "Completed Tasks")}</p>
-                            <p className="text-text">{report.tasksDone}</p>
-                          </div>
-                          <div>
-                            <p className="text-text-secondary font-medium">{t("المهارات المستخدمة", "Skills Used")}</p>
-                            <p className="text-xs text-text-muted mt-1">{report.skillsUsed.join(" · ")}</p>
-                          </div>
-                          <div>
-                            <p className="text-text-secondary font-medium">{t("التحديات", "Challenges")}</p>
-                            <p className="text-text">{report.challenges}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between mt-4">
-                          <span className="text-xs text-text-muted">{t("أُرسل", "Submitted")} {formatDate(report.submittedAt)}</span>
-                          {report.status === "pending" && (
-                            <div className="flex gap-2">
-                              <Button size="sm">{t("اعتماد", "Approve")}</Button>
-                              <Button size="sm" variant="outline">{t("طلب تعديل", "Request Revision")}</Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <EmptyState
+                  icon={FileText}
+                  title={t("لا تقارير", "No Reports")}
+                  description={
+                    activeId
+                      ? t("لا توجد تقارير أسبوعية لهذا التدريب بعد.", "No weekly reports for this internship yet.")
+                      : t("اختر تدريباً لعرض تقاريره الأسبوعية.", "Select an internship to view its weekly reports.")
+                  }
+                />
               </PanelCard>
             </div>
           </div>

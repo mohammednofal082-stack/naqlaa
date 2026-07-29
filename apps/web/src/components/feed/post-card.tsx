@@ -2,12 +2,34 @@
 
 import Link from "next/link";
 import type { FeedPost } from "@careerlink/shared";
-import { getPostAuthor } from "@careerlink/shared";
 import { formatDateTime } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { Avatar } from "@/components/ui/avatar";
 import { Heart, MessageCircle, Share2, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCompanies, useUsers } from "@/hooks/data";
+
+function usePostAuthor(post: FeedPost) {
+  const { data: users } = useUsers();
+  const { data: companies } = useCompanies();
+  const { t } = useI18n();
+
+  if (post.authorType === "company") {
+    const company = companies?.find((c) => c.id === post.authorId);
+    return company
+      ? { name: company.name, avatar: company.logo, subtitle: company.industry }
+      : { name: t("شركة", "Company"), avatar: "", subtitle: "" };
+  }
+
+  const user = users?.find((u) => u.id === post.authorId);
+  return user
+    ? {
+        name: `${user.firstName} ${user.lastName}`,
+        avatar: user.avatar,
+        subtitle: user.headline || user.role,
+      }
+    : { name: t("مستخدم", "User"), avatar: "", subtitle: "" };
+}
 
 export function PostCard({
   post,
@@ -19,7 +41,7 @@ export function PostCard({
   onLike: () => void;
 }) {
   const { t } = useI18n();
-  const author = getPostAuthor(post);
+  const author = usePostAuthor(post);
   const typeLabels: Record<FeedPost["type"], string> = {
     update: t("تحديث", "Update"),
     job: t("فرصة عمل", "Job Opportunity"),

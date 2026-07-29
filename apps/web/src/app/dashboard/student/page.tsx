@@ -15,7 +15,7 @@ import { JobCard } from "@/components/jobs/job-card";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/app-context";
 import { getRoleExperience } from "@/components/role/role-experience";
-import { dashboardStats, analyzeSkillGap, buildUserSkills } from "@careerlink/shared";
+import { analyzeSkillGap, buildUserSkills } from "@careerlink/shared";
 import { useJobs, useProfile } from "@/hooks/data";
 import Link from "next/link";
 import { Map, Route, Compass, FileText, Briefcase } from "lucide-react";
@@ -28,6 +28,7 @@ export default function StudentDashboard() {
   const { data: jobsData, loading: jobsLoading } = useJobs();
   const role = getRoleExperience("student", t);
   const firstName = user?.fullName.split(" ")[0] ?? t("طالب", "Student");
+  const profileCompletion = profileData?.profile.profileCompletion ?? 0;
 
   const userSkills = profileData
     ? buildUserSkills(profileData.profile.skills, profileData.skillLevels)
@@ -39,7 +40,7 @@ export default function StudentDashboard() {
     .slice(0, 3);
 
   const journeySteps = [
-    { label: t("إكمال الملف الشخصي", "Complete your profile"), status: "done" as const, detail: t(`${dashboardStats.profileCompletion}% مكتمل`, `${dashboardStats.profileCompletion}% complete`) },
+    { label: t("إكمال الملف الشخصي", "Complete your profile"), status: "done" as const, detail: t(`${profileCompletion}% مكتمل`, `${profileCompletion}% complete`) },
     { label: t("تحليل المهارات", "Skills analysis"), status: "done" as const, detail: t(`${gapAnalysis.missing.length} مهارات تحتاج تطوير`, `${gapAnalysis.missing.length} skills need development`) },
     { label: t("التقديم على التدريب", "Apply for training"), status: "current" as const, detail: t("فرصتان مناسبتان الآن", "Two suitable opportunities now") },
     { label: t("المقابلة الأولى", "First interview"), status: "upcoming" as const },

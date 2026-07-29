@@ -2,12 +2,15 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { events } from "@careerlink/shared";
+import type { Event } from "@careerlink/shared";
 import { useI18n } from "../i18n";
 import { colors, spacing, radius } from "../constants/theme";
+import { useRemoteData } from "../hooks/use-remote-data";
 
 export default function EventsScreen() {
   const { t, locale } = useI18n();
+  const { data: eventsData } = useRemoteData<Event[]>("events");
+  const list = eventsData ?? [];
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -18,7 +21,7 @@ export default function EventsScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.intro}>{t("سيناريو: تسجيل → QR → check-in → شهادة", "Scenario: registration → QR → check-in → certificate")}</Text>
-        {events.map((e) => (
+        {list.map((e) => (
           <View key={e.id} style={styles.card}>
             <Text style={styles.type}>{e.type === "career_day" ? t("يوم مهني", "Career day") : e.type === "hackathon" ? t("هاكاثون", "Hackathon") : t("ورشة", "Workshop")}</Text>
             <Text style={styles.title}>{e.title}</Text>

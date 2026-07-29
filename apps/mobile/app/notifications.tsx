@@ -2,12 +2,15 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { notifications } from "@careerlink/shared";
+import type { Notification } from "@careerlink/shared";
 import { useI18n } from "../i18n";
 import { colors, spacing, radius } from "../constants/theme";
+import { useRemoteData } from "../hooks/use-remote-data";
 
 export default function NotificationsScreen() {
   const { t } = useI18n();
+  const { data: listData } = useRemoteData<Notification[]>("notifications");
+  const list = listData ?? [];
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -17,7 +20,7 @@ export default function NotificationsScreen() {
         <Text style={styles.headerTitle}>{t("الإشعارات", "Notifications")}</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        {notifications.map((n) => (
+        {list.map((n) => (
           <View key={n.id} style={[styles.card, !n.read && styles.unread]}>
             <Text style={styles.title}>{n.title}</Text>
             <Text style={styles.body}>{n.message}</Text>

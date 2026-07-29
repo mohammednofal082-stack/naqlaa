@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { logoutUser } from '@/lib/auth/provider';
+import { logoutUser } from '@/backend/auth/provider';
 
 export async function POST() {
   await logoutUser();

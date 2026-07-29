@@ -7,21 +7,25 @@ import { ActivityRow, PanelCard } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { StatCard } from "@/components/dashboard/widgets";
 import { Button } from "@/components/ui/button";
-import { skillAnalysis, studentProfile } from "@careerlink/shared";
+import { useProfile } from "@/hooks/data";
 import { Plus, Target, TrendingUp } from "lucide-react";
 import { useI18n } from "@/i18n";
 
 export default function AdminSkillsPage() {
   const { t } = useI18n();
+  const { data: profileData, loading } = useProfile();
+  const skillLevels = profileData?.skillLevels ?? [];
+  const userSkills = profileData?.profile.skills ?? [];
+
   const platformSkills = [
-    ...skillAnalysis.map((s) => ({ name: s.skill, demand: s.value, category: t("تقنية", "Technical") })),
-    { name: "Docker", demand: 45, category: "DevOps" },
-    { name: "CI/CD", demand: 40, category: "DevOps" },
-    { name: "Agile", demand: 55, category: t("عمل", "Business") },
+    ...skillLevels.map((s) => ({ name: s.skill, demand: s.value, category: t("تقنية", "Technical") })),
+    ...userSkills
+      .filter((name) => !skillLevels.some((s) => s.skill === name))
+      .map((name) => ({ name, demand: 50, category: t("مسجّلة", "Registered") })),
   ];
   const [search, setSearch] = useState("");
   const filtered = platformSkills.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()));
-  const gaps = studentProfile.skills.length > 0 ? ["Docker", "CI/CD", "Testing"] : [];
+  const gaps = skillLevels.filter((s) => s.value < 60).map((s) => s.skill);
 
   return (
     <DashboardLayout>
@@ -48,7 +52,13 @@ export default function AdminSkillsPage() {
 
         <div className="grid lg:grid-cols-2 gap-6">
           <PanelCard title={t("قاموس المهارات", "Skills Dictionary")}>
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="space-y-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="nq-skeleton h-14" />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
               <EmptyState
                 icon={Target}
                 title={t("لا نتائج", "No Results")}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search } from "lucide-react";
-import { globalSearch } from "@careerlink/shared";
+import { useSearch } from "@/hooks/data";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 
@@ -14,8 +14,16 @@ export function GlobalSearch({ className, variant = "default" }: { className?: s
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  const results = useMemo(() => (query.trim().length >= 2 ? globalSearch(query) : null), [query]);
+  const trimmed = query.trim();
+  const { data: searchData, loading } = useSearch(trimmed.length >= 2 ? trimmed : "");
+  const results =
+    trimmed.length >= 2 && searchData
+      ? {
+          jobs: searchData.jobs,
+          companies: searchData.companies,
+          total: searchData.jobs.length + searchData.companies.length,
+        }
+      : null;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -57,49 +65,48 @@ export function GlobalSearch({ className, variant = "default" }: { className?: s
         />
       </div>
 
-      {open && results && results.total > 0 && (
+      {open && trimmed.length >= 2 && (
         <div className="absolute top-full mt-2 inset-x-0 z-50 rounded-xl border border-border bg-surface-elevated shadow-elevated overflow-hidden max-h-80 overflow-y-auto">
-          {results.jobs.slice(0, 3).map((j) => (
-            <Link
-              key={j.id}
-              href={`/jobs/${j.id}`}
-              onClick={() => setOpen(false)}
-              className="block px-4 py-3 hover:bg-surface-hover border-b border-border text-sm"
-            >
-              <span className="text-xs text-brand font-medium">{t("وظيفة", "Job")}</span>
-              <p className="font-medium text-text">{j.title}</p>
-              <p className="text-xs text-text-muted">{j.company.name}</p>
-            </Link>
-          ))}
-          {results.companies.slice(0, 2).map((c) => (
-            <Link
-              key={c.id}
-              href={`/companies/${c.id}`}
-              onClick={() => setOpen(false)}
-              className="block px-4 py-3 hover:bg-surface-hover border-b border-border text-sm"
-            >
-              <span className="text-xs text-brand font-medium">{t("شركة", "Company")}</span>
-              <p className="font-medium text-text">{c.name}</p>
-            </Link>
-          ))}
-          {results.people.slice(0, 2).map((p) => (
-            <Link
-              key={p.id}
-              href={`/messages?user=${p.id}`}
-              onClick={() => setOpen(false)}
-              className="block px-4 py-3 hover:bg-surface-hover border-b border-border text-sm"
-            >
-              <span className="text-xs text-brand font-medium">{t("شخص", "Person")}</span>
-              <p className="font-medium text-text">{p.firstName} {p.lastName}</p>
-            </Link>
-          ))}
-          <button
-            type="button"
-            onClick={submit}
-            className="w-full px-4 py-3 text-sm font-semibold text-brand hover:bg-surface-hover text-right"
-          >
-            {t(`عرض كل النتائج (${results.total})`, `View all results (${results.total})`)}
-          </button>
+          {loading && (
+            <p className="px-4 py-3 text-sm text-text-muted">{t("جاري البحث...", "Searching...")}</p>
+          )}
+          {!loading && results && results.total > 0 && (
+            <>
+              {results.jobs.slice(0, 3).map((j) => (
+                <Link
+                  key={j.id}
+                  href={`/jobs/${j.id}`}
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-3 hover:bg-surface-hover border-b border-border text-sm"
+                >
+                  <span className="text-xs text-brand font-medium">{t("وظيفة", "Job")}</span>
+                  <p className="font-medium text-text">{j.title}</p>
+                  <p className="text-xs text-text-muted">{j.company.name}</p>
+                </Link>
+              ))}
+              {results.companies.slice(0, 2).map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/companies/${c.id}`}
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-3 hover:bg-surface-hover border-b border-border text-sm"
+                >
+                  <span className="text-xs text-brand font-medium">{t("شركة", "Company")}</span>
+                  <p className="font-medium text-text">{c.name}</p>
+                </Link>
+              ))}
+              <button
+                type="button"
+                onClick={submit}
+                className="w-full px-4 py-3 text-sm font-semibold text-brand hover:bg-surface-hover text-right"
+              >
+                {t(`عرض كل النتائج (${results.total})`, `View all results (${results.total})`)}
+              </button>
+            </>
+          )}
+          {!loading && results && results.total === 0 && (
+            <p className="px-4 py-3 text-sm text-text-muted">{t("لا نتائج", "No results")}</p>
+          )}
         </div>
       )}
     </div>

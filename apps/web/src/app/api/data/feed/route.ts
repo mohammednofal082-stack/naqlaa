@@ -1,4 +1,4 @@
-import { dataResponse, getRepo } from '@/lib/data/api';
+import { dataResponse, getRepo } from '@/backend/data/api';
 
 export async function GET() {
   return dataResponse(() => getRepo().getFeedPosts());

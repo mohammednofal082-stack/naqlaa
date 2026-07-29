@@ -9,7 +9,7 @@ import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { validatePassword } from "@/lib/auth/password";
+import { validatePassword } from "@/backend/auth/password";
 import { INDUSTRIES } from "@careerlink/shared";
 import { useI18n } from "@/i18n";
 import { ArrowLeft, ArrowRight, AlertCircle, CheckCircle } from "lucide-react";

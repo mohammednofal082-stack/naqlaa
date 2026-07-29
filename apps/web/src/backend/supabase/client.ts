@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
-import { envConfig, isSupabaseConfigured } from '@/lib/config/env';
+import { envConfig, isSupabaseConfigured } from '@/backend/config/env';
 
 export function createSupabaseBrowserClient() {
   if (!isSupabaseConfigured()) {

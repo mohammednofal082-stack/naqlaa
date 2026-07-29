@@ -1,71 +1,160 @@
-# نقلة (Naqla) — MVP للعرض الأكاديمي
+# نقلة (Naqla)
 
-منصة فلسطينية تربط الطلبة والخريجين بسوق العمل: وظائف، تدريب، كورسات، إرشاد، فعاليات، وأدوات مهنية (فجوة مهارات، تحليل سيرة، توصيات).
+منصة مهنية فلسطينية تربط طلاب وخريجي الجامعات بالوظائف، التدريبات، التعلم، والإرشاد.
 
-> هذا المستودع **عرض مرحلي (MVP)** لإظهار التقدم للدكتور — ليس النسخة النهائية للتسليم.
+| | |
+|---|---|
+| **الجامعة** | جامعة النجاح الوطنية |
+| **النوع** | مشروع تخرج — ويب + موبايل |
+| **الطلاب** | أمير أبو شمس · محمد نوفل |
+| **Students** | Ameer Abu Shams · Mohammed Nofal |
+| **البيانات** | PostgreSQL عبر Supabase فقط (بدون Mock) |
 
-## الفريق
+---
 
-- محمد نوفل
-- أمير أبو شمس
-- سارة محمد
-- أمين صلاحات
+## نظرة عامة
 
-جامعة النجاح الوطنية — مشروع تخرج.
+- طلاب وخريجون: ملف، تطابق، أدوات جاهزية، تقديمات
+- شركات وموارد بشرية: إعلانات، مسار توظيف، talent pools
+- جامعات: تدريبات، فعاليات، شراكات
+- مدربون وموجهون: دورات وجلسات
+- إدارة: تحقق، إشراف، سجلات
 
-## ماذا يعمل في هذا الـ MVP
+واجهة عربية / إنجليزية، RTL/LTR، ويب وموبايل.
 
-- واجهة ويب متجاوبة (موبايل / تابلت / ديسكتوب) + وضع داكن/فاتح
-- عربي / إنجليزي مع تبديل اللغة واتجاه RTL/LTR
-- 8 أدوار: طالب، خريج، شركة، HR، جامعة، مدرب، مرشد، أدمن
-- تدفقات أساسية: تسجيل/دخول، وظائف، تقديمات، فيد، رسائل، لوحات لكل دور
-- أدوات مهنية: فجوة المهارات، تحليل السيرة، مسار مهني، توصيات، مقابلة تدريبية
-- Talent Pools وتحليل سوق العمل
-- تطبيق موبايل (Expo) بنفس السيناريوهات
-- طبقة بيانات جاهزة لـ Supabase + migrations كاملة + seed للعرض
-- دليل التشغيل للجنة: [`docs/GO-LIVE.md`](docs/GO-LIVE.md)
+---
 
-> الوضع الافتراضي في الريبو: **mock** (بدون مفاتيح). بعد تشغيل SQL غيّر PROVIDER إلى `supabase`.
+## هيكل المشروع
 
-## التشغيل السريع (ويب)
+```text
+naqla/
+├── apps/web/          # Next.js (واجهة + API)
+│   └── src/backend/   # Auth + مستودعات البيانات + Supabase
+├── apps/mobile/       # Expo (يتصل بنفس API)
+├── packages/shared/   # أنواع ودوال مجال مشتركة
+└── supabase/          # migrations + seed
+```
+
+التفاصيل: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+
+---
+
+## المتطلبات
+
+- Node.js 20+
+- حساب [Supabase](https://supabase.com) مع مشروع فارغ
+- npm
+
+---
+
+## 1) إعداد قاعدة البيانات (مرة واحدة)
+
+1. افتح Supabase → **SQL Editor**
+2. نفّذ بالترتيب:
+   - `supabase/migrations/001_initial_schema.sql`
+   - `supabase/migrations/002_talent_pools.sql`
+   - `supabase/migrations/003_operations.sql`
+   - `supabase/migrations/004_rls_demo.sql`
+   - `supabase/seed.sql`
+3. من **Project Settings → API** انسخ:
+   - Project URL
+   - `anon` public key
+   - `service_role` secret (للخادم فقط)
+
+---
+
+## 2) تشغيل الويب (بيانات حقيقية)
 
 ```bash
 npm install
 cd apps/web
 cp .env.example .env.local
+```
+
+عدّل `apps/web/.env.local`:
+
+```env
+NEXT_PUBLIC_DATA_PROVIDER=supabase
+NEXT_PUBLIC_AUTH_PROVIDER=supabase
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+```
+
+ثم:
+
+```bash
 npm run dev
 ```
 
-افتح: http://localhost:3000
+افتح http://localhost:3000
 
-حساب تجريبي (وضع mock):
+### تحقق سريع أن البيانات من قاعدة البيانات
 
-- البريد: `student@naqlah.ps`
-- كلمة المرور: `Naqlah@2025`
+افتح http://localhost:3000/api/data/jobs  
+يجب أن ترى `"provider":"supabase"` وقائمة وظائف من الجداول (ليس mock).
 
-## ملاحظات للدكتور
+تسجيل الدخول التجريبي بعد الـ seed: راجع حسابات الـ seed في `supabase/seed.sql` أو أنشئ مستخدماً من صفحة التسجيل.
 
-1. البيانات حالياً تجريبية (mock) لعرض الواجهات والتدفقات كاملة.
-2. ربط قاعدة البيانات (Supabase) جاهز هيكلياً — المفاتيح والـ migrations موجودة محلياً ولا تُرفع هنا لأسباب أمنية.
-3. صفحة السيناريوهات: `/workflows` — نفس الـ 7 workflows على الويب والموبايل.
+---
 
-## البنية
+## 3) تشغيل الموبايل (نفس قاعدة البيانات عبر API)
 
-```
-apps/web      → Next.js
-apps/mobile   → Expo
-packages/shared → أنواع وخوارزميات مشتركة
-supabase/     → SQL migrations
+الويب يجب أن يكون شغّالاً أولاً.
+
+```bash
+cd apps/mobile
+cp .env.example .env
 ```
 
-## النشر على Vercel (للعرض)
+في `.env`:
 
-راجع الخطوات الكاملة: [`docs/VERCEL.md`](docs/VERCEL.md)
-
-باختصار: Root Directory = `apps/web`، والمتغيرات:
-
+```env
+EXPO_PUBLIC_API_URL=http://localhost:3000
 ```
-NEXT_PUBLIC_DATA_PROVIDER=mock
-NEXT_PUBLIC_AUTH_PROVIDER=mock
-JWT_SECRET=...
+
+على جهاز حقيقي استبدل `localhost` بـ IP جهازك على الشبكة (مثال `http://192.168.1.10:3000`).
+
+ثم:
+
+```bash
+npx expo start
 ```
+
+الموبايل يجلب البيانات من `/api/data/*` على الويب، والويب يقرأ من Supabase فقط.
+
+---
+
+## مسار البيانات
+
+```text
+Web UI / Mobile  →  /api/data/*  →  backend/data (Supabase)  →  PostgreSQL
+```
+
+لا يُستخدم مصدر mock طالما مفاتيح Supabase موجودة في `.env.local`.
+
+---
+
+## الفريق
+
+| الاسم بالعربية | الاسم بالإنجليزية |
+|---|---|
+| أمير أبو شمس | Ameer Abu Shams |
+| محمد نوفل | Mohammed Nofal |
+
+جامعة النجاح الوطنية — مشروع تخرج.
+
+---
+
+## التوثيق
+
+| الملف | الغرض |
+|------|--------|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | الطبقات والبنية |
+| [`docs/GO-LIVE.md`](docs/GO-LIVE.md) | ربط Supabase |
+| [`docs/VERCEL.md`](docs/VERCEL.md) | النشر على Vercel |
+| [`docs/SRS-NAQLA.md`](docs/SRS-NAQLA.md) | المتطلبات |
+
+## التقنيات
+
+Next.js · React · TypeScript · Tailwind · Expo · Supabase (PostgreSQL + Auth + RLS)

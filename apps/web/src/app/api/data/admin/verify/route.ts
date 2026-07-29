@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { mutationResponse, getRepo, requireAuth } from '@/lib/data/api';
+import { mutationResponse, getRepo, requireAuth } from '@/backend/data/api';
 
 export async function POST(req: NextRequest) {
   return mutationResponse(async () => {

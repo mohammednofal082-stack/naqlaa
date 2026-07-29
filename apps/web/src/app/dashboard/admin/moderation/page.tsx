@@ -20,7 +20,7 @@ export default function AdminModerationPage() {
   const { t } = useI18n();
   const reports = [
     { id: "mod-1", type: "profile", target: t("حساب مشبوه", "Suspicious account"), reporter: t("سارة خليل", "Sara Khalil"), reason: t("معلومات غير دقيقة", "Inaccurate information"), status: "pending", date: "2025-06-20" },
-    { id: "mod-2", type: "message", target: t("رسالة مسيئة", "Abusive message"), reporter: t("أمين صلاحات", "Amin Salahat"), reason: t("محتوى غير لائق", "Inappropriate content"), status: "pending", date: "2025-06-19" },
+    { id: "mod-2", type: "message", target: t("رسالة مسيئة", "Abusive message"), reporter: t("أمير أبو شمس", "Ameer Abu Shams"), reason: t("محتوى غير لائق", "Inappropriate content"), status: "pending", date: "2025-06-19" },
     { id: "mod-3", type: "job", target: t("وظيفة مزيفة", "Fake job posting"), reporter: t("مدير النظام", "System Administrator"), reason: t("شركة غير موثقة", "Unverified company"), status: "reviewed", date: "2025-06-18" },
   ];
 

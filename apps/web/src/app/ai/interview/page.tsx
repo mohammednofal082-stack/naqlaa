@@ -5,7 +5,7 @@ import { DashboardLayout } from "@/components/layout/sidebar";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { evaluateInterviewClient, startInterviewClient } from "@/lib/ai/client-api";
+import { evaluateInterviewClient, startInterviewClient } from "@/backend/ai/client-api";
 import type { InterviewQuestion } from "@careerlink/shared";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, Mic, MicOff, Send, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";

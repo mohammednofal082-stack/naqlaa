@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loginUser } from '@/lib/auth/provider';
-import { validateEmail } from '@/lib/auth/password';
+import { loginUser } from '@/backend/auth/provider';
+import { validateEmail } from '@/backend/auth/password';
 import type { UserRole } from '@careerlink/shared';
 
 export async function POST(req: NextRequest) {
