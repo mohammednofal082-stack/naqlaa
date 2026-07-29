@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { ActivityRow, PanelCard } from "@/components/dashboard/dashboard-shell";
@@ -24,10 +25,12 @@ export default function UniversityPartnershipsPage() {
         title={t("الشراكات", "Partnerships")}
         subtitle={t("شراكات الجامعة مع الشركات", "University partnerships with companies")}
         actions={
-          <Button size="sm">
-            <Plus className="w-4 h-4" />
-            {t("شراكة جديدة", "New Partnership")}
-          </Button>
+          <Link href="/dashboard/university/internships">
+            <Button size="sm">
+              <Plus className="w-4 h-4" />
+              {t("ربط عبر التدريبات", "Link via internships")}
+            </Button>
+          </Link>
         }
       >
         {loading ? (
@@ -44,10 +47,12 @@ export default function UniversityPartnershipsPage() {
                 title={t("لا شراكات بعد", "No Partnerships Yet")}
                 description={t("أضف شراكة جديدة مع شركة لتفعيل التدريبات.", "Add a new partnership with a company to enable internships.")}
                 action={
-                  <Button size="sm">
-                    <Plus className="w-4 h-4" />
-                    {t("شراكة جديدة", "New Partnership")}
-                  </Button>
+                  <Link href="/dashboard/university/internships">
+                    <Button size="sm">
+                      <Plus className="w-4 h-4" />
+                      {t("فتح التدريبات", "Open internships")}
+                    </Button>
+                  </Link>
                 }
               />
             ) : (
@@ -72,11 +77,15 @@ export default function UniversityPartnershipsPage() {
                       />
                       <p className="text-xs text-text-muted mt-3 mr-12">{t("منذ", "Since")} {formatDate(partnership.startDate)}</p>
                       <div className="flex gap-2 mt-3 mr-12">
-                        <Button size="sm" variant="outline">
-                          <Handshake className="w-4 h-4" />
-                          {t("التفاصيل", "Details")}
-                        </Button>
-                        <Button size="sm">{t("التدريبات", "Internships")}</Button>
+                        <Link href={`/companies/${partnership.companyId}`}>
+                          <Button size="sm" variant="outline">
+                            <Handshake className="w-4 h-4" />
+                            {t("التفاصيل", "Details")}
+                          </Button>
+                        </Link>
+                        <Link href="/dashboard/university/internships">
+                          <Button size="sm">{t("التدريبات", "Internships")}</Button>
+                        </Link>
                       </div>
                     </div>
                   );

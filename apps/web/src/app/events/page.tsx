@@ -42,7 +42,7 @@ export default function EventsPage() {
   const handleRegister = async (eventId: string) => {
     setRegistering(eventId);
     try {
-      const event = await registerForEvent(eventId);
+      const event = (await registerForEvent(eventId)) as { qrCode?: string };
       if (event?.qrCode) {
         setTickets((prev) => ({ ...prev, [eventId]: event.qrCode! }));
       }

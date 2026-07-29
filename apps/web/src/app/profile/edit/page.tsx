@@ -1,29 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DashboardLayout, Header } from "@/components/layout/sidebar";
 import { Input, Textarea, Select } from "@/components/ui/input";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useProfile, updateProfile } from "@/hooks/data";
-import { Save, Plus, X } from "lucide-react";
+import { Save, Plus, X, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n";
 
 export default function ProfileEditPage() {
   const { t } = useI18n();
   const router = useRouter();
-  const { data: profileData } = useProfile();
+  const { data: profileData, refetch } = useProfile();
   const profile = profileData?.profile;
+  const [headline, setHeadline] = useState("");
+  const [about, setAbout] = useState("");
+  const [location, setLocation] = useState("");
+  const [portfolio, setPortfolio] = useState("");
+  const [careerGoal, setCareerGoal] = useState("frontend");
   const [skills, setSkills] = useState<string[]>([]);
   const [newSkill, setNewSkill] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [hydrated, setHydrated] = useState(false);
 
-  const currentSkills = skills.length ? skills : (profile?.skills ?? []);
+  useEffect(() => {
+    if (!profile || hydrated) return;
+    setHeadline(profile.headline ?? "");
+    setAbout(profile.about ?? "");
+    setLocation(profile.location ?? "");
+    setSkills(profile.skills ?? []);
+    setHydrated(true);
+  }, [profile, hydrated]);
 
   const addSkill = () => {
-    if (newSkill.trim() && !currentSkills.includes(newSkill.trim())) {
-      setSkills([...currentSkills, newSkill.trim()]);
+    if (newSkill.trim() && !skills.includes(newSkill.trim())) {
+      setSkills([...skills, newSkill.trim()]);
       setNewSkill("");
     }
   };
@@ -31,16 +45,21 @@ export default function ProfileEditPage() {
   const handleSave = async () => {
     if (!profile) return;
     setSaving(true);
+    setError("");
     try {
+      const note = [portfolio.trim() && `Portfolio: ${portfolio.trim()}`, careerGoal && `Goal: ${careerGoal}`]
+        .filter(Boolean)
+        .join(" · ");
       await updateProfile({
-        headline: profile.headline,
-        about: profile.about,
-        location: profile.location,
-        skills: currentSkills,
+        headline: headline.trim(),
+        about: note ? `${about.trim()}${about.trim() ? "\n\n" : ""}${note}` : about.trim(),
+        location: location.trim(),
+        skills,
       });
+      await refetch();
       router.push("/profile");
-    } catch {
-      router.push("/profile");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("فشل حفظ الملف", "Failed to save profile"));
     } finally {
       setSaving(false);
     }
@@ -69,6 +88,12 @@ export default function ProfileEditPage() {
         actions={<Button onClick={handleSave} disabled={saving}><Save className="w-4 h-4" /> {saving ? t("جاري الحفظ...", "Saving...") : t("حفظ ومعاينة", "Save & Preview")}</Button>}
       />
 
+      {error && (
+        <p className="mt-4 text-sm text-red-500 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4" /> {error}
+        </p>
+      )}
+
       <div className="nq-page-enter grid lg:grid-cols-3 gap-5 items-start">
         <div className="lg:col-span-2 space-y-5">
           <Card>
@@ -76,20 +101,20 @@ export default function ProfileEditPage() {
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-text-muted mb-2 block">{t("العنوان المهني", "Professional Headline")}</label>
-                <Input defaultValue={profile.headline} placeholder={t("مثال: مطور Full Stack طموح", "e.g., Aspiring Full Stack Developer")} />
+                <Input value={headline} onChange={(e) => setHeadline(e.target.value)} placeholder={t("مثال: مطور Full Stack طموح", "e.g., Aspiring Full Stack Developer")} />
               </div>
               <div>
                 <label className="text-sm text-text-muted mb-2 block">{t("نبذة عنك", "About You")}</label>
-                <Textarea rows={4} defaultValue={profile.about} placeholder={t("احكِ قصتك المهنية باختصار...", "Briefly tell your professional story...")} />
+                <Textarea rows={4} value={about} onChange={(e) => setAbout(e.target.value)} placeholder={t("احكِ قصتك المهنية باختصار...", "Briefly tell your professional story...")} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-text-muted mb-2 block">{t("الموقع", "Location")}</label>
-                  <Input defaultValue={profile.location} />
+                  <Input value={location} onChange={(e) => setLocation(e.target.value)} />
                 </div>
                 <div>
                   <label className="text-sm text-text-muted mb-2 block">{t("رابط Portfolio", "Portfolio Link")}</label>
-                  <Input placeholder="https://github.com/..." />
+                  <Input value={portfolio} onChange={(e) => setPortfolio(e.target.value)} placeholder="https://github.com/..." />
                 </div>
               </div>
             </div>
@@ -99,19 +124,21 @@ export default function ProfileEditPage() {
             <CardTitle className="font-display mb-4">{t("التعليم", "Education")}</CardTitle>
             {profile.education.map((edu) => (
               <div key={edu.university} className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-border last:border-0">
-                <Input defaultValue={edu.university} />
-                <Input defaultValue={edu.major} />
-                <Input defaultValue={String(edu.startYear)} placeholder={t("سنة البداية", "Start Year")} />
-                <Input defaultValue={String(edu.endYear)} placeholder={t("سنة التخرج", "Graduation Year")} />
+                <Input defaultValue={edu.university} readOnly />
+                <Input defaultValue={edu.major} readOnly />
+                <Input defaultValue={String(edu.startYear)} readOnly placeholder={t("سنة البداية", "Start Year")} />
+                <Input defaultValue={String(edu.endYear)} readOnly placeholder={t("سنة التخرج", "Graduation Year")} />
               </div>
             ))}
+            <p className="text-xs text-text-muted">{t("التعليم يُحدَّث من بيانات الجامعة المرتبطة بالحساب.", "Education is synced from the university data linked to your account.")}</p>
           </Card>
 
           <Card>
             <CardTitle className="font-display mb-4">{t("مشروع مميز", "Featured Project")}</CardTitle>
             <div className="space-y-4">
-              <Input defaultValue={profile.projects[0]?.title} placeholder={t("اسم المشروع", "Project Name")} />
-              <Textarea rows={3} defaultValue={profile.projects[0]?.description} placeholder={t("ماذا بنيت؟ ما التقنيات؟ ما النتيجة؟", "What did you build? Which technologies? What was the outcome?")} />
+              <Input defaultValue={profile.projects[0]?.title} readOnly placeholder={t("اسم المشروع", "Project Name")} />
+              <Textarea rows={3} defaultValue={profile.projects[0]?.description} readOnly placeholder={t("ماذا بنيت؟ ما التقنيات؟ ما النتيجة؟", "What did you build? Which technologies? What was the outcome?")} />
+              <p className="text-xs text-text-muted">{t("أضف تفاصيل المشروع في النبذة أو Portfolio حالياً.", "Add project details in About or Portfolio for now.")}</p>
             </div>
           </Card>
         </div>
@@ -120,10 +147,10 @@ export default function ProfileEditPage() {
           <Card>
             <CardTitle className="font-display mb-4">{t("المهارات", "Skills")}</CardTitle>
             <ul className="space-y-2 mb-4">
-              {currentSkills.map((s) => (
+              {skills.map((s) => (
                 <li key={s} className="flex items-center justify-between text-sm text-text-secondary rounded-lg border border-border px-3 py-1.5">
                   <span>{s}</span>
-                  <button type="button" onClick={() => setSkills(currentSkills.filter((x) => x !== s))} className="text-text-muted hover:text-red-500">
+                  <button type="button" onClick={() => setSkills(skills.filter((x) => x !== s))} className="text-text-muted hover:text-red-500">
                     <X className="w-4 h-4" />
                   </button>
                 </li>
@@ -137,7 +164,7 @@ export default function ProfileEditPage() {
 
           <Card>
             <CardTitle className="font-display mb-4">{t("الهدف المهني", "Career Goal")}</CardTitle>
-            <Select defaultValue="frontend">
+            <Select value={careerGoal} onChange={(e) => setCareerGoal(e.target.value)}>
               <option value="frontend">{t("مطور Frontend", "Frontend Developer")}</option>
               <option value="backend">{t("مطور Backend", "Backend Developer")}</option>
               <option value="fullstack">{t("Full Stack", "Full Stack")}</option>

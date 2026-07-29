@@ -8,6 +8,8 @@ import type {
   SendMessageInput,
   WeeklyReportInput,
   VerifyEntityInput,
+  CreateEventInput,
+  CreatePartnershipInput,
 } from './types';
 import {
   initMemoryStore,
@@ -268,9 +270,22 @@ export const mockRepositories: DataRepositories = {
     throw new Error('JOB_OR_INTERNSHIP_REQUIRED');
   },
 
-  async updateApplicationStatus(id, status) {
+  async updateApplicationStatus(id, status, extras) {
     ensureInit();
-    return storeUpdateStatus(id, status);
+    return storeUpdateStatus(id, status, extras);
+  },
+
+  async updateMentorshipStatus(id, status, extras) {
+    ensureInit();
+    const session = memoryStore.mentorshipSessions.find((s) => s.id === id);
+    if (!session) throw new Error('NOT_FOUND');
+    session.status = status;
+    if (extras?.scheduledAt) session.scheduledAt = extras.scheduledAt;
+    if (extras?.meetingLink) session.meetingLink = extras.meetingLink;
+    if (status === 'accepted' && !session.meetingLink) {
+      session.meetingLink = `https://meet.naqlah.ps/session/${id}`;
+    }
+    return session;
   },
 
   async createJob(input: CreateJobInput) {
@@ -398,6 +413,41 @@ export const mockRepositories: DataRepositories = {
       link: '/events',
     });
     return event;
+  },
+
+  async createEvent(input: CreateEventInput) {
+    ensureInit();
+    const event = {
+      id: `event-${Date.now()}`,
+      organizerType: input.organizerType ?? ('university' as const),
+      organizerId: input.organizerId ?? memoryStore.currentUserId,
+      title: input.title,
+      type: input.type ?? ('workshop' as const),
+      description: input.description ?? '',
+      startAt: input.startAt,
+      endAt: input.endAt ?? input.startAt,
+      location: input.location ?? '',
+      status: input.status ?? ('published' as const),
+      registrationsCount: 0,
+    };
+    memoryStore.events.unshift(event);
+    pushAudit('event_created', 'event', event.id);
+    return event;
+  },
+
+  async createPartnership(input: CreatePartnershipInput) {
+    ensureInit();
+    const partnership = {
+      id: `partnership-${Date.now()}`,
+      universityId: input.universityId,
+      companyId: input.companyId,
+      status: input.status ?? ('pending' as const),
+      startDate: input.startDate ?? new Date().toISOString().split('T')[0],
+      endDate: input.endDate,
+    };
+    memoryStore.partnerships.unshift(partnership);
+    pushAudit('partnership_created', 'partnership', partnership.id);
+    return partnership;
   },
 
   async submitWeeklyReport(input: WeeklyReportInput) {

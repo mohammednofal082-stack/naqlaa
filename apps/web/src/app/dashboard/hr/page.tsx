@@ -167,8 +167,12 @@ export default function HRDashboard() {
                     <p className="text-xs text-text-muted truncate">{app.job?.title}</p>
                     <p className="text-xs text-text-muted mt-1">{t("تقدم", "Applied")} {formatDate(app.appliedAt)}</p>
                     <div className="flex gap-2 mt-3">
-                      <Button size="sm" variant="outline">{t("مراجعة", "Review")}</Button>
-                      <Button size="sm">{t("جدولة", "Schedule")}</Button>
+                      <Link href="/dashboard/hr/pipeline">
+                        <Button size="sm" variant="outline">{t("مراجعة", "Review")}</Button>
+                      </Link>
+                      <Link href="/dashboard/hr/interviews">
+                        <Button size="sm">{t("جدولة", "Schedule")}</Button>
+                      </Link>
                     </div>
                   </div>
                 ))}

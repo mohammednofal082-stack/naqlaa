@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/contexts/app-context";
 import { useI18n } from "@/i18n";
@@ -25,7 +25,6 @@ function isLinkActive(pathname: string, href: string, role: UserRole) {
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, logout } = useApp();
   const { t } = useI18n();
   const role = user?.role ?? "student";
@@ -33,8 +32,9 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
   const handleLogout = async () => {
     await logout();
-    router.push("/auth/login");
     onNavigate?.();
+    // Full navigation clears client state and lands on the public home page
+    window.location.href = "/";
   };
 
   return (

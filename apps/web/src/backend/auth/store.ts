@@ -27,9 +27,10 @@ export function authenticateUser(
   password: string
 ): (Omit<AuthUser, 'passwordHash'> & { role: AuthUser['roles'][0] }) | null {
   initStore();
-  const user = findAuthUserByEmail(email);
-  if (!user) return null;
-  const stored = userStore.get(user.id);
+  const normalized = email.toLowerCase();
+  const fromShared = findAuthUserByEmail(normalized);
+  const fromStore = Array.from(userStore.values()).find((u) => u.email.toLowerCase() === normalized);
+  const stored = fromStore || (fromShared ? userStore.get(fromShared.id) : undefined);
   if (!stored) return null;
   if (stored.status !== 'active') return null;
   if (!verifyPassword(password, stored.passwordHash)) return null;
@@ -55,8 +56,8 @@ export function registerUser(data: {
     passwordHash: hashPassword(data.password),
     fullName: data.fullName,
     roles: [data.role],
-    status: data.role === 'student' ? 'active' : 'pending',
-    emailVerified: false,
+    status: 'active',
+    emailVerified: true,
     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.fullName)}`,
     organizationId: data.organizationId,
     createdAt: new Date().toISOString().split('T')[0],

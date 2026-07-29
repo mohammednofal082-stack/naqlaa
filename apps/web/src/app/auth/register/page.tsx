@@ -9,6 +9,7 @@ import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { useApp } from "@/contexts/app-context";
 import { validatePassword } from "@/backend/auth/password";
 import { INDUSTRIES } from "@careerlink/shared";
 import { useI18n } from "@/i18n";
@@ -16,6 +17,7 @@ import { ArrowLeft, ArrowRight, AlertCircle, CheckCircle } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { refresh } = useApp();
   const { t, isRTL } = useI18n();
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const REGISTER_ROLES = [
@@ -71,11 +73,13 @@ export default function RegisterPage() {
     const data = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setError(data.error);
+      setError(data.error || t("فشل التسجيل", "Registration failed"));
       return;
     }
-    setSuccess(data.message);
-    setTimeout(() => router.push(data.redirect), 1500);
+    setSuccess(data.message || t("تم إنشاء الحساب", "Account created"));
+    await refresh();
+    const target = data.redirect || `/auth/login?email=${encodeURIComponent(form.email)}&role=${type}`;
+    setTimeout(() => router.push(target), 800);
   };
 
   return (

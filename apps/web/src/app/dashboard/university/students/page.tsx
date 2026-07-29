@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { ActivityRow, PanelCard } from "@/components/dashboard/dashboard-shell";
@@ -14,10 +15,17 @@ import { useI18n } from "@/i18n";
 export default function UniversityStudentsPage() {
   const { t } = useI18n();
   const [search, setSearch] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data: users, loading } = useUsers();
-  const students = (users ?? []).filter((u) => u.role === "student").filter(
-    (s) => !search || s.firstName.includes(search) || s.lastName.includes(search) || s.email.includes(search)
-  );
+  const students = (users ?? [])
+    .filter((u) => u.role === "student")
+    .filter(
+      (s) =>
+        !search ||
+        s.firstName.includes(search) ||
+        s.lastName.includes(search) ||
+        s.email.includes(search)
+    );
 
   return (
     <DashboardLayout>
@@ -49,7 +57,11 @@ export default function UniversityStudentsPage() {
               <EmptyState
                 icon={Users}
                 title={t("لا طلاب", "No Students")}
-                description={search ? t("لا نتائج مطابقة لبحثك.", "No results match your search.") : t("عند تسجيل الطلاب سيظهرون هنا.", "Students will appear here once enrolled.")}
+                description={
+                  search
+                    ? t("لا نتائج مطابقة لبحثك.", "No results match your search.")
+                    : t("عند تسجيل الطلاب سيظهرون هنا.", "Students will appear here once enrolled.")
+                }
               />
             ) : (
               <div className="grid lg:grid-cols-2 gap-2">
@@ -64,8 +76,31 @@ export default function UniversityStudentsPage() {
                       title={`${student.firstName} ${student.lastName}`}
                       subtitle={ROLE_LABELS[student.role] ?? student.role}
                       meta={student.email}
-                      badge={<Button size="sm" variant="outline">{t("عرض", "View")}</Button>}
+                      badge={
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setExpandedId(expandedId === student.id ? null : student.id)}
+                        >
+                          {t("عرض", "View")}
+                        </Button>
+                      }
                     />
+                    {expandedId === student.id && (
+                      <div className="px-3 pb-3 flex flex-wrap gap-2 text-sm">
+                        <span className="text-text-secondary">
+                          {t("البريد:", "Email:")} {student.email}
+                        </span>
+                        <Link href="/messages">
+                          <Button size="sm">{t("مراسلة", "Message")}</Button>
+                        </Link>
+                        <a href={`mailto:${student.email}`}>
+                          <Button size="sm" variant="outline">
+                            {t("بريد", "Email")}
+                          </Button>
+                        </a>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

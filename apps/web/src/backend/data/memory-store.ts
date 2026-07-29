@@ -243,11 +243,15 @@ export function createApplication(input: {
   return app;
 }
 
-export function updateApplicationStatus(id: string, status: ApplicationStatus) {
+export function updateApplicationStatus(id: string, status: ApplicationStatus, extras?: { interviewDate?: string }) {
   initMemoryStore();
   const app = memoryStore.applications.find((a) => a.id === id);
   if (!app) throw new Error('NOT_FOUND');
   app.status = status;
+  if (extras?.interviewDate) app.interviewDate = extras.interviewDate;
+  else if (status === 'interview_scheduled' && !app.interviewDate) {
+    app.interviewDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+  }
   pushNotification({
     userId: app.studentId,
     type: 'application-update',

@@ -1,29 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { ActivityRow, PanelCard } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { useAllApplications } from "@/hooks/data";
+import { useAllApplications, updateApplicationStatus } from "@/hooks/data";
 import { Filter, Search, Users } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { applicationStatusLabel } from "@/i18n/labels";
+import type { ApplicationStatus } from "@careerlink/shared";
+
+const FILTERS: Array<ApplicationStatus | "all"> = [
+  "all",
+  "applied",
+  "under_review",
+  "shortlisted",
+  "interview_scheduled",
+  "accepted",
+  "rejected",
+];
 
 export default function HRCandidatesPage() {
   const { t } = useI18n();
   const [search, setSearch] = useState("");
-  const { data: applications, loading } = useAllApplications();
+  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
+  const [showFilters, setShowFilters] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const { data: applications, loading, refetch } = useAllApplications();
   const apps = applications ?? [];
 
-  const candidates = apps.filter((c) =>
-    !search ||
-    c.student?.firstName.includes(search) ||
-    c.student?.lastName.includes(search) ||
-    c.job?.title.includes(search)
+  const candidates = useMemo(
+    () =>
+      apps.filter((c) => {
+        const matchesSearch =
+          !search ||
+          c.student?.firstName.includes(search) ||
+          c.student?.lastName.includes(search) ||
+          c.job?.title.includes(search);
+        const matchesStatus = statusFilter === "all" || c.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      }),
+    [apps, search, statusFilter],
   );
+
+  const schedule = async (id: string) => {
+    setBusyId(id);
+    try {
+      await updateApplicationStatus(id, "interview_scheduled");
+      await refetch();
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -43,11 +75,21 @@ export default function HRCandidatesPage() {
               className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
             />
           </div>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setShowFilters((v) => !v)}>
             <Filter className="w-4 h-4" />
             {t("فلترة", "Filter")}
           </Button>
         </div>
+
+        {showFilters && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {FILTERS.map((f) => (
+              <Button key={f} size="sm" variant={statusFilter === f ? "primary" : "outline"} onClick={() => setStatusFilter(f)}>
+                {f === "all" ? t("الكل", "All") : applicationStatusLabel(f, t)}
+              </Button>
+            ))}
+          </div>
+        )}
 
         <PanelCard title={t("قائمة المرشحين", "Candidate List")}>
           {loading ? (
@@ -61,7 +103,7 @@ export default function HRCandidatesPage() {
               icon={Users}
               title={t("لا يوجد مرشحون مطابقون", "No Matching Candidates")}
               description={t("جرّب تعديل كلمات البحث أو إزالة الفلاتر.", "Try adjusting your search terms or removing filters.")}
-              action={search ? <Button size="sm" variant="outline" onClick={() => setSearch("")}>{t("مسح البحث", "Clear Search")}</Button> : undefined}
+              action={search || statusFilter !== "all" ? <Button size="sm" variant="outline" onClick={() => { setSearch(""); setStatusFilter("all"); }}>{t("مسح البحث", "Clear Search")}</Button> : undefined}
             />
           ) : (
             <div className="space-y-3">
@@ -70,7 +112,7 @@ export default function HRCandidatesPage() {
                   <ActivityRow
                     avatar={
                       <div className="w-9 h-9 rounded-lg bg-brand-muted flex items-center justify-center text-sm font-bold text-brand">
-                        {candidate.student?.firstName[0]}
+                        {candidate.student?.firstName?.[0]}
                       </div>
                     }
                     title={`${candidate.student?.firstName} ${candidate.student?.lastName}`}
@@ -79,8 +121,12 @@ export default function HRCandidatesPage() {
                       <div className="flex items-center gap-2">
                         <span className={(candidate.matchScore ?? 0) >= 80 ? "nq-chip nq-chip-emerald" : "nq-chip"}>{t("تطابق", "Match")} {candidate.matchScore}%</span>
                         <span className="text-xs text-text-muted hidden sm:inline">{applicationStatusLabel(candidate.status, t)}</span>
-                        <Button size="sm">{t("عرض الملف", "View Profile")}</Button>
-                        <Button size="sm" variant="outline">{t("جدولة", "Schedule")}</Button>
+                        <Link href="/dashboard/hr/pipeline">
+                          <Button size="sm">{t("عرض الملف", "View Profile")}</Button>
+                        </Link>
+                        <Button size="sm" variant="outline" disabled={busyId === candidate.id} onClick={() => void schedule(candidate.id)}>
+                          {t("جدولة", "Schedule")}
+                        </Button>
                       </div>
                     }
                   />

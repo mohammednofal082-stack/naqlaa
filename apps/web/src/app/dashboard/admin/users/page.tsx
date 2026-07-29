@@ -1,9 +1,12 @@
 "use client";
 
+import { Fragment, useState } from "react";
+import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { PanelCard } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
+import { Button } from "@/components/ui/button";
 import { useUsers } from "@/hooks/data";
 import { Users } from "lucide-react";
 import { useI18n } from "@/i18n";
@@ -13,6 +16,7 @@ export default function AdminUsersPage() {
   const { t } = useI18n();
   const { data: users, loading } = useUsers();
   const items = users ?? [];
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
     <DashboardLayout>
@@ -49,16 +53,44 @@ export default function AdminUsersPage() {
                   </thead>
                   <tbody>
                     {items.map((user) => (
-                      <tr key={user.id} className="border-b border-border hover:bg-surface-hover transition-colors">
-                        <td className="py-3 px-4 text-text">{user.firstName} {user.lastName}</td>
-                        <td className="py-3 px-4 text-text-muted">{user.email}</td>
-                        <td className="py-3 px-4">
-                          <span className="nq-chip">{roleLabel(user.role, t)}</span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <button type="button" className="text-brand text-sm hover:underline">{t("عرض", "View")}</button>
-                        </td>
-                      </tr>
+                      <Fragment key={user.id}>
+                        <tr className="border-b border-border hover:bg-surface-hover transition-colors">
+                          <td className="py-3 px-4 text-text">{user.firstName} {user.lastName}</td>
+                          <td className="py-3 px-4 text-text-muted">{user.email}</td>
+                          <td className="py-3 px-4">
+                            <span className="nq-chip">{roleLabel(user.role, t)}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              type="button"
+                              className="text-brand text-sm hover:underline"
+                              onClick={() => setExpandedId(expandedId === user.id ? null : user.id)}
+                            >
+                              {t("عرض", "View")}
+                            </button>
+                          </td>
+                        </tr>
+                        {expandedId === user.id && (
+                          <tr className="border-b border-border bg-surface-hover/40">
+                            <td colSpan={4} className="py-3 px-4">
+                              <div className="flex flex-wrap items-center gap-3 text-sm">
+                                <span className="text-text-secondary">
+                                  {t("البريد:", "Email:")} <strong className="text-text">{user.email}</strong>
+                                </span>
+                                <span className="text-text-secondary">
+                                  {t("المعرف:", "ID:")} {user.id}
+                                </span>
+                                <Link href="/messages">
+                                  <Button size="sm" variant="outline">{t("رسائل", "Messages")}</Button>
+                                </Link>
+                                <a href={`mailto:${user.email}`}>
+                                  <Button size="sm">{t("إرسال بريد", "Send Email")}</Button>
+                                </a>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>

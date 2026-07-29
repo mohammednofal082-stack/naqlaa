@@ -123,7 +123,9 @@ export default function TrainerDashboard() {
                         <p className="text-xs text-text-muted">{item.student} · {item.course}</p>
                         <div className="flex items-center justify-between mt-2">
                           <span className="nq-chip">{t("موعد", "Due")} {item.due}</span>
-                          <Button size="sm" variant="outline">{t("تصحيح", "Grade")}</Button>
+                          <Link href="/dashboard/trainer/quizzes">
+                            <Button size="sm" variant="outline">{t("تصحيح", "Grade")}</Button>
+                          </Link>
                         </div>
                       </div>
                     ))}

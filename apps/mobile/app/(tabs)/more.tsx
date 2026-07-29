@@ -36,7 +36,13 @@ export default function MoreScreen() {
         <SectionTitle title={t("للمناقشة", "For Discussion")} />
         <MenuRow icon="git-network" label={t("السيناريوهات السبعة", "The Seven Scenarios")} subtitle={t("Workflows من وثيقة SRS", "Workflows from the SRS document")} color={colors.blue} onPress={() => router.push("/workflows")} />
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={() => { logout(); router.replace("/auth/login"); }}>
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={async () => {
+            await logout();
+            router.replace("/");
+          }}
+        >
           <Text style={styles.logoutText}>{t(`تسجيل الخروج — ${user?.fullName}`, `Sign out — ${user?.fullName}`)}</Text>
         </TouchableOpacity>
         <View style={{ height: 32 }} />

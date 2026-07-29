@@ -64,7 +64,7 @@ async function getSupabaseSession(req: NextRequest, res: NextResponse) {
   return { role, userId: user.id };
 }
 
-const AUTH_PATHS = ['/auth/login', '/auth/register'];
+const AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password'];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -94,7 +94,7 @@ export async function proxy(req: NextRequest) {
   const session = localSession ?? supabaseSession;
   const isAuthPage = AUTH_PATHS.some((p) => pathname.startsWith(p));
 
-  if (session && isAuthPage) {
+  if (session && isAuthPage && !pathname.startsWith('/auth/reset-password')) {
     return NextResponse.redirect(new URL(`/dashboard/${session.role || 'student'}`, req.url));
   }
 

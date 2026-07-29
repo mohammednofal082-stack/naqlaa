@@ -1,5 +1,7 @@
 "use client";
 
+import { Fragment, useState } from "react";
+import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { PanelCard } from "@/components/dashboard/dashboard-shell";
@@ -16,6 +18,7 @@ export default function TrainerStudentsPage() {
   const { data: users, loading: usersLoading } = useUsers();
   const loading = coursesLoading || usersLoading;
   const courseItems = courses ?? [];
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const studentProgress = (users ?? [])
     .filter((u) => u.role === "student")
     .map((student, i) => ({
@@ -64,29 +67,54 @@ export default function TrainerStudentsPage() {
                     </thead>
                     <tbody>
                       {studentProgress.map(({ student, course, progress, lastActive }) => (
-                        <tr key={student.id} className="border-b border-border hover:bg-surface-hover transition-colors">
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-emerald/10 flex items-center justify-center text-sm font-bold text-emerald">
-                                {student.firstName[0]}
+                        <Fragment key={student.id}>
+                          <tr className="border-b border-border hover:bg-surface-hover transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-emerald/10 flex items-center justify-center text-sm font-bold text-emerald">
+                                  {student.firstName[0]}
+                                </div>
+                                {student.firstName} {student.lastName}
                               </div>
-                              {student.firstName} {student.lastName}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-text-secondary">{course?.title}</td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <div className="w-24 h-2 bg-cream-dark dark:bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full rounded-full bg-emerald" style={{ width: `${progress}%` }} />
+                            </td>
+                            <td className="py-3 px-4 text-text-secondary">{course?.title}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-24 h-2 bg-cream-dark dark:bg-white/5 rounded-full overflow-hidden">
+                                  <div className="h-full rounded-full bg-emerald" style={{ width: `${progress}%` }} />
+                                </div>
+                                <span className="text-emerald font-medium tabular-nums">{progress}%</span>
                               </div>
-                              <span className="text-emerald font-medium tabular-nums">{progress}%</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-text-secondary">{lastActive}</td>
-                          <td className="py-3 px-4">
-                            <Button size="sm" variant="outline">{t("التفاصيل", "Details")}</Button>
-                          </td>
-                        </tr>
+                            </td>
+                            <td className="py-3 px-4 text-text-secondary">{lastActive}</td>
+                            <td className="py-3 px-4">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setExpandedId(expandedId === student.id ? null : student.id)}
+                              >
+                                {t("التفاصيل", "Details")}
+                              </Button>
+                            </td>
+                          </tr>
+                          {expandedId === student.id && (
+                            <tr className="border-b border-border bg-surface-hover/40">
+                              <td colSpan={5} className="py-3 px-4">
+                                <div className="flex flex-wrap items-center gap-3 text-sm">
+                                  <span className="text-text-secondary">
+                                    {t("البريد:", "Email:")} <strong className="text-text">{student.email}</strong>
+                                  </span>
+                                  <span className="text-text-secondary">
+                                    {t("التقدم:", "Progress:")} {progress}%
+                                  </span>
+                                  <Link href="/messages">
+                                    <Button size="sm">{t("مراسلة", "Message")}</Button>
+                                  </Link>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
                       ))}
                     </tbody>
                   </table>

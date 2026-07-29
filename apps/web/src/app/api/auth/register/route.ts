@@ -32,33 +32,36 @@ export async function POST(req: NextRequest) {
       password,
       fullName,
       role,
-      organizationId: role === 'company' ? `comp-${Date.now()}` : university,
+      organizationId: role === 'company' ? undefined : university,
+      companyName: role === 'company' ? companyName : undefined,
+      industry: role === 'company' ? industry : undefined,
+      major: major || undefined,
     });
 
-    if (result.error) {
+    if (result.error && !result.user) {
       return NextResponse.json({ error: result.error }, { status: 409 });
     }
 
     if (!result.user) {
       return NextResponse.json({
         redirect: result.redirect ?? '/auth/login',
-        message: 'تم إنشاء حسابك — يمكنك تسجيل الدخول',
+        message: 'تم إنشاء حسابك — سجّل الدخول بنفس البريد وكلمة المرور',
       });
     }
 
     const user = result.user;
-    const activeRole = user.role;
 
     return NextResponse.json({
       user: {
         id: user.userId,
         email: user.email,
         fullName: user.fullName,
-        role: activeRole,
+        role: user.role,
         avatar: user.avatar,
       },
-      redirect: result.redirect,
-      message: 'تم إنشاء حسابك بنجاح',
+      redirect: result.redirect ?? `/dashboard/${user.role}`,
+      message: 'تم إنشاء حسابك بنجاح — يمكنك استخدام المنصة الآن',
+      token: result.token,
     });
   } catch {
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });

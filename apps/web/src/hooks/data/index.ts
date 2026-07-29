@@ -114,8 +114,24 @@ export async function applyToInternship(internshipId: string, coverNote?: string
   return dataClient.post("applications", { internshipId, coverNote });
 }
 
-export async function updateApplicationStatus(id: string, status: ApplicationStatus) {
-  return dataClient.patch(`applications/${id}`, { status });
+export async function updateApplicationStatus(id: string, status: ApplicationStatus, interviewDate?: string) {
+  return dataClient.patch(`applications/${id}`, { status, interviewDate });
+}
+
+export async function updateMentorshipStatus(
+  id: string,
+  status: "accepted" | "rejected" | "completed" | "cancelled",
+  extras?: { scheduledAt?: string; meetingLink?: string },
+) {
+  return fetch("/api/data/mentorship", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, status, ...extras }),
+  }).then(async (r) => {
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "FAILED");
+    return j.data;
+  });
 }
 
 export async function enrollInCourse(courseId: string) {
@@ -133,6 +149,30 @@ export async function bookMentorship(input: {
 
 export async function registerForEvent(eventId: string) {
   return dataClient.post("events/register", { eventId });
+}
+
+export async function createEvent(input: {
+  title: string;
+  description?: string;
+  location?: string;
+  startAt: string;
+  endAt?: string;
+  type?: Event["type"];
+  organizerType?: Event["organizerType"];
+  organizerId?: string;
+  status?: Event["status"];
+}) {
+  return dataClient.post("events", input) as Promise<Event>;
+}
+
+export async function createPartnership(input: {
+  universityId: string;
+  companyId: string;
+  status?: Partnership["status"];
+  startDate?: string;
+  endDate?: string;
+}) {
+  return dataClient.post("partnerships", input) as Promise<Partnership>;
 }
 
 export async function checkInEvent(qrCode: string) {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { ActivityRow, PanelCard } from "@/components/dashboard/dashboard-shell";
@@ -86,7 +87,7 @@ export default function CompanyProfilePage() {
                     }
                     title={job.title}
                     subtitle={`${job.location} · ${job.applicants} ${t("متقدم", "applicants")}`}
-                    badge={<Button size="sm" variant="outline">{t("إدارة", "Manage")}</Button>}
+                    badge={<Link href="/dashboard/company/jobs"><Button size="sm" variant="outline">{t("إدارة", "Manage")}</Button></Link>}
                   />
                 ))}
               </div>
@@ -115,8 +116,12 @@ export default function CompanyProfilePage() {
             </PanelCard>
 
             <PanelCard title={t("تعديل الملف", "Edit Profile")}>
-              <Button className="w-full">{t("تحديث المعلومات", "Update Information")}</Button>
-              <Button variant="outline" className="w-full mt-2">{t("رفع شعار جديد", "Upload New Logo")}</Button>
+              <Link href="/dashboard/company/jobs" className="block">
+                <Button className="w-full">{t("إدارة الوظائف", "Manage jobs")}</Button>
+              </Link>
+              <Link href="/dashboard/company/applications" className="block mt-2">
+                <Button variant="outline" className="w-full">{t("مراجعة المتقدمين", "Review applicants")}</Button>
+              </Link>
             </PanelCard>
           </div>
         </div>

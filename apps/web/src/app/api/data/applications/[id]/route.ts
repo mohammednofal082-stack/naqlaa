@@ -7,7 +7,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   return mutationResponse(async () => {
     await requirePermission('application.review');
-    const { status } = await req.json();
-    return getRepo().updateApplicationStatus(id, status as ApplicationStatus);
+    const body = await req.json();
+    return getRepo().updateApplicationStatus(id, body.status as ApplicationStatus, {
+      interviewDate: body.interviewDate ? String(body.interviewDate) : undefined,
+    });
   });
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { RoleDashboardShell } from "@/components/dashboard/role-page-shell";
@@ -7,7 +8,7 @@ import { StatCard } from "@/components/dashboard/widgets";
 import { PanelCard } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { useMentors, useMentorshipSessions, useUsers } from "@/hooks/data";
+import { useMentors, useMentorshipSessions, useUsers, updateMentorshipStatus } from "@/hooks/data";
 import { Calendar, ClipboardList, Clock, Star } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import { useI18n } from "@/i18n";
@@ -21,15 +22,26 @@ export default function MentorDashboard() {
     { day: t("الخميس", "Thursday"), slots: ["09:00", "13:00", "17:00"] },
   ];
   const { data: mentors, loading: mentorsLoading } = useMentors();
-  const { data: sessions, loading: sessionsLoading } = useMentorshipSessions();
+  const { data: sessions, loading: sessionsLoading, refetch } = useMentorshipSessions();
   const { data: users, loading: usersLoading } = useUsers();
   const loading = mentorsLoading || sessionsLoading || usersLoading;
   const mentor = mentors?.[0];
   const allSessions = sessions ?? [];
   const getUser = (id: string) => users?.find((u) => u.id === id);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const upcoming = allSessions.filter((s) => s.status === "accepted" || s.status === "requested");
   const requests = allSessions.filter((s) => s.status === "requested");
+
+  const respond = async (id: string, status: "accepted" | "rejected") => {
+    setBusyId(id);
+    try {
+      await updateMentorshipStatus(id, status);
+      await refetch();
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -111,8 +123,8 @@ export default function MentorDashboard() {
                             <p className="text-sm text-text-muted">{formatDateTime(session.scheduledAt)}</p>
                           </div>
                           <div className="flex gap-2">
-                            <Button size="sm">{t("قبول", "Accept")}</Button>
-                            <Button size="sm" variant="outline">{t("رفض", "Decline")}</Button>
+                            <Button size="sm" disabled={busyId === session.id} onClick={() => void respond(session.id, "accepted")}>{t("قبول", "Accept")}</Button>
+                            <Button size="sm" variant="outline" disabled={busyId === session.id} onClick={() => void respond(session.id, "rejected")}>{t("رفض", "Decline")}</Button>
                           </div>
                         </div>
                       ))}

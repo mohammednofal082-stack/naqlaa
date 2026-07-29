@@ -6,7 +6,8 @@ import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useMentorshipSessions } from "@/hooks/data";
+import { Input } from "@/components/ui/input";
+import { useMentorshipSessions, updateMentorshipStatus } from "@/hooks/data";
 import { Clock, Calendar, ClipboardList } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 import { useI18n } from "@/i18n";
@@ -14,14 +15,27 @@ import { sessionStatusLabel } from "@/i18n/labels";
 
 export default function MentorRequestsPage() {
   const { t } = useI18n();
-  const { data: sessions, loading } = useMentorshipSessions();
-  const [removed, setRemoved] = useState<string[]>([]);
+  const { data: sessions, loading, refetch } = useMentorshipSessions();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [suggestId, setSuggestId] = useState<string | null>(null);
+  const [suggestAt, setSuggestAt] = useState("");
+  const [msg, setMsg] = useState("");
 
-  const requests = (sessions ?? [])
-    .filter((s) => s.status === "requested" && !removed.includes(s.id));
+  const requests = (sessions ?? []).filter((s) => s.status === "requested");
 
-  const handleAction = (id: string) => {
-    setRemoved((prev) => [...prev, id]);
+  const handleAction = async (id: string, status: "accepted" | "rejected", scheduledAt?: string) => {
+    setBusyId(id);
+    setMsg("");
+    try {
+      await updateMentorshipStatus(id, status, scheduledAt ? { scheduledAt } : undefined);
+      setSuggestId(null);
+      await refetch();
+      setMsg(status === "accepted" ? t("تم القبول", "Accepted") : t("تم الرفض", "Declined"));
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : t("فشل التحديث", "Update failed"));
+    } finally {
+      setBusyId(null);
+    }
   };
 
   return (
@@ -31,6 +45,7 @@ export default function MentorRequestsPage() {
         title={t("طلبات الجلسات", "Session Requests")}
         subtitle={t(`${requests.length} طلب جديد`, `${requests.length} new request(s)`)}
       >
+        {msg && <p className="text-sm text-text-secondary mb-4">{msg}</p>}
         {loading ? (
           <div className="space-y-4">
             {[0, 1, 2].map((i) => (
@@ -62,12 +77,36 @@ export default function MentorRequestsPage() {
                     </div>
                     <span className="nq-chip mt-2 inline-flex">{sessionStatusLabel(session.status, t)}</span>
                   </div>
-                  <div className="flex gap-2">
-                    <Button onClick={() => handleAction(session.id)}>{t("قبول", "Accept")}</Button>
-                    <Button variant="outline" onClick={() => handleAction(session.id)}>{t("رفض", "Decline")}</Button>
-                    <Button variant="secondary">{t("اقتراح وقت", "Suggest Time")}</Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button disabled={busyId === session.id} onClick={() => void handleAction(session.id, "accepted")}>
+                      {t("قبول", "Accept")}
+                    </Button>
+                    <Button variant="outline" disabled={busyId === session.id} onClick={() => void handleAction(session.id, "rejected")}>
+                      {t("رفض", "Decline")}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      disabled={busyId === session.id}
+                      onClick={() => {
+                        setSuggestId(session.id);
+                        setSuggestAt(session.scheduledAt.slice(0, 16));
+                      }}
+                    >
+                      {t("اقتراح وقت", "Suggest Time")}
+                    </Button>
                   </div>
                 </div>
+                {suggestId === session.id && (
+                  <div className="mt-4 flex flex-col sm:flex-row gap-2 border-t border-border pt-4">
+                    <Input type="datetime-local" value={suggestAt} onChange={(e) => setSuggestAt(e.target.value)} />
+                    <Button
+                      disabled={!suggestAt || busyId === session.id}
+                      onClick={() => void handleAction(session.id, "accepted", new Date(suggestAt).toISOString())}
+                    >
+                      {t("قبول بالوقت الجديد", "Accept with new time")}
+                    </Button>
+                  </div>
+                )}
               </Card>
             ))}
           </div>

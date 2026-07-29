@@ -581,12 +581,47 @@ export const supabaseRepositories: DataRepositories = {
     return mapApplication(data);
   },
 
-  async updateApplicationStatus(id, status) {
+  async updateApplicationStatus(id, status, extras?: { interviewDate?: string }) {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase.from('applications').update({ status, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+    const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+    if (extras?.interviewDate) patch.interview_date = extras.interviewDate;
+    else if (status === 'interview_scheduled') {
+      patch.interview_date = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+    }
+    const { data, error } = await supabase.from('applications').update(patch).eq('id', id).select().single();
     if (error) throw error;
     return mapApplication(data);
+  },
+
+  async updateMentorshipStatus(id, status, extras) {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const patch: Record<string, unknown> = { status };
+    if (extras?.scheduledAt) patch.scheduled_at = extras.scheduledAt;
+    if (extras?.meetingLink) patch.meeting_link = extras.meetingLink;
+    if (status === 'accepted' && !extras?.meetingLink) {
+      patch.meeting_link = `https://meet.naqlah.ps/session/${id}`;
+    }
+    const { data, error } = await supabase
+      .from('mentorship_sessions')
+      .update(patch)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return {
+      id: String(data.id),
+      mentorId: String(data.mentor_id),
+      menteeId: String(data.mentee_id),
+      topic: String(data.topic),
+      scheduledAt: String(data.scheduled_at),
+      durationMinutes: Number(data.duration_minutes ?? 45),
+      status: data.status as import('@careerlink/shared').SessionStatus,
+      meetingLink: data.meeting_link ? String(data.meeting_link) : undefined,
+      feedback: data.feedback ? String(data.feedback) : undefined,
+      rating: data.rating != null ? Number(data.rating) : undefined,
+    };
   },
 
   async createJob(input) {
@@ -711,6 +746,58 @@ export const supabaseRepositories: DataRepositories = {
     await supabase.from('events').update({ registered_count: Number(data.registered_count ?? 0) + 1 }).eq('id', eventId);
     const event = (await this.getEvents()).find((e) => e.id === eventId)!;
     return { ...event, qrCode: qrCode ?? event.qrCode };
+  },
+
+  async createEvent(input) {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from('events').insert({
+      organizer_id: input.organizerId || user?.id || null,
+      title: input.title,
+      description: input.description ?? '',
+      location: input.location ?? '',
+      event_date: input.startAt,
+      capacity: 100,
+      registered_count: 0,
+      status: input.status ?? 'published',
+    }).select('*').single();
+    if (error) throw error;
+    return {
+      id: String(data.id),
+      organizerType: input.organizerType ?? ('university' as const),
+      organizerId: String(data.organizer_id ?? ''),
+      title: String(data.title),
+      type: input.type ?? ('workshop' as const),
+      description: String(data.description ?? ''),
+      startAt: String(data.event_date),
+      endAt: input.endAt ?? String(data.event_date),
+      location: String(data.location ?? ''),
+      status: data.status as import('@careerlink/shared').EventStatus,
+      registrationsCount: Number(data.registered_count ?? 0),
+      qrCode: `NAQLAH-${String(data.id).slice(0, 8).toUpperCase()}`,
+    };
+  },
+
+  async createPartnership(input) {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.from('partnerships').insert({
+      university_id: input.universityId,
+      company_id: input.companyId,
+      status: input.status ?? 'pending',
+      start_date: input.startDate ?? new Date().toISOString().split('T')[0],
+      end_date: input.endDate ?? null,
+    }).select('*').single();
+    if (error) throw error;
+    return {
+      id: String(data.id),
+      universityId: String(data.university_id),
+      companyId: String(data.company_id),
+      status: data.status as 'pending' | 'active' | 'expired',
+      startDate: String(data.start_date),
+      endDate: data.end_date ? String(data.end_date) : undefined,
+    };
   },
 
   async submitWeeklyReport(input) {

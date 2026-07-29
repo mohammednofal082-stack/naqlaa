@@ -102,6 +102,26 @@ export interface CreateTalentPoolInput {
   companyId?: string;
 }
 
+export interface CreateEventInput {
+  title: string;
+  description?: string;
+  location?: string;
+  startAt: string;
+  endAt?: string;
+  type?: Event['type'];
+  organizerType?: Event['organizerType'];
+  organizerId?: string;
+  status?: Event['status'];
+}
+
+export interface CreatePartnershipInput {
+  universityId: string;
+  companyId: string;
+  status?: Partnership['status'];
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface VerifyEntityInput {
   entityType: 'company' | 'mentor' | 'trainer';
   entityId: string;
@@ -141,10 +161,11 @@ export interface DataRepositories {
   search(query: string): Promise<{ jobs: JobWithCompany[]; companies: Company[] }>;
 
   apply(input: ApplyInput): Promise<Application>;
-  updateApplicationStatus(id: string, status: ApplicationStatus): Promise<Application>;
+  updateApplicationStatus(id: string, status: ApplicationStatus, extras?: { interviewDate?: string }): Promise<Application>;
   createJob(input: CreateJobInput): Promise<Job>;
   enrollCourse(courseId: string): Promise<{ enrolled: boolean }>;
   bookMentorship(input: BookMentorshipInput): Promise<MentorshipSession>;
+  updateMentorshipStatus(id: string, status: import('@careerlink/shared').SessionStatus, extras?: { scheduledAt?: string; meetingLink?: string }): Promise<MentorshipSession>;
   sendMessage(input: SendMessageInput): Promise<Message>;
   markNotificationRead(id: string): Promise<void>;
   saveJob(jobId: string): Promise<void>;
@@ -152,6 +173,8 @@ export interface DataRepositories {
   saveCompany(companyId: string): Promise<void>;
   updateSettings(settings: Partial<UserSettings>): Promise<UserSettings>;
   registerForEvent(eventId: string): Promise<Event>;
+  createEvent(input: CreateEventInput): Promise<Event>;
+  createPartnership(input: CreatePartnershipInput): Promise<Partnership>;
   submitWeeklyReport(input: WeeklyReportInput): Promise<WeeklyReport>;
   verifyEntity(input: VerifyEntityInput): Promise<{ success: boolean }>;
   markConversationRead(conversationId: string): Promise<void>;

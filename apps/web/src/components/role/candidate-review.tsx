@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -100,9 +101,19 @@ export function CandidateReviewStack({
             <Button variant="danger" className="flex-1" onClick={() => decide("rejected")} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-5 h-5" />} {t("رفض", "Reject")}
             </Button>
-            <Button variant="outline" className="flex-1" disabled>
-              <FileText className="w-4 h-4" /> {t("الملف", "Profile")}
-            </Button>
+            {current.student?.email ? (
+              <a href={`mailto:${current.student.email}`} className="flex-1">
+                <Button variant="outline" className="w-full">
+                  <FileText className="w-4 h-4" /> {t("الملف", "Profile")}
+                </Button>
+              </a>
+            ) : (
+              <Link href="/dashboard/company/applications" className="flex-1">
+                <Button variant="outline" className="w-full">
+                  <FileText className="w-4 h-4" /> {t("الملف", "Profile")}
+                </Button>
+              </Link>
+            )}
             <Button className="flex-1" onClick={() => decide("accepted")} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-5 h-5" />} {t("قبول", "Accept")}
             </Button>

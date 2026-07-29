@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { EmptyState } from "@/components/layout/page-header";
@@ -79,14 +80,22 @@ export default function MentorSessionsPage() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    {session.meetingLink && tab === "upcoming" && (
-                      <Button size="sm">
+                    {(session.meetingLink || session.status === "accepted") && tab === "upcoming" && (
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          const link = session.meetingLink || `https://meet.naqlah.ps/session/${session.id}`;
+                          window.open(link, "_blank", "noopener,noreferrer");
+                        }}
+                      >
                         <Video className="w-4 h-4" />
                         {t("انضم", "Join")}
                       </Button>
                     )}
                     {tab === "past" && (
-                      <Button size="sm" variant="outline">{t("ملاحظات", "Notes")}</Button>
+                      <Link href="/dashboard/mentor/notes">
+                        <Button size="sm" variant="outline">{t("ملاحظات", "Notes")}</Button>
+                      </Link>
                     )}
                   </div>
                 </div>

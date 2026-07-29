@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const origin = req.nextUrl.origin;
-    const redirectTo = `${origin}/auth/login`;
+    const redirectTo = `${origin}/auth/reset-password`;
 
     if (hasSupabaseAdmin()) {
       const admin = createSupabaseAdminClient();

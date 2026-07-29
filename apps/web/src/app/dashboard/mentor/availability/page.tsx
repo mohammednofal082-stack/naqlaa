@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { PanelCard } from "@/components/dashboard/dashboard-shell";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+
+const STORAGE_KEY = "naqlah-mentor-availability";
 
 const days = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 const timeSlots = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
@@ -33,6 +35,18 @@ export default function MentorAvailabilityPage() {
   const dayLabel = (day: string) => t(day, dayLabels[day] ?? day);
   const [availability, setAvailability] = useState(initialAvailability);
   const [selectedDay, setSelectedDay] = useState("الأحد");
+  const [customSlot, setCustomSlot] = useState("");
+  const [showAddSlot, setShowAddSlot] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) setAvailability(JSON.parse(raw) as Record<string, string[]>);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const toggleSlot = (slot: string) => {
     setAvailability((prev) => {
@@ -42,7 +56,30 @@ export default function MentorAvailabilityPage() {
         : [...daySlots, slot].sort();
       return { ...prev, [selectedDay]: updated };
     });
+    setMessage("");
   };
+
+  const addCustomSlot = () => {
+    const slot = customSlot.trim();
+    if (!/^\d{1,2}:\d{2}$/.test(slot)) return;
+    setAvailability((prev) => {
+      const daySlots = prev[selectedDay] ?? [];
+      if (daySlots.includes(slot)) return prev;
+      return { ...prev, [selectedDay]: [...daySlots, slot].sort() };
+    });
+    setCustomSlot("");
+    setShowAddSlot(false);
+    setMessage("");
+  };
+
+  const saveChanges = () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(availability));
+    setMessage(t("تم حفظ الأوقات المتاحة", "Availability saved"));
+  };
+
+  const allSlots = Array.from(
+    new Set([...timeSlots, ...(availability[selectedDay] ?? [])])
+  ).sort();
 
   return (
     <DashboardLayout>
@@ -81,14 +118,26 @@ export default function MentorAvailabilityPage() {
             <PanelCard
               title={t(`أوقات ${selectedDay}`, `${dayLabels[selectedDay] ?? selectedDay} Availability`)}
               action={
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" onClick={() => setShowAddSlot((v) => !v)}>
                   <Plus className="w-4 h-4" />
                   {t("إضافة فترة", "Add Slot")}
                 </Button>
               }
             >
+              {showAddSlot && (
+                <div className="flex gap-2 mb-4">
+                  <input
+                    type="text"
+                    placeholder="HH:MM"
+                    value={customSlot}
+                    onChange={(e) => setCustomSlot(e.target.value)}
+                    className="flex-1 px-4 py-2.5 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
+                  />
+                  <Button size="sm" onClick={addCustomSlot}>{t("إضافة", "Add")}</Button>
+                </div>
+              )}
               <div className="grid grid-cols-4 gap-3">
-                {timeSlots.map((slot) => {
+                {allSlots.map((slot) => {
                   const isSelected = availability[selectedDay]?.includes(slot);
                   return (
                     <button
@@ -107,7 +156,10 @@ export default function MentorAvailabilityPage() {
                   );
                 })}
               </div>
-              <Button className="w-full mt-6">{t("حفظ التغييرات", "Save Changes")}</Button>
+              {message && <p className="mt-4 text-sm text-emerald-600 dark:text-emerald-400">{message}</p>}
+              <Button className="w-full mt-6" onClick={saveChanges}>
+                {t("حفظ التغييرات", "Save Changes")}
+              </Button>
             </PanelCard>
 
             <PanelCard title={t("ملخص الأسبوع", "Weekly Summary")}>
