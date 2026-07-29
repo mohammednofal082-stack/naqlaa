@@ -699,14 +699,18 @@ export const supabaseRepositories: DataRepositories = {
     const { data: { user } } = await supabase.auth.getUser();
     const { data, error } = await supabase.from('events').select('*').eq('id', eventId).single();
     if (error || !data) throw new Error('NOT_FOUND');
+    let qrCode: string | undefined;
     if (user) {
-      await supabase.from('event_registrations').upsert({
+      const { data: reg, error: regError } = await supabase.from('event_registrations').upsert({
         event_id: eventId,
         user_id: user.id,
-      }, { onConflict: 'event_id,user_id' });
+      }, { onConflict: 'event_id,user_id' }).select('qr_code').single();
+      if (regError) throw regError;
+      qrCode = String(reg.qr_code);
     }
     await supabase.from('events').update({ registered_count: Number(data.registered_count ?? 0) + 1 }).eq('id', eventId);
-    return (await this.getEvents()).find((e) => e.id === eventId)!;
+    const event = (await this.getEvents()).find((e) => e.id === eventId)!;
+    return { ...event, qrCode: qrCode ?? event.qrCode };
   },
 
   async submitWeeklyReport(input) {

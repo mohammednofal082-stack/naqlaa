@@ -167,6 +167,11 @@ export default function LoginPage() {
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  <div className="mt-2 text-end">
+                    <Link href="/auth/forgot-password" className="text-xs text-brand hover:underline">
+                      {t("نسيت كلمة المرور؟", "Forgot password?")}
+                    </Link>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" size="lg" loading={loading}>
                   {t("دخول", "Sign in")}

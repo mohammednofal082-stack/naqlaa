@@ -31,7 +31,9 @@ JWT_SECRET=naqlah-mvp-change-me-please-2026
 
 1. `supabase/migrations/005_jobs_write_rls.sql`
 2. `supabase/migrations/006_write_rls.sql`
-3. من جذر المشروع: `npm run seed:demo-users` ← ينشئ 8 حسابات Auth + طلبات تجريبية
+3. `supabase/migrations/007_storage_courses.sql`
+4. إنشاء Storage bucket باسم `cvs`
+5. من جذر المشروع: `npm run seed:demo-users` ← ينشئ 8 حسابات Auth + طلبات تجريبية
 
 ثم:
 
@@ -66,10 +68,11 @@ npm run dev
 ## هـ) ما زال اختيارياً لاحقاً
 
 - Supabase Realtime للرسائل
-- Storage لرفع CV
 - Push notifications على الموبايل
-- توسيع جداول الدروس/الكويز المنفصلة
-- Forgot password / email verification كامل
+- كويزات/تقييمات كورس متقدمة
+- Email verification كامل + قوالب بريد مخصّصة
 - Pagination و rate limiting و اختبارات CI
+
+**مضاف في هذا التجهيز:** Storage لـ CV (`cvs` + `cv_files`)، وحدات/دروس الكورس، تسجيل حضور فعاليات عبر QR، واستعادة كلمة المرور عبر Supabase Auth.
 
 هذه لا تمنع عرض الـ MVP للجنة إذا الواجهات والخوارزميات شغّالة مع Supabase.

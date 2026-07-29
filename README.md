@@ -57,8 +57,10 @@ naqla/
    - `supabase/migrations/004_rls_demo.sql`
    - `supabase/migrations/005_jobs_write_rls.sql`
    - `supabase/migrations/006_write_rls.sql`
+   - `supabase/migrations/007_storage_courses.sql`
    - `supabase/seed.sql`
-3. من **Project Settings → API** انسخ:
+3. في **Storage** أنشئ bucket باسم `cvs` (للسيرة الذاتية)
+4. من **Project Settings → API** انسخ:
    - Project URL
    - `anon` public key
    - `service_role` secret (للخادم فقط)

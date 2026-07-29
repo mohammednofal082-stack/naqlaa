@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAiSession } from "@/backend/ai/api";
+import { createSupabaseServerClient } from "@/backend/supabase/server";
+import { createSupabaseAdminClient, hasSupabaseAdmin } from "@/backend/supabase/admin";
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireAiSession();
+  const { session, error } = await requireAiSession();
   if (error) return error;
 
   try {
@@ -34,7 +36,43 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ text, fileName: file.name });
+    let storagePath: string | null = null;
+    let publicUrl: string | null = null;
+
+    if (hasSupabaseAdmin() && session?.userId) {
+      try {
+        const admin = createSupabaseAdminClient();
+        const safeName = file.name.replace(/[^\w.\-ء-ي]+/g, "_");
+        storagePath = `${session.userId}/${Date.now()}-${safeName}`;
+        const { error: uploadError } = await admin.storage
+          .from("cvs")
+          .upload(storagePath, buffer, { contentType: "application/pdf", upsert: true });
+
+        if (!uploadError) {
+          const { data: urlData } = admin.storage.from("cvs").getPublicUrl(storagePath);
+          publicUrl = urlData.publicUrl;
+
+          const supabase = await createSupabaseServerClient();
+          await supabase.from("cv_files").insert({
+            user_id: session.userId,
+            file_name: file.name,
+            storage_path: storagePath,
+            public_url: publicUrl,
+            extracted_chars: text.length,
+          });
+        }
+      } catch (storageErr) {
+        console.warn("CV storage skipped:", storageErr);
+      }
+    }
+
+    return NextResponse.json({
+      text,
+      fileName: file.name,
+      stored: Boolean(storagePath),
+      storagePath,
+      publicUrl,
+    });
   } catch (err) {
     console.error("PDF parse error:", err);
     return NextResponse.json({ error: "فشل قراءة ملف PDF" }, { status: 500 });

@@ -135,6 +135,46 @@ export async function registerForEvent(eventId: string) {
   return dataClient.post("events/register", { eventId });
 }
 
+export async function checkInEvent(qrCode: string) {
+  return fetch("/api/data/event-registrations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "check-in", qrCode }),
+  }).then(async (r) => {
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "FAILED");
+    return j.data as { id: string; qrCode: string; checkedIn: boolean; eventTitle: string };
+  });
+}
+
+export async function fetchCourseModules(courseId: string) {
+  const res = await fetch(`/api/data/course-modules?courseId=${encodeURIComponent(courseId)}`);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || "FAILED");
+  return json.data as Array<{
+    id: string;
+    courseId: string;
+    title: string;
+    sortOrder: number;
+    lessonsCount: number;
+    lessons: Array<{ id: string; title: string; content: string; durationMinutes: number; sortOrder: number }>;
+  }>;
+}
+
+export async function createCourseModule(input: { courseId: string; title: string; sortOrder?: number }) {
+  return dataClient.post("course-modules", input);
+}
+
+export async function createCourseLesson(input: {
+  moduleId: string;
+  title: string;
+  content?: string;
+  durationMinutes?: number;
+  sortOrder?: number;
+}) {
+  return dataClient.post("course-modules", { type: "lesson", ...input });
+}
+
 export async function updateProfile(input: Record<string, unknown>) {
   return fetch("/api/data/profile", {
     method: "PUT",
