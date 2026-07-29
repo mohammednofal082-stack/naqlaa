@@ -45,9 +45,9 @@ export function PageLayout({
       <main className="pt-20 pb-16">
         <div className="shell">
           <p className="text-[13px] text-text-muted mb-8 py-4 border-b border-border">
-            {t("تصفّح مجاناً —", "Browse for free —")}{" "}
+            {t("تصفّح الفرص —", "Browse opportunities —")}{" "}
             <Link href="/auth/login" className="text-navy font-semibold underline underline-offset-4 decoration-border-strong hover:decoration-navy">
-              {t("سجّل للتقديم", "Sign up to apply")}
+              {t("سجّل للدخول والتقديم", "Sign in to apply")}
             </Link>
           </p>
           {title && <PageHeader title={title} subtitle={subtitle} meta={meta} actions={actions} />}

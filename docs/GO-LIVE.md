@@ -27,6 +27,11 @@ SUPABASE_SERVICE_ROLE_KEY=...
 JWT_SECRET=naqlah-mvp-change-me-please-2026
 ```
 
+ثم نفّذ أيضاً (مرة واحدة):
+
+1. `supabase/migrations/005_jobs_write_rls.sql`
+2. من جذر المشروع: `npm run seed:demo-users` ← ينشئ 8 حسابات Auth + طلبات تجريبية
+
 ثم:
 
 ```bash
@@ -36,7 +41,7 @@ npm run dev
 
 تحقق: `http://localhost:3000/api/data/jobs` → `"provider":"supabase"` وبيانات من الـ seed.
 
-أنشئ حساباً من `/auth/register` (طالب) ثم جرّب الوظائف و`/market` وTalent Pools بعد دخول شركة.
+دخول تجريبي: `student@naqlah.ps` / `Naqlah@2025` (بعد سكربت الحسابات).
 
 ## ج) Vercel (عرض للدكتور)
 

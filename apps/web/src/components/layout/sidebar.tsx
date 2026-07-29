@@ -41,7 +41,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     <>
       <div className="px-4 py-5 border-b border-border flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <Link href={usesFluidShell(role) ? "/feed" : `/dashboard/${role}`} onClick={onNavigate}>
+          <Link href={ `/dashboard/${role}`} onClick={onNavigate}>
             <Logo size="sm" />
           </Link>
         </div>
@@ -202,7 +202,7 @@ export function PublicHeader() {
             {t("دخول", "Sign in")}
           </Link>
           <Link href="/auth/register" className="btn-primary !py-2 !px-4 text-sm hidden sm:inline-flex">
-            {t("ابدأ مجاناً", "Start free")}
+            {t("إنشاء حساب", "Create account")}
           </Link>
           <button
             type="button"
@@ -222,7 +222,7 @@ export function PublicHeader() {
             </Link>
           ))}
           <Link href="/auth/login" className="block py-2 text-sm" onClick={() => setOpen(false)}>{t("دخول", "Sign in")}</Link>
-          <Link href="/auth/register" className="btn-primary w-full justify-center mt-2" onClick={() => setOpen(false)}>{t("ابدأ مجاناً", "Start free")}</Link>
+          <Link href="/auth/register" className="btn-primary w-full justify-center mt-2" onClick={() => setOpen(false)}>{t("إنشاء حساب", "Create account")}</Link>
         </div>
       )}
     </header>

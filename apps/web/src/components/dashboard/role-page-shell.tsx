@@ -8,6 +8,8 @@ import { DashboardHero } from "@/components/dashboard/dashboard-shell";
 import { getRoleExperience } from "@/components/role/role-experience";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
+import { useApp } from "@/contexts/app-context";
+import { roleLabel } from "@/i18n/labels";
 
 export function RoleDashboardShell({
   role,
@@ -31,16 +33,28 @@ export function RoleDashboardShell({
   children: React.ReactNode;
 }) {
   const { t } = useI18n();
+  const { user } = useApp();
   const exp = getRoleExperience(role, t);
   const scenario = exp.scenarios[scenarioIndex] ?? exp.scenarios[0];
+  const firstName = user?.fullName?.split(" ")[0];
+  const personalizedTitle = firstName
+    ? t(`${title} — مرحباً ${firstName}`, `${title} — Welcome ${firstName}`)
+    : title;
+  const personalizedSubtitle = [
+    t(`الدور: ${roleLabel(role, t)}`, `Role: ${roleLabel(role, t)}`),
+    user?.email ? user.email : null,
+    subtitle,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="nq-page-enter">
-      <PageHeader meta={meta} title={title} subtitle={subtitle} actions={actions} />
+      <PageHeader meta={meta} title={personalizedTitle} subtitle={personalizedSubtitle} actions={actions} />
       <RoleWorkspace showScenarios={showScenarios} showBanner={false}>
         {scenario && (
           <DashboardHero
-            eyebrow={t("الخطوة التالية الموصى بها", "Recommended next step")}
+            eyebrow={t(`${exp.icon} ${exp.label} · الخطوة التالية`, `${exp.icon} ${exp.label} · Next step`)}
             title={scenario.title}
             subtitle={scenario.description}
           >

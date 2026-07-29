@@ -55,7 +55,7 @@ export function AppTopBar() {
   const fluid = usesFluidShell(user.role);
   const roleMeta = getRoleExperience(user.role, t);
   const pageTitle = getPageTitle(pathname, t);
-  const homeHref = fluid ? "/feed" : `/dashboard/${user.role}`;
+  const homeHref = `/dashboard/${user.role}`;
 
   return (
     <header className="nq-topbar sticky top-0 z-40 w-full">

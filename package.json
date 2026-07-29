@@ -9,7 +9,8 @@
     "dev:web": "npm run dev --workspace=@careerlink/web",
     "dev:mobile": "npm run start --workspace=@careerlink/mobile",
     "build:web": "npm run build --workspace=@careerlink/web",
-    "pdf:handoff": "node docs/generate-handoff-pdf.mjs"
+    "pdf:handoff": "node docs/generate-handoff-pdf.mjs",
+    "seed:demo-users": "node scripts/seed-demo-users.mjs"
   },
   "devDependencies": {
     "pdfkit": "^0.19.1"

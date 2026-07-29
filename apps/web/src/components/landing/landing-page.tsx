@@ -89,7 +89,7 @@ function LandingNav() {
               className="nq-pulse-ring inline-flex px-3 sm:px-4 py-2 sm:py-2.5 text-sm font-semibold rounded-xl text-white transition-all hover:brightness-110 whitespace-nowrap"
               style={{ background: BRAND, boxShadow: "0 0 36px rgba(29,78,216,0.4)" }}
             >
-              {t("ابدأ مجاناً", "Start free")}
+              {t("إنشاء حساب", "Create account")}
             </Link>
           </Magnetic>
           <button type="button" className="md:hidden p-2 text-text-secondary" onClick={() => setOpen(!open)} aria-label={t("القائمة", "Menu")}>
@@ -193,7 +193,7 @@ function HeroSection() {
                   className="nq-btn-shimmer inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-base font-bold text-white transition-all hover:scale-[1.03] active:scale-[0.98]"
                   style={{ background: BRAND, boxShadow: "0 14px 48px rgba(29,78,216,0.45)" }}
                 >
-                  {t("ابدأ الآن — مجاناً", "Get started — free")}
+                  {t("تسجيل الدخول", "Sign in")}
                   <Arrow className="w-5 h-5" />
                 </Link>
               </Magnetic>

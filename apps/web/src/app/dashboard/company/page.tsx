@@ -19,7 +19,7 @@ export default function CompanyDashboard() {
   const { t } = useI18n();
   const { user } = useApp();
   const role = getRoleExperience("company", t);
-  const companyId = user?.organizationId ?? "comp-1";
+  const companyId = user?.organizationId ?? "a3333333-3333-3333-3333-333333333333";
   const { data: applications, loading } = useAllApplications();
   const { data: jobs } = useJobs();
   const apps = applications ?? [];
@@ -39,8 +39,14 @@ export default function CompanyDashboard() {
       <RoleDashboardShell
         role="company"
         meta={t("لوحة الشركة", "Company Dashboard")}
-        title={t("مركز التوظيف", "Recruitment Center")}
-        subtitle={t("إدارة الوظائف، المتقدمين، المقابلات، والشراكات الجامعية", "Manage jobs, applicants, interviews, and university partnerships")}
+        title={t(
+          user?.fullName ? `مركز التوظيف — ${user.fullName}` : "مركز التوظيف",
+          user?.fullName ? `Recruitment Center — ${user.fullName}` : "Recruitment Center",
+        )}
+        subtitle={t(
+          `دور الشركة · ${user?.email ?? ""} · وظائف ومتقدمين ومقابلات`,
+          `Company role · ${user?.email ?? ""} · Jobs, applicants, and interviews`,
+        )}
         showScenarios
         secondaryCta={{ href: "/dashboard/company/applications", label: t("مراجعة المتقدمين", "Review Applicants") }}
         actions={

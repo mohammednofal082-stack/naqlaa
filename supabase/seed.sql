@@ -1,5 +1,7 @@
 -- Naqlah demo seed — run AFTER 001–004
--- Catalog data only (no auth.users). Register users from /auth/register.
+-- Catalog data only. Create loginable users with:
+--   npm run seed:demo-users
+-- (requires SUPABASE_SERVICE_ROLE_KEY in apps/web/.env.local)
 
 insert into public.companies (id, name, industry, description, logo_url, location, size, verified)
 values

@@ -712,7 +712,7 @@ export const supabaseRepositories: DataRepositories = {
     const { data, error } = await supabase.from('weekly_reports').insert({
       internship_request_id: input.internshipRequestId,
       week_number: input.weekNumber,
-      title: `Week ${input.weekNumber}`,
+      title: input.summary || `Week ${input.weekNumber}`,
       tasks_done: input.tasksCompleted,
       challenges: input.challenges ?? '',
       status: 'pending',

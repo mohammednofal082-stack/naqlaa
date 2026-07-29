@@ -8,6 +8,7 @@ import { PanelCard, ActivityRow } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { useAllApplications } from "@/hooks/data";
+import { useApp } from "@/contexts/app-context";
 import { Users, Calendar, Layers, ClipboardList, Inbox } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { useI18n } from "@/i18n";
@@ -15,6 +16,7 @@ import { applicationStatusLabel } from "@/i18n/labels";
 
 export default function HRDashboard() {
   const { t } = useI18n();
+  const { user } = useApp();
   const { data: applications, loading } = useAllApplications();
   const apps = applications ?? [];
 
@@ -39,8 +41,14 @@ export default function HRDashboard() {
       <RoleDashboardShell
         role="hr"
         meta={t("لوحة الموارد البشرية", "HR Dashboard")}
-        title={t("قمع التوظيف", "Recruitment Funnel")}
-        subtitle={t("مراجعة المتقدمين، جدولة المقابلات، وإدارة القرارات اليومية", "Review applicants, schedule interviews, and manage daily decisions")}
+        title={t(
+          user?.fullName ? `قمع التوظيف — ${user.fullName.split(" ")[0]}` : "قمع التوظيف",
+          user?.fullName ? `Recruitment Funnel — ${user.fullName.split(" ")[0]}` : "Recruitment Funnel",
+        )}
+        subtitle={t(
+          `دور الموارد البشرية · ${user?.email ?? ""} · مراجعة وجدولة وقرارات`,
+          `HR role · ${user?.email ?? ""} · Review, schedule, and decide`,
+        )}
         showScenarios
         secondaryCta={{ href: "/dashboard/hr/pipeline", label: t("عرض القمع", "View Funnel") }}
         actions={

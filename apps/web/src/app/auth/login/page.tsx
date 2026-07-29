@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/card";
 import { useApp } from "@/contexts/app-context";
 import { useI18n } from "@/i18n";
 import { roleLabel } from "@/i18n/labels";
-import { getDemoCredentials, type UserRole } from "@careerlink/shared";
+import { getDemoCredentials, ROLE_DASHBOARD_PATHS, type UserRole } from "@careerlink/shared";
 import { Mail, Lock, ArrowLeft, ArrowRight, Eye, EyeOff, AlertCircle, ChevronDown } from "lucide-react";
 
 const ROLES: UserRole[] = ['student', 'graduate', 'company', 'hr', 'university', 'trainer', 'mentor', 'admin'];
@@ -52,7 +52,7 @@ export default function LoginPage() {
       setError(result.error);
       return;
     }
-    router.push(role === "student" || role === "graduate" ? "/feed" : (result.redirect || `/dashboard/${role}`));
+    router.push(result.redirect || ROLE_DASHBOARD_PATHS[role] || `/dashboard/${role}`);
   };
 
   return (
@@ -75,7 +75,10 @@ export default function LoginPage() {
                   {t("منصة", "The")} <span className="nq-gradient-text">{t("نقلة", "Naqla")}</span> {t("— جاهزة للعرض", "platform — ready for demo")}
                 </h2>
                 <p className="text-text-secondary leading-relaxed text-sm">
-                  {t("بعد تسجيل الدخول ستصل مباشرة إلى المنشورات، البحث، والدردشة — مع لوحة تحكم كاملة لكل دور.", "After signing in you'll go straight to posts, search, and chat — with a full dashboard for every role.")}
+                  {t(
+                    "بعد تسجيل الدخول تنتقل مباشرة إلى لوحة التحكم الخاصة بدورك — طالب، شركة، موارد بشرية، جامعة، أو إدارة.",
+                    "After signing in you go straight to the dashboard for your role — student, company, HR, university, or admin.",
+                  )}
                 </p>
               </div>
               <ul className="space-y-3 text-sm text-text-secondary">

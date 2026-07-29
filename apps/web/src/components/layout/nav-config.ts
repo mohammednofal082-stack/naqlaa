@@ -59,8 +59,8 @@ function buildRoleNavGroups(t: TFn): Record<UserRole, NavGroup[]> {
       {
         label: t("الرئيسية", "Home"),
         items: [
-          { href: "/feed", label: t("المنصة", "Feed"), icon: LayoutGrid },
           { href: "/dashboard/student", label: t("لوحة التحكم", "Dashboard"), icon: LayoutDashboard },
+          { href: "/feed", label: t("المنصة", "Feed"), icon: LayoutGrid },
         ],
       },
       {
@@ -109,8 +109,8 @@ function buildRoleNavGroups(t: TFn): Record<UserRole, NavGroup[]> {
       {
         label: t("الرئيسية", "Home"),
         items: [
-          { href: "/feed", label: t("المنصة", "Feed"), icon: LayoutGrid },
           { href: "/dashboard/graduate", label: t("لوحة التحكم", "Dashboard"), icon: LayoutDashboard },
+          { href: "/feed", label: t("المنصة", "Feed"), icon: LayoutGrid },
         ],
       },
       {

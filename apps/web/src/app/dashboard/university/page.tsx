@@ -43,7 +43,10 @@ export default function UniversityDashboard() {
         role="university"
         meta={t("لوحة الجامعة", "University Dashboard")}
         title={uniName}
-        subtitle={t("رؤية شاملة للطلاب، التدريبات، الشراكات، ونسب التوظيف", "A comprehensive view of students, internships, partnerships, and employment rates")}
+        subtitle={t(
+          `دور الجامعة · ${user?.email ?? ""} · طلاب وتدريبات وشراكات`,
+          `University role · ${user?.email ?? ""} · Students, internships, partnerships`,
+        )}
         showScenarios
         secondaryCta={{ href: "/dashboard/university/reports", label: t("التقارير", "Reports") }}
       >

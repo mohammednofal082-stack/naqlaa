@@ -26,6 +26,7 @@ import type {
   InternshipRequest,
   Conversation,
   Message,
+  WeeklyReport,
 } from "@careerlink/shared";
 import type { SmartRecommendations, JobMarketAnalysis, TalentPool as TalentPoolType } from "@careerlink/shared";
 
@@ -91,6 +92,7 @@ export const useTalentPools = () => useDataApi<TalentPool[]>("talent-pools");
 export const usePartnerships = () => useDataApi<Partnership[]>("partnerships");
 export const useAssessments = () => useDataApi<Assessment[]>("assessments");
 export const useInternshipRequests = () => useDataApi<InternshipRequest[]>("internship-requests");
+export const useWeeklyReports = () => useDataApi<WeeklyReport[]>("weekly-reports");
 export const useConversations = () => useDataApi<Conversation[]>("conversations");
 export const useMarketAnalysis = () => useDataApi<JobMarketAnalysis>("market-analysis");
 
@@ -167,6 +169,16 @@ export async function verifyEntity(input: {
 
 export async function createJob(input: Record<string, unknown>) {
   return dataClient.post("jobs", input);
+}
+
+export async function submitWeeklyReport(input: {
+  internshipRequestId: string;
+  weekNumber: number;
+  summary?: string;
+  tasksCompleted: string;
+  challenges?: string;
+}) {
+  return dataClient.post("weekly-reports", input);
 }
 
 export async function createTalentPool(input: { name: string; description: string }) {

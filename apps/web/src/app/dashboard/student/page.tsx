@@ -53,7 +53,10 @@ export default function StudentDashboard() {
       <PageHeader
         meta={t("لوحة الطالب", "Student Dashboard")}
         title={t(`مرحباً، ${firstName}`, `Welcome, ${firstName}`)}
-        subtitle={t("نظرة شاملة على تقدّمك، فرصك، وأدواتك المهنية", "A comprehensive overview of your progress, opportunities, and professional tools")}
+        subtitle={t(
+          `دور الطالب · ${user?.email ?? ""} · نظرة على تقدّمك وفرصك`,
+          `Student role · ${user?.email ?? ""} · Your progress and opportunities`,
+        )}
         actions={
           <Link href="/feed">
             <Button variant="outline" size="sm">{t("المنصة", "Platform")}</Button>

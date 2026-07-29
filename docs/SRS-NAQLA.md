@@ -87,7 +87,7 @@
 - [x] إدارة رحلة الطالب من بناء Profile إلى التدريب والتوظيف.
 - [x] توفير Dashboards وتقارير للجامعة والشركات والإدارة.
 - [x] تطبيق Role-Based Access Control مع صلاحيات واضحة.
-- [x] بناء قاعدة بيانات منظمة وقابلة للتوسع (مُعرَّفة — بانتظار الربط).
+- [x] بناء قاعدة بيانات منظمة وقابلة للتوسع (Supabase PostgreSQL + migrations + seed).
 - [x] ميزات ذكية: Matching، Skill Gap، CV Analyzer، Career Roadmap.
 
 ### 2.4 نطاق النظام والافتراضات
@@ -685,25 +685,26 @@ match_score = 45% skill_match
 
 | المجموعة | Endpoints | ملاحظات |
 |----------|-----------|---------|
-| **Auth** | POST `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/forgot-password` | ✅ جزئي منفذ |
-| **Profiles** | GET/PUT `/profiles/me`, GET `/students/{id}`, `/companies/{id}` | مطلوب DB |
-| **Skills** | GET `/skills`, POST `/users/me/skills` | مطلوب DB |
-| **Jobs** | GET/POST/PUT `/jobs`, GET `/jobs/{id}/matches` | مطلوب DB |
-| **Applications** | POST `/jobs/{id}/apply`, PUT `/applications/{id}/status` | مطلوب DB |
-| **Courses** | GET/POST `/courses`, POST `/courses/{id}/enroll` | مطلوب DB |
-| **Mentorship** | GET `/mentors`, POST `/sessions` | مطلوب DB |
-| **Internships** | POST `/internship-requests`, POST `/weekly-reports` | مطلوب DB |
-| **Events** | GET/POST `/events`, POST `/events/{id}/check-in` | مطلوب DB |
-| **Admin** | GET `/admin/verification-queue`, PUT `/admin/verify/{type}/{id}` | مطلوب DB |
+| **Auth** | POST `/api/auth/register`, `/login`, `/logout`, GET `/me` | ✅ Supabase Auth عند التفعيل |
+| **Profiles** | GET/PUT `/api/data/profile` | ✅ DB |
+| **Jobs** | GET/POST `/api/data/jobs` | ✅ DB |
+| **Applications** | GET/POST `/api/data/applications`, PATCH `.../[id]` | ✅ DB |
+| **Courses** | GET `/api/data/courses`, POST `.../enroll` | ✅ DB |
+| **Mentorship** | GET `/api/data/mentors`, POST `.../book` | ✅ DB |
+| **Internships / Reports** | GET internship-requests, GET/POST weekly-reports | ✅ DB |
+| **Talent / Market** | `/api/data/talent-pools`, `/market-analysis` | ✅ DB |
+| **Events** | GET/POST register | ✅ جزئي (بدون check-in كامل) |
+| **Admin** | POST `/api/data/admin/verify` | ✅ DB |
 
 ### 16.2 API المنفذ حالياً
 
 | Endpoint | Method | الحالة |
 |----------|--------|--------|
-| `/api/auth/login` | POST | ✅ JWT + scrypt |
-| `/api/auth/register` | POST | ✅ In-memory store |
-| `/api/auth/me` | GET | ✅ Session validation |
-| `/api/auth/logout` | POST | ✅ Cookie clear |
+| `/api/auth/login` | POST | ✅ Supabase / JWT |
+| `/api/auth/register` | POST | ✅ يكتب profile |
+| `/api/auth/me` | GET | ✅ |
+| `/api/auth/logout` | POST | ✅ |
+| `/api/data/*` | GET/POST/PATCH | ✅ مستودعات Supabase |
 
 ---
 
@@ -797,22 +798,23 @@ match_score = 45% skill_match
 | Phase 4 — Training & Mentorship | courses, mentor sessions | ✅ UI |
 | Phase 5 — University Tracking | internship requests, weekly reports | ✅ UI |
 | Phase 6 — Dashboards | student/company/university/admin | ✅ UI |
-| **Phase 7 — Database** | PostgreSQL + Prisma + APIs | ⏳ المتبقي |
+| **Phase 7 — Database** | Supabase PostgreSQL + REST `/api/data/*` | ✅ مربوط |
 
 ### 20.2 الحد الأدنى للمناقشة (Checklist)
 
-- [x] تسجيل دخول لكل الرولز (8 حسابات تجريبية)
+- [x] تسجيل دخول لكل الرولز (8 حسابات تجريبية عبر Supabase Auth)
 - [x] بروفايل طالب وشركة وجامعة ومدرب و mentor
-- [x] نشر فرصة من الشركة والتقديم من الطالب
-- [x] HR يغير حالة application
+- [x] نشر فرصة من الشركة والتقديم من الطالب (UI + API + DB)
+- [x] HR يغير حالة application (يحفظ في قاعدة البيانات)
 - [x] حساب match score
 - [x] skill gap
-- [x] CV Builder بسيط
+- [x] CV Analyzer (رفع PDF + تحليل؛ التخزين السحابي اختياري)
 - [x] Mentorship booking
 - [x] Course enrollment
-- [x] University internship tracking
+- [x] University internship tracking + تقارير أسبوعية
 - [x] Dashboards مختصرة لكل رول
-- [ ] **ربط قاعدة البيانات** ← الخطوة الوحيدة المتبقية
+- [x] **ربط قاعدة البيانات (Supabase)** — منفّذ
+- [x] Talent Pools + تحليل سوق العمل `/market`
 
 ---
 
@@ -835,39 +837,41 @@ match_score = 45% skill_match
 
 ## 22. حالة التنفيذ الحالية
 
-### 22.1 ما هو منفذ ويعمل (بدون DB)
+### 22.1 ما هو منفذ ويعمل مع قاعدة البيانات
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  ✅ Landing Page فاخرة (8 أقسام، RTL، animations)         │
-│  ✅ 45+ صفحة ويب لكل الرولز                                │
-│  ✅ نظام مصادقة JWT + RBAC + Proxy guard                   │
-│  ✅ 8 رولز × dashboards × sidebar navigation               │
-│  ✅ Mock data فلسطيني واقعي (Birzeit, Jawwal, Exalt...)    │
-│  ✅ Types كاملة (~540 سطر) = عقد البيانات                  │
-│  ✅ Permissions matrix كاملة                               │
-│  ✅ Matching algorithm + skill gap + CV analyzer UI        │
-│  ✅ تطبيق موبايل Expo (5 tabs طالب)                        │
-│  ✅ npm run build — ناجح                                   │
+│  ✅ Landing + 45+ صفحة ويب + 8 رولز                        │
+│  ✅ Auth: Supabase Auth (أو مسار تطوير محلي عند غياب المفاتيح)│
+│  ✅ Data: Supabase PostgreSQL عبر /api/data/*               │
+│  ✅ نشر وظيفة / تقديم / تحديث حالة الطلب (DB)             │
+│  ✅ Talent Pools + Market Analysis من بيانات حية            │
+│  ✅ كورسات enroll + Mentorship book                        │
+│  ✅ تقارير تدريب أسبوعية (API + واجهة الجامعة)            │
+│  ✅ Matching + Skill Gap + CV Analyzer                     │
+│  ✅ موبايل Expo متصل بنفس API                              │
+│  ✅ Seed كتالوج + سكربت حسابات تجريبية                     │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 22.2 ما يحتاج ربط DB فقط
+### 22.2 حالة الربط (محدثة)
 
 | العملية | الواجهة | API | DB |
 |---------|---------|-----|-----|
-| إنشاء/تعديل وظيفة | ✅ | ❌ | ❌ |
-| التقديم على فرصة | ✅ | ❌ | ❌ |
-| تغيير حالة طلب | ✅ | ❌ | ❌ |
-| تسجيل كورس | ✅ | ❌ | ❌ |
-| حجز جلسة إرشاد | ✅ | ❌ | ❌ |
-| تقرير تدريب أسبوعي | ✅ | ❌ | ❌ |
-| إرسال رسالة | ✅ | ❌ | ❌ |
-| حفظ إعدادات | ✅ | ❌ | ❌ |
-| رفع ملف CV | ✅ | ❌ | ❌ |
-| موافقة Admin | ✅ | ❌ | ❌ |
+| إنشاء وظيفة | ✅ | ✅ | ✅ |
+| التقديم على فرصة | ✅ | ✅ | ✅ |
+| تغيير حالة طلب | ✅ | ✅ | ✅ |
+| تسجيل كورس | ✅ | ✅ | ✅ |
+| حجز جلسة إرشاد | ✅ | ✅ | ✅ |
+| تقرير تدريب أسبوعي | ✅ | ✅ | ✅ |
+| Talent Pools | ✅ | ✅ | ✅ |
+| تحليل سوق العمل | ✅ | ✅ | ✅ |
+| إرسال رسالة | ✅ | ✅ | ✅ (REST، بدون Realtime) |
+| موافقة Admin | ✅ | ✅ | ✅ |
+| رفع ملف CV إلى Storage | ✅ تحليل | ✅ | ⏳ اختياري |
+| Event check-in / QR | ✅ عرض | جزئي | جزئي |
 
-> **الخلاصة:** الواجهات والقيود والسيناريوهات جاهزة 100%. المتبقي: **طبقة API + PostgreSQL** لتحويل Mock إلى بيانات حقيقية.
+> **الخلاصة:** المسارات الأساسية للمناقشة مربوطة بـ Supabase. ما تبقى اختياري للتحسين: Storage، Push، Realtime، وجداول الجامعات ككيانات مستقلة.
 
 ---
 

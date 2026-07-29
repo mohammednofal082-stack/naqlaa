@@ -94,7 +94,14 @@ npm run dev
 افتح http://localhost:3000/api/data/jobs  
 يجب أن ترى `"provider":"supabase"` وقائمة وظائف من الجداول (ليس mock).
 
-تسجيل الدخول التجريبي بعد الـ seed: راجع حسابات الـ seed في `supabase/seed.sql` أو أنشئ مستخدماً من صفحة التسجيل.
+تسجيل الدخول التجريبي بعد تشغيل سكربت الحسابات:
+
+```bash
+npm run seed:demo-users
+```
+
+كلمة المرور لكل الحسابات: `Naqlah@2025`  
+أمثلة: `student@naqlah.ps` · `company@jawwal.ps` · `hr@jawwal.ps` · `admin@naqlah.ps`
 
 ---
 

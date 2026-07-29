@@ -38,7 +38,10 @@ export default function GraduateDashboard() {
       <PageHeader
         meta={t("لوحة الخريج", "Graduate Dashboard")}
         title={t(`مرحباً، ${firstName}`, `Welcome, ${firstName}`)}
-        subtitle={t("تتبع طلباتك، فرصك، ومجتمع الخريجين بعد التخرج", "Track your applications, opportunities, and the alumni community after graduation")}
+        subtitle={t(
+          `دور الخريج · ${user?.email ?? ""} · تتبع طلباتك وفرصك بعد التخرج`,
+          `Graduate role · ${user?.email ?? ""} · Track applications after graduation`,
+        )}
         actions={<Link href="/feed"><Button variant="outline" size="sm">{t("المنصة", "Platform")}</Button></Link>}
       />
 

@@ -14,8 +14,8 @@ import { applicationStatusLabel } from "@/i18n/labels";
 export default function CompanyApplicationsPage() {
   const { t } = useI18n();
   const { user } = useApp();
-  const companyId = user?.organizationId ?? "comp-1";
-  const { data: applications, loading } = useAllApplications();
+  const companyId = user?.organizationId ?? "a3333333-3333-3333-3333-333333333333";
+  const { data: applications, loading, refetch } = useAllApplications();
   const enriched = (applications ?? []).filter(
     (a) => a.company?.id === companyId || a.job?.companyId === companyId
   );
@@ -39,7 +39,7 @@ export default function CompanyApplicationsPage() {
         <div className="grid lg:grid-cols-2 gap-8">
           <div>
             <p className="text-sm font-semibold text-text mb-4">{t("المراجعة السريعة", "Quick Review")}</p>
-            <CandidateReviewStack candidates={enriched} />
+            <CandidateReviewStack candidates={enriched} onUpdated={() => void refetch()} />
           </div>
 
           <PanelCard title={t("كل المتقدمين", "All Applicants")}>
