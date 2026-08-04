@@ -114,8 +114,13 @@ export async function applyToInternship(internshipId: string, coverNote?: string
   return dataClient.post("applications", { internshipId, coverNote });
 }
 
-export async function updateApplicationStatus(id: string, status: ApplicationStatus, interviewDate?: string) {
-  return dataClient.patch(`applications/${id}`, { status, interviewDate });
+export async function updateApplicationStatus(
+  id: string,
+  status: ApplicationStatus,
+  interviewDate?: string,
+  meetingUrl?: string,
+) {
+  return dataClient.patch(`applications/${id}`, { status, interviewDate, meetingUrl });
 }
 
 export async function updateMentorshipStatus(
@@ -249,6 +254,10 @@ export async function verifyEntity(input: {
 
 export async function createJob(input: Record<string, unknown>) {
   return dataClient.post("jobs", input);
+}
+
+export async function updateJob(id: string, input: Record<string, unknown>) {
+  return dataClient.patch(`jobs/${id}`, input);
 }
 
 export async function submitWeeklyReport(input: {

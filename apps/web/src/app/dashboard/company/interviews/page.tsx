@@ -32,6 +32,7 @@ export default function CompanyInterviewsPage() {
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState("");
   const [when, setWhen] = useState("");
+  const [meetingUrl, setMeetingUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -42,10 +43,11 @@ export default function CompanyInterviewsPage() {
     setBusy(true);
     setMsg("");
     try {
-      await updateApplicationStatus(appId, "interview_scheduled", interviewDate);
+      await updateApplicationStatus(appId, "interview_scheduled", interviewDate, meetingUrl.trim() || undefined);
       setOpen(false);
       setSelectedId("");
       setWhen("");
+      setMeetingUrl("");
       await refetch();
       setMsg(t("تمت جدولة المقابلة", "Interview scheduled"));
     } catch (e) {
@@ -86,6 +88,13 @@ export default function CompanyInterviewsPage() {
                 ))}
               </select>
               <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
+              <Input
+                className="sm:col-span-2"
+                type="url"
+                placeholder={t("رابط الاجتماع (Zoom / Meet)", "Meeting URL (Zoom / Meet)")}
+                value={meetingUrl}
+                onChange={(e) => setMeetingUrl(e.target.value)}
+              />
             </div>
             <div className="flex gap-2 mt-3">
               <Button size="sm" disabled={busy || !selectedId} onClick={() => void schedule()}>
@@ -138,8 +147,11 @@ export default function CompanyInterviewsPage() {
                   <div className="flex gap-2 mt-3 mr-12">
                     <Button
                       size="sm"
+                      disabled={!item.meetingUrl}
                       onClick={() => {
-                        window.location.href = `mailto:${item.student?.email ?? ""}?subject=${encodeURIComponent(t("مقابلة نقلة", "Naqla Interview"))}`;
+                        if (item.meetingUrl) {
+                          window.open(item.meetingUrl, "_blank", "noopener,noreferrer");
+                        }
                       }}
                     >
                       <Video className="w-4 h-4" />
@@ -149,9 +161,19 @@ export default function CompanyInterviewsPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => {
+                        window.location.href = `mailto:${item.student?.email ?? ""}?subject=${encodeURIComponent(t("مقابلة نقلة", "Naqla Interview"))}`;
+                      }}
+                    >
+                      {t("دعوة بريد", "Email")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
                         setOpen(true);
                         setSelectedId(item.id);
                         setWhen(item.interviewDate ? item.interviewDate.slice(0, 16) : "");
+                        setMeetingUrl(item.meetingUrl ?? "");
                       }}
                     >
                       {t("إعادة جدولة", "Reschedule")}

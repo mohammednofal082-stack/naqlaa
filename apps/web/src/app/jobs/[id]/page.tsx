@@ -138,7 +138,28 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <Link href="/applications" className="block mt-2">
               <Button variant="outline" className="w-full">{t("متابعة طلباتي", "Track my applications")}</Button>
             </Link>
-            <Button variant="outline" className="w-full mt-2">
+            <Button
+              variant="outline"
+              className="w-full mt-2"
+              onClick={async () => {
+                const url = typeof window !== "undefined" ? window.location.href : `/jobs/${id}`;
+                try {
+                  if (navigator.share) {
+                    await navigator.share({ title: job.title, url });
+                  } else {
+                    await navigator.clipboard.writeText(url);
+                    setError(t("تم نسخ رابط الوظيفة", "Job link copied"));
+                  }
+                } catch {
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    setError(t("تم نسخ رابط الوظيفة", "Job link copied"));
+                  } catch {
+                    setError(t("تعذّر المشاركة", "Share failed"));
+                  }
+                }
+              }}
+            >
               <Share2 className="w-4 h-4" /> {t("مشاركة", "Share")}
             </Button>
           </Card>

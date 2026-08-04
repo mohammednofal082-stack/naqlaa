@@ -91,7 +91,7 @@ export default function UniversityStudentsPage() {
                         <span className="text-text-secondary">
                           {t("البريد:", "Email:")} {student.email}
                         </span>
-                        <Link href="/messages">
+                        <Link href={`/messages?user=${student.id}`}>
                           <Button size="sm">{t("مراسلة", "Message")}</Button>
                         </Link>
                         <a href={`mailto:${student.email}`}>

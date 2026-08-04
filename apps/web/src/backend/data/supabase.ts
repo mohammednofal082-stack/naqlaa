@@ -805,6 +805,31 @@ export const supabaseRepositories: DataRepositories = {
     };
   },
 
+  async updateAssessment(id, input) {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const patch: Record<string, unknown> = {};
+    if (input.title !== undefined) patch.title = input.title;
+    if (input.deadline !== undefined) patch.deadline = input.deadline;
+    if (input.status !== undefined) patch.status = input.status;
+    const { data, error } = await supabase
+      .from('assessments')
+      .update(patch)
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error) throw error;
+    if (!data) throw new Error('NOT_FOUND');
+    return {
+      id: String(data.id),
+      jobId: String(data.job_id),
+      title: String(data.title),
+      type: data.type as 'mcq' | 'coding' | 'upload' | 'video',
+      deadline: String(data.deadline ?? ''),
+      status: String(data.status ?? 'active'),
+    };
+  },
+
   async getMarketAnalysis() {
     const jobs = await this.getJobs();
     const internships = await this.getInternships();
@@ -893,7 +918,7 @@ export const supabaseRepositories: DataRepositories = {
     return mapApplication(data);
   },
 
-  async updateApplicationStatus(id, status, extras?: { interviewDate?: string }) {
+  async updateApplicationStatus(id, status, extras?: { interviewDate?: string; meetingUrl?: string }) {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -904,6 +929,9 @@ export const supabaseRepositories: DataRepositories = {
     if (extras?.interviewDate) patch.interview_date = extras.interviewDate;
     else if (status === 'interview_scheduled') {
       patch.interview_date = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+    }
+    if (extras?.meetingUrl !== undefined) {
+      patch.meeting_url = extras.meetingUrl || null;
     }
     const { data, error } = await supabase.from('applications').update(patch).eq('id', id).select().single();
     if (error) throw error;
@@ -961,6 +989,26 @@ export const supabaseRepositories: DataRepositories = {
       status: 'published',
     }).select().single();
     if (error) throw error;
+    return mapJob(data);
+  },
+
+  async updateJob(id, input) {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const patch: Record<string, unknown> = {};
+    if (input.status != null) patch.status = input.status;
+    if (input.title != null) patch.title = input.title;
+    if (input.description != null) patch.description = input.description;
+    if (input.requirements != null) patch.requirements = input.requirements;
+    if (input.skills != null) patch.skills = input.skills;
+    if (input.salaryMin != null) patch.salary_min = input.salaryMin;
+    if (input.salaryMax != null) patch.salary_max = input.salaryMax;
+    if (input.location != null) patch.location = input.location;
+    if (input.workType != null) patch.work_type = input.workType;
+    if (input.experienceLevel != null) patch.experience_level = input.experienceLevel;
+    const { data, error } = await supabase.from('jobs').update(patch).eq('id', id).select().single();
+    if (error) throw error;
+    if (!data) throw new Error('NOT_FOUND');
     return mapJob(data);
   },
 
@@ -1142,6 +1190,37 @@ export const supabaseRepositories: DataRepositories = {
       description: String(data.description ?? ''),
       startAt: String(data.event_date),
       endAt: input.endAt ?? String(data.event_date),
+      location: String(data.location ?? ''),
+      status: data.status as import('@careerlink/shared').EventStatus,
+      registrationsCount: Number(data.registered_count ?? 0),
+      qrCode: `NAQLAH-${String(data.id).slice(0, 8).toUpperCase()}`,
+    };
+  },
+
+  async updateEvent(id, input) {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const patch: Record<string, unknown> = {};
+    if (input.title !== undefined) patch.title = input.title;
+    if (input.location !== undefined) patch.location = input.location;
+    if (input.description !== undefined) patch.description = input.description;
+    const { data, error } = await supabase
+      .from('events')
+      .update(patch)
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error) throw error;
+    if (!data) throw new Error('NOT_FOUND');
+    return {
+      id: String(data.id),
+      organizerType: 'university' as const,
+      organizerId: String(data.organizer_id ?? ''),
+      title: String(data.title),
+      type: 'workshop' as const,
+      description: String(data.description ?? ''),
+      startAt: String(data.event_date),
+      endAt: String(data.event_date),
       location: String(data.location ?? ''),
       status: data.status as import('@careerlink/shared').EventStatus,
       registrationsCount: Number(data.registered_count ?? 0),

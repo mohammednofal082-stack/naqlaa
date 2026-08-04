@@ -11,5 +11,5 @@ export function getRepositories(): DataRepositories {
   return supabaseRepositories;
 }
 
-export type { DataRepositories, JobWithCompany, InternshipWithCompany, ApplicationWithDetails, UserProfileBundle, UserSettings, ApplyInput, CreateJobInput } from './types';
+export type { DataRepositories, JobWithCompany, InternshipWithCompany, ApplicationWithDetails, UserProfileBundle, UserSettings, ApplyInput, CreateJobInput, UpdateJobInput } from './types';
 export { dataClient } from './client';

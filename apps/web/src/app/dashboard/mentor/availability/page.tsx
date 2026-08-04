@@ -9,8 +9,6 @@ import { Calendar, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 
-const STORAGE_KEY = "naqlah-mentor-availability";
-
 const days = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 const timeSlots = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
 
@@ -38,19 +36,15 @@ export default function MentorAvailabilityPage() {
   const [customSlot, setCustomSlot] = useState("");
   const [showAddSlot, setShowAddSlot] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setAvailability(JSON.parse(raw) as Record<string, string[]>);
-    } catch {
-      /* ignore */
-    }
     void (async () => {
       try {
         const res = await fetch("/api/data/mentor-availability");
         const json = await res.json();
-        if (!res.ok || !Array.isArray(json.data)) return;
+        if (!res.ok) throw new Error(json.error || "FAILED");
+        if (!Array.isArray(json.data)) return;
         const dayNames = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
         const next: Record<string, string[]> = {};
         for (const slot of json.data as { dayOfWeek: number; startTime: string; isActive?: boolean }[]) {
@@ -60,10 +54,11 @@ export default function MentorAvailabilityPage() {
           next[day] = [...(next[day] ?? []), time].sort();
         }
         if (Object.keys(next).length) setAvailability(next);
-      } catch {
-        /* keep local */
+      } catch (e) {
+        setError(e instanceof Error ? e.message : t("فشل التحميل", "Load failed"));
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
   const toggleSlot = (slot: string) => {
@@ -75,6 +70,7 @@ export default function MentorAvailabilityPage() {
       return { ...prev, [selectedDay]: updated };
     });
     setMessage("");
+    setError("");
   };
 
   const addCustomSlot = () => {
@@ -88,10 +84,12 @@ export default function MentorAvailabilityPage() {
     setCustomSlot("");
     setShowAddSlot(false);
     setMessage("");
+    setError("");
   };
 
   const saveChanges = async () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(availability));
+    setMessage("");
+    setError("");
     try {
       const dayIndex: Record<string, number> = {
         "الأحد": 0, "الإثنين": 1, "الثلاثاء": 2, "الأربعاء": 3, "الخميس": 4, "الجمعة": 5, "السبت": 6,
@@ -109,13 +107,11 @@ export default function MentorAvailabilityPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slots }),
       });
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json.error || "FAILED");
-      }
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "FAILED");
       setMessage(t("تم حفظ الأوقات في قاعدة البيانات", "Availability saved to database"));
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : t("حُفظ محلياً — تأكد من migration 009", "Saved locally — ensure migration 009"));
+      setError(e instanceof Error ? e.message : t("فشل الحفظ", "Save failed"));
     }
   };
 
@@ -199,6 +195,7 @@ export default function MentorAvailabilityPage() {
                 })}
               </div>
               {message && <p className="mt-4 text-sm text-emerald-600 dark:text-emerald-400">{message}</p>}
+              {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
               <Button className="w-full mt-6" onClick={() => void saveChanges()}>
                 {t("حفظ التغييرات", "Save Changes")}
               </Button>

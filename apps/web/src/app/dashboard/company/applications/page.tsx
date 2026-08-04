@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { CandidateReviewStack } from "@/components/role/candidate-review";
@@ -52,22 +53,27 @@ export default function CompanyApplicationsPage() {
             ) : (
               <div className="space-y-2 max-h-[600px] overflow-y-auto">
                 {enriched.map((app) => (
-                  <ActivityRow
+                  <Link
                     key={app.id}
-                    avatar={
-                      <div className="w-9 h-9 rounded-lg bg-brand-muted flex items-center justify-center text-sm font-bold text-brand">
-                        {app.student?.firstName[0]}
-                      </div>
-                    }
-                    title={`${app.student?.firstName} ${app.student?.lastName}`}
-                    subtitle={app.job?.title}
-                    badge={
-                      <div className="flex items-center gap-2">
-                        <span className={(app.matchScore ?? 0) >= 80 ? "nq-chip nq-chip-emerald" : "nq-chip"}>{app.matchScore}%</span>
-                        <span className="text-xs text-text-muted hidden sm:inline">{applicationStatusLabel(app.status, t)}</span>
-                      </div>
-                    }
-                  />
+                    href={`/dashboard/company/applications/${app.id}`}
+                    className="block"
+                  >
+                    <ActivityRow
+                      avatar={
+                        <div className="w-9 h-9 rounded-lg bg-brand-muted flex items-center justify-center text-sm font-bold text-brand">
+                          {app.student?.firstName[0]}
+                        </div>
+                      }
+                      title={`${app.student?.firstName} ${app.student?.lastName}`}
+                      subtitle={app.job?.title}
+                      badge={
+                        <div className="flex items-center gap-2">
+                          <span className={(app.matchScore ?? 0) >= 80 ? "nq-chip nq-chip-emerald" : "nq-chip"}>{app.matchScore}%</span>
+                          <span className="text-xs text-text-muted hidden sm:inline">{applicationStatusLabel(app.status, t)}</span>
+                        </div>
+                      }
+                    />
+                  </Link>
                 ))}
               </div>
             )}

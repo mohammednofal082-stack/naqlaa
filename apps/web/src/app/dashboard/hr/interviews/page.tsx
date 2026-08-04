@@ -27,6 +27,7 @@ export default function HRInterviewsPage() {
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState("");
   const [when, setWhen] = useState("");
+  const [meetingUrl, setMeetingUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -46,10 +47,12 @@ export default function HRInterviewsPage() {
         selectedId,
         "interview_scheduled",
         when ? new Date(when).toISOString() : undefined,
+        meetingUrl.trim() || undefined,
       );
       setOpen(false);
       setSelectedId("");
       setWhen("");
+      setMeetingUrl("");
       await refetch();
       setMsg(t("تمت جدولة المقابلة", "Interview scheduled"));
     } catch (e) {
@@ -118,6 +121,13 @@ export default function HRInterviewsPage() {
                 ))}
               </select>
               <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
+              <Input
+                className="sm:col-span-2"
+                type="url"
+                placeholder={t("رابط الاجتماع (Zoom / Meet)", "Meeting URL (Zoom / Meet)")}
+                value={meetingUrl}
+                onChange={(e) => setMeetingUrl(e.target.value)}
+              />
             </div>
             <p className="text-xs text-text-muted mt-2">
               {t(
@@ -287,13 +297,25 @@ export default function HRInterviewsPage() {
                     <div className="flex gap-2 mt-3 mr-12">
                       <Button
                         size="sm"
+                        disabled={!item.meetingUrl}
+                        onClick={() => {
+                          if (item.meetingUrl) {
+                            window.open(item.meetingUrl, "_blank", "noopener,noreferrer");
+                          }
+                        }}
+                      >
+                        <Video className="w-4 h-4" />
+                        {t("بدء", "Start")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() => {
                           window.location.href = `mailto:${item.student?.email ?? ""}?subject=${encodeURIComponent(
                             t("مقابلة نقلة", "Naqla Interview")
                           )}`;
                         }}
                       >
-                        <Video className="w-4 h-4" />
                         {t("دعوة بريد", "Email invite")}
                       </Button>
                       <Button

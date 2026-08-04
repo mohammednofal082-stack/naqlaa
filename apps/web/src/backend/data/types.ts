@@ -70,6 +70,19 @@ export interface CreateJobInput {
   salaryMax: number;
 }
 
+export interface UpdateJobInput {
+  status?: Job['status'];
+  title?: string;
+  description?: string;
+  requirements?: string[];
+  skills?: string[];
+  salaryMin?: number;
+  salaryMax?: number;
+  location?: string;
+  workType?: WorkType;
+  experienceLevel?: ExperienceLevel;
+}
+
 export interface BookMentorshipInput {
   mentorId: string;
   topic: string;
@@ -163,11 +176,13 @@ export interface DataRepositories {
   getPartnerships(): Promise<Partnership[]>;
   getAssessments(): Promise<Assessment[]>;
   createAssessment(input: { jobId: string; title: string; type: Assessment['type']; deadline?: string; status?: string }): Promise<Assessment>;
+  updateAssessment(id: string, input: { title?: string; deadline?: string; status?: string }): Promise<Assessment>;
   search(query: string): Promise<{ jobs: JobWithCompany[]; companies: Company[] }>;
 
   apply(input: ApplyInput): Promise<Application>;
-  updateApplicationStatus(id: string, status: ApplicationStatus, extras?: { interviewDate?: string }): Promise<Application>;
+  updateApplicationStatus(id: string, status: ApplicationStatus, extras?: { interviewDate?: string; meetingUrl?: string }): Promise<Application>;
   createJob(input: CreateJobInput): Promise<Job>;
+  updateJob(id: string, input: UpdateJobInput): Promise<Job>;
   enrollCourse(courseId: string): Promise<{ enrolled: boolean }>;
   bookMentorship(input: BookMentorshipInput): Promise<MentorshipSession>;
   updateMentorshipStatus(id: string, status: import('@careerlink/shared').SessionStatus, extras?: { scheduledAt?: string; meetingLink?: string }): Promise<MentorshipSession>;
@@ -179,6 +194,7 @@ export interface DataRepositories {
   updateSettings(settings: Partial<UserSettings>): Promise<UserSettings>;
   registerForEvent(eventId: string): Promise<Event>;
   createEvent(input: CreateEventInput): Promise<Event>;
+  updateEvent(id: string, input: { title?: string; location?: string; description?: string }): Promise<Event>;
   createPartnership(input: CreatePartnershipInput): Promise<Partnership>;
   submitWeeklyReport(input: WeeklyReportInput): Promise<WeeklyReport>;
   verifyEntity(input: VerifyEntityInput): Promise<{ success: boolean }>;

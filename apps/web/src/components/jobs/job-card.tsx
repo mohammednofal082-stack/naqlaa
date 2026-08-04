@@ -12,9 +12,10 @@ import {
   type Company,
 } from "@careerlink/shared";
 import { formatDate, formatSalary } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n";
 import { workTypeLabel, experienceLabel } from "@/i18n/labels";
+import { useSaved } from "@/hooks/data";
 
 interface JobCardProps {
   job: Job;
@@ -24,7 +25,36 @@ interface JobCardProps {
 
 export function JobCard({ job, company, compact }: JobCardProps) {
   const { t } = useI18n();
+  const { data: savedData, refetch } = useSaved();
   const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const ids = (savedData?.jobs ?? []).map((j) => j.id);
+    setSaved(ids.includes(job.id));
+  }, [savedData, job.id]);
+
+  const toggleSave = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (busy) return;
+    setBusy(true);
+    const next = !saved;
+    setSaved(next);
+    try {
+      const res = await fetch("/api/data/saved/jobs", {
+        method: next ? "POST" : "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: job.id }),
+      });
+      if (!res.ok) setSaved(!next);
+      else await refetch();
+    } catch {
+      setSaved(!next);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <motion.div
@@ -34,11 +64,10 @@ export function JobCard({ job, company, compact }: JobCardProps) {
     >
       <Card hover className="relative overflow-hidden group">
         <button
-          onClick={(e) => {
-            e.preventDefault();
-            setSaved(!saved);
-          }}
+          type="button"
+          onClick={(e) => void toggleSave(e)}
           className="absolute top-4 left-4 p-2 rounded-xl hover:bg-cream transition-colors z-10"
+          aria-label={saved ? t("إزالة من المحفوظات", "Unsave") : t("حفظ", "Save")}
         >
           {saved ? (
             <BookmarkCheck className="w-5 h-5 text-emerald" />

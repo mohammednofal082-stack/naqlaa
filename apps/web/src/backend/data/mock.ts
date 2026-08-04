@@ -4,6 +4,7 @@ import type {
   DataRepositories,
   ApplyInput,
   CreateJobInput,
+  UpdateJobInput,
   BookMentorshipInput,
   UpdateProfileInput,
   SendMessageInput,
@@ -294,6 +295,21 @@ export const mockRepositories: DataRepositories = {
     return item;
   },
 
+  async updateAssessment(id, input) {
+    ensureInit();
+    const idx = memoryStore.assessments.findIndex((a) => a.id === id);
+    if (idx < 0) throw new Error('NOT_FOUND');
+    const current = memoryStore.assessments[idx];
+    const updated: Assessment = {
+      ...current,
+      title: input.title ?? current.title,
+      deadline: input.deadline ?? current.deadline,
+      status: input.status ?? current.status,
+    };
+    memoryStore.assessments[idx] = updated;
+    return updated;
+  },
+
   async search(query) {
     ensureInit();
     const q = query.trim().toLowerCase();
@@ -382,6 +398,24 @@ export const mockRepositories: DataRepositories = {
     };
     memoryStore.jobs.unshift(job);
     pushAudit('job_created', 'job', job.id);
+    return job;
+  },
+
+  async updateJob(id: string, input: UpdateJobInput) {
+    ensureInit();
+    const job = memoryStore.jobs.find((j) => j.id === id);
+    if (!job) throw new Error('NOT_FOUND');
+    if (input.status != null) job.status = input.status;
+    if (input.title != null) job.title = input.title;
+    if (input.description != null) job.description = input.description;
+    if (input.requirements != null) job.requirements = input.requirements;
+    if (input.skills != null) job.skills = input.skills;
+    if (input.salaryMin != null) job.salaryMin = input.salaryMin;
+    if (input.salaryMax != null) job.salaryMax = input.salaryMax;
+    if (input.location != null) job.location = input.location;
+    if (input.workType != null) job.workType = input.workType;
+    if (input.experienceLevel != null) job.experienceLevel = input.experienceLevel;
+    pushAudit('job_updated', 'job', id);
     return job;
   },
 
@@ -506,6 +540,21 @@ export const mockRepositories: DataRepositories = {
     memoryStore.events.unshift(event);
     pushAudit('event_created', 'event', event.id);
     return event;
+  },
+
+  async updateEvent(id, input) {
+    ensureInit();
+    const idx = memoryStore.events.findIndex((e) => e.id === id);
+    if (idx < 0) throw new Error('NOT_FOUND');
+    const current = memoryStore.events[idx];
+    const updated = {
+      ...current,
+      title: input.title ?? current.title,
+      location: input.location ?? current.location,
+      description: input.description ?? current.description,
+    };
+    memoryStore.events[idx] = updated;
+    return updated;
   },
 
   async createPartnership(input: CreatePartnershipInput) {

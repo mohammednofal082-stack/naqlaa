@@ -107,7 +107,7 @@ export default function TrainerStudentsPage() {
                                   <span className="text-text-secondary">
                                     {t("التقدم:", "Progress:")} {progress}%
                                   </span>
-                                  <Link href="/messages">
+                                  <Link href={`/messages?user=${student.id}`}>
                                     <Button size="sm">{t("مراسلة", "Message")}</Button>
                                   </Link>
                                 </div>

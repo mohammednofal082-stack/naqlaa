@@ -21,3 +21,17 @@ export async function POST(req: NextRequest) {
     });
   });
 }
+
+export async function PUT(req: NextRequest) {
+  return mutationResponse(async () => {
+    await requireAnyRole('hr', 'company', 'admin');
+    await requireAuth();
+    const body = await req.json();
+    if (!body.id) throw new Error('INVALID_INPUT');
+    return getRepo().updateAssessment(String(body.id), {
+      title: body.title !== undefined ? String(body.title) : undefined,
+      deadline: body.deadline !== undefined ? String(body.deadline) : undefined,
+      status: body.status !== undefined ? String(body.status) : undefined,
+    });
+  });
+}

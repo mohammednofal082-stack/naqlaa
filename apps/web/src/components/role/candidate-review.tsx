@@ -101,12 +101,12 @@ export function CandidateReviewStack({
             <Button variant="danger" className="flex-1" onClick={() => decide("rejected")} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-5 h-5" />} {t("رفض", "Reject")}
             </Button>
-            {current.student?.email ? (
-              <a href={`mailto:${current.student.email}`} className="flex-1">
+            {current.studentId ? (
+              <Link href={`/dashboard/company/applications/${current.id}`} className="flex-1">
                 <Button variant="outline" className="w-full">
                   <FileText className="w-4 h-4" /> {t("الملف", "Profile")}
                 </Button>
-              </a>
+              </Link>
             ) : (
               <Link href="/dashboard/company/applications" className="flex-1">
                 <Button variant="outline" className="w-full">

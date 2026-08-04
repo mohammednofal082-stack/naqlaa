@@ -121,7 +121,7 @@ export default function HRCandidatesPage() {
                       <div className="flex items-center gap-2">
                         <span className={(candidate.matchScore ?? 0) >= 80 ? "nq-chip nq-chip-emerald" : "nq-chip"}>{t("تطابق", "Match")} {candidate.matchScore}%</span>
                         <span className="text-xs text-text-muted hidden sm:inline">{applicationStatusLabel(candidate.status, t)}</span>
-                        <Link href="/dashboard/hr/pipeline">
+                        <Link href={`/dashboard/hr/candidates/${candidate.id}`}>
                           <Button size="sm">{t("عرض الملف", "View Profile")}</Button>
                         </Link>
                         <Button size="sm" variant="outline" disabled={busyId === candidate.id} onClick={() => void schedule(candidate.id)}>

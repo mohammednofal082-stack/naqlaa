@@ -9,25 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Mic, Plus, Users, X } from "lucide-react";
 import { useI18n } from "@/i18n";
 
-const STORAGE_KEY = "naqlah-trainer-sessions";
-
 type SessionItem = {
   id: string;
   title: string;
   date: string;
   attendees: number;
   status: "scheduled" | "completed" | string;
+  meetingUrl?: string;
 };
-
-function loadSessions(): SessionItem[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as SessionItem[]) : [];
-  } catch {
-    return [];
-  }
-}
 
 export default function TrainerSessionsPage() {
   const { t } = useI18n();
@@ -36,44 +25,45 @@ export default function TrainerSessionsPage() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [attendees, setAttendees] = useState(10);
+  const [meetingUrl, setMeetingUrl] = useState("");
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-
-  const persist = (next: SessionItem[]) => {
-    setSessions(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  };
 
   const load = async () => {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/data/trainer-sessions");
       const json = await res.json();
-      if (res.ok && Array.isArray(json.data) && json.data.length) {
-        persist(json.data as SessionItem[]);
-        return;
-      }
-    } catch {
-      /* fall through */
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      setSessions(Array.isArray(json.data) ? (json.data as SessionItem[]) : []);
+    } catch (e) {
+      setSessions([]);
+      setError(e instanceof Error ? e.message : t("فشل التحميل", "Load failed"));
+    } finally {
+      setLoading(false);
     }
-    const local = loadSessions();
-    setSessions(local);
   };
 
   useEffect(() => {
-    void load().finally(() => setLoading(false));
+    void load();
   }, []);
 
   const openForm = () => {
     setTitle("");
     setDate("");
     setAttendees(10);
+    setMeetingUrl("");
     setShowForm(true);
     setMessage("");
+    setError("");
   };
 
   const addSession = async () => {
     if (!title.trim() || !date.trim()) return;
+    setMessage("");
+    setError("");
     try {
       const res = await fetch("/api/data/trainer-sessions", {
         method: "POST",
@@ -83,29 +73,17 @@ export default function TrainerSessionsPage() {
           date,
           attendees: attendees || 0,
           status: "scheduled",
+          meetingUrl: meetingUrl.trim() || undefined,
         }),
       });
-      if (res.ok) {
-        const json = await res.json();
-        const item = json.data as SessionItem;
-        persist([item, ...sessions.filter((s) => s.id !== item.id)]);
-        setShowForm(false);
-        setMessage(t("تم حفظ الجلسة في قاعدة البيانات", "Session saved to database"));
-        return;
-      }
-    } catch {
-      /* fall through */
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      setShowForm(false);
+      setMessage(t("تم حفظ الجلسة في قاعدة البيانات", "Session saved to database"));
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("فشل الحفظ", "Save failed"));
     }
-    const item: SessionItem = {
-      id: `s-${Date.now()}`,
-      title: title.trim(),
-      date: date.trim(),
-      attendees: attendees || 0,
-      status: "scheduled",
-    };
-    persist([item, ...sessions]);
-    setShowForm(false);
-    setMessage(t("حُفظت الجلسة محلياً — شغّل migration 010", "Saved locally — run migration 010"));
   };
 
   return (
@@ -121,10 +99,11 @@ export default function TrainerSessionsPage() {
         }
       >
         {message && <p className="mb-4 text-sm text-emerald-600 dark:text-emerald-400">{message}</p>}
+        {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
         {showForm && (
           <PanelCard title={t("جلسة جديدة", "New Session")} className="mb-6">
-            <div className="grid sm:grid-cols-3 gap-3">
+            <div className="grid sm:grid-cols-2 gap-3">
               <input
                 type="text"
                 placeholder={t("عنوان الجلسة", "Session title")}
@@ -143,6 +122,13 @@ export default function TrainerSessionsPage() {
                 min={0}
                 value={attendees}
                 onChange={(e) => setAttendees(Number(e.target.value) || 0)}
+                className="px-4 py-2.5 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
+              />
+              <input
+                type="url"
+                placeholder={t("رابط الاجتماع", "Meeting URL")}
+                value={meetingUrl}
+                onChange={(e) => setMeetingUrl(e.target.value)}
                 className="px-4 py-2.5 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
               />
             </div>
@@ -180,6 +166,16 @@ export default function TrainerSessionsPage() {
                   <div>
                     <p className="font-semibold text-sm">{s.title}</p>
                     <p className="text-xs text-text-muted mt-1">{s.date}</p>
+                    {s.meetingUrl && (
+                      <a
+                        href={s.meetingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-brand mt-1 inline-block hover:underline"
+                      >
+                        {t("رابط الاجتماع", "Meeting link")}
+                      </a>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 text-sm text-text-secondary">
                     <span className="flex items-center gap-1">

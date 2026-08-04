@@ -239,6 +239,7 @@ export interface Application {
   matchScore?: number;
   appliedAt: string;
   interviewDate?: string;
+  meetingUrl?: string;
   notes?: string;
   coverNote?: string;
 }

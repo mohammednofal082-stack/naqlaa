@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useCourses, useUsers } from "@/hooks/data";
-import { Award, Download } from "lucide-react";
+import { Award, Download, ExternalLink } from "lucide-react";
 import { useI18n } from "@/i18n";
 
 type Cert = {
@@ -134,9 +135,16 @@ export default function TrainerCertificatesPage() {
                       <p className="font-semibold text-sm text-text">{cert.certificate_code}</p>
                       <p className="text-xs text-text-muted">{cert.courses?.title ?? cert.course_id}</p>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => download(cert)}>
-                      <Download className="w-4 h-4" /> {t("تحميل", "Download")}
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Link href={`/certificates/${cert.certificate_code}`}>
+                        <Button size="sm" variant="outline">
+                          <ExternalLink className="w-4 h-4" /> {t("تحقق", "Verify")}
+                        </Button>
+                      </Link>
+                      <Button size="sm" variant="outline" onClick={() => download(cert)}>
+                        <Download className="w-4 h-4" /> {t("تحميل", "Download")}
+                      </Button>
+                    </div>
                   </Card>
                 ))}
               </div>

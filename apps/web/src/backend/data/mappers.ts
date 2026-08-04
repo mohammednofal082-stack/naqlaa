@@ -83,6 +83,7 @@ export function mapApplication(row: Record<string, unknown>): Application {
     matchScore: row.match_score != null ? Number(row.match_score) : undefined,
     appliedAt: String(row.applied_at),
     interviewDate: row.interview_date ? String(row.interview_date) : undefined,
+    meetingUrl: row.meeting_url ? String(row.meeting_url) : undefined,
     coverNote: row.cover_letter ? String(row.cover_letter) : undefined,
   };
 }

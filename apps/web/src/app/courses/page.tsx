@@ -89,7 +89,9 @@ export default function CoursesPage() {
                   <div className="flex items-center justify-between mt-auto pt-2">
                     <span className="text-text-muted text-xs">{course.level}</span>
                     {isEnrolled ? (
-                      <Button>{t("متابعة التعلم", "Continue Learning")}</Button>
+                      <Link href={`/courses/${course.id}/learn`}>
+                        <Button>{t("متابعة التعلم", "Continue Learning")}</Button>
+                      </Link>
                     ) : (
                       <Button onClick={() => handleEnroll(course.id)} disabled={enrolling === course.id}>
                         {enrolling === course.id ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

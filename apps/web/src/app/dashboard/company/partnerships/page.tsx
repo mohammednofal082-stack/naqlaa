@@ -13,34 +13,21 @@ import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import type { Partnership } from "@careerlink/shared";
 
-const STORAGE_KEY = "naqlah-company-partnerships";
-
 type UniRow = { id: string; name: string };
-
-function loadLocal(): Partnership[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Partnership[]) : [];
-  } catch {
-    return [];
-  }
-}
 
 export default function CompanyPartnershipsPage() {
   const { t } = useI18n();
   const { data: partnerships, loading, refetch } = usePartnerships();
   const { data: companies } = useCompanies();
-  const [localItems, setLocalItems] = useState<Partnership[]>([]);
   const [universities, setUniversities] = useState<UniRow[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [universityId, setUniversityId] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setLocalItems(loadLocal());
     void fetch("/api/data/universities")
       .then((r) => r.json())
       .then((json) => {
@@ -61,24 +48,21 @@ export default function CompanyPartnershipsPage() {
     if (universities[0]?.id && !universityId) setUniversityId(universities[0].id);
   }, [universities, universityId]);
 
-  const persist = (next: Partnership[]) => {
-    setLocalItems(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  };
-
-  const apiItems = partnerships ?? [];
-  const items = [...localItems, ...apiItems.filter((p) => !localItems.some((l) => l.id === p.id))];
+  const items = partnerships ?? [];
 
   const uniName = (id: string) => universities.find((u) => u.id === id)?.name ?? id;
 
   const openForm = () => {
     setShowForm(true);
     setMessage("");
+    setError("");
   };
 
   const requestPartnership = async () => {
     if (!universityId.trim() || !companyId) return;
     setSaving(true);
+    setMessage("");
+    setError("");
     const payload = {
       universityId: universityId.trim(),
       companyId,
@@ -92,28 +76,16 @@ export default function CompanyPartnershipsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (res.ok) {
-        const json = await res.json();
-        const created = json.data as Partnership;
-        persist([created, ...localItems.filter((p) => p.id !== created.id)]);
-        await refetch();
-        setMessage(t("تم إرسال طلب الشراكة", "Partnership request sent"));
-        setShowForm(false);
-        setSaving(false);
-        return;
-      }
-    } catch {
-      /* fall through */
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      await refetch();
+      setMessage(t("تم إرسال طلب الشراكة", "Partnership request sent"));
+      setShowForm(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("فشل إرسال الطلب", "Request failed"));
+    } finally {
+      setSaving(false);
     }
-
-    const local: Partnership = {
-      id: `partnership-local-${Date.now()}`,
-      ...payload,
-    };
-    persist([local, ...localItems]);
-    setMessage(t("تم حفظ طلب الشراكة محلياً", "Partnership request saved locally"));
-    setShowForm(false);
-    setSaving(false);
   };
 
   return (
@@ -130,6 +102,7 @@ export default function CompanyPartnershipsPage() {
         }
       >
         {message && <p className="mb-4 text-sm text-emerald-600 dark:text-emerald-400">{message}</p>}
+        {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
         {showForm && (
           <PanelCard title={t("طلب شراكة", "Request Partnership")} className="mb-6">
@@ -234,7 +207,7 @@ export default function CompanyPartnershipsPage() {
                       )}
                     </p>
                     <div className="flex gap-2 mt-3 mr-12">
-                      <Link href={`/companies/${partnership.companyId}`}>
+                      <Link href={`/dashboard/company/partnerships/${partnership.id}`}>
                         <Button size="sm" variant="outline">
                           {t("التفاصيل", "Details")}
                         </Button>

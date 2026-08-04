@@ -9,8 +9,34 @@ function code() {
 
 export async function GET(req: NextRequest) {
   return dataResponse(async () => {
-    const user = await requireAuth();
     const supabase = await createSupabaseServerClient();
+    const code = req.nextUrl.searchParams.get('code');
+
+    if (code) {
+      const { data, error } = await supabase
+        .from('certificates_issued')
+        .select('*, courses(title)')
+        .eq('certificate_code', code)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        return { valid: false, certificate: null, courseTitle: null, studentName: null };
+      }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', data.student_id)
+        .maybeSingle();
+      const courses = data.courses as { title?: string } | null;
+      return {
+        valid: true,
+        certificate: data,
+        courseTitle: courses?.title ?? null,
+        studentName: profile?.full_name ? String(profile.full_name) : null,
+      };
+    }
+
+    const user = await requireAuth();
     const courseId = req.nextUrl.searchParams.get('courseId');
     let q = supabase.from('certificates_issued').select('*, courses(title)').order('issued_at', { ascending: false });
     if (courseId) q = q.eq('course_id', courseId);

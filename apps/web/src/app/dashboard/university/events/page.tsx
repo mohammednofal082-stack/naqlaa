@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
@@ -13,18 +13,6 @@ import { formatDateTime } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import type { Event } from "@careerlink/shared";
 
-const STORAGE_KEY = "naqlah-university-events";
-
-function loadLocalEvents(): Event[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Event[]) : [];
-  } catch {
-    return [];
-  }
-}
-
 export default function UniversityEventsPage() {
   const { t } = useI18n();
   const eventTypeLabels: Record<string, string> = {
@@ -35,7 +23,6 @@ export default function UniversityEventsPage() {
   };
   const [filter, setFilter] = useState<string>("all");
   const { data: events, loading, refetch } = useEvents();
-  const [localEvents, setLocalEvents] = useState<Event[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -46,23 +33,10 @@ export default function UniversityEventsPage() {
   const [startAt, setStartAt] = useState("");
   const [type, setType] = useState<Event["type"]>("workshop");
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    setLocalEvents(loadLocalEvents());
-  }, []);
-
-  const persistLocal = (next: Event[]) => {
-    setLocalEvents(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  };
-
-  const universityEvents = [
-    ...localEvents,
-    ...(events ?? []).filter(
-      (e) => e.organizerType === "university" && !localEvents.some((l) => l.id === e.id)
-    ),
-  ];
+  const universityEvents = (events ?? []).filter((e) => e.organizerType === "university");
   const filtered = filter === "all" ? universityEvents : universityEvents.filter((e) => e.type === filter);
 
   const openForm = () => {
@@ -73,12 +47,14 @@ export default function UniversityEventsPage() {
     setType("workshop");
     setShowForm(true);
     setMessage("");
+    setError("");
   };
 
   const createEvent = async () => {
     if (!title.trim() || !startAt) return;
     setSaving(true);
     setMessage("");
+    setError("");
     const payload = {
       title: title.trim(),
       description: description.trim() || title.trim(),
@@ -97,54 +73,39 @@ export default function UniversityEventsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (res.ok) {
-        const json = await res.json();
-        const created = json.data as Event;
-        await refetch();
-        setMessage(t("تم إنشاء الفعالية", "Event created"));
-        setShowForm(false);
-        setSaving(false);
-        return;
-      }
-    } catch {
-      /* fall through to local */
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      await refetch();
+      setMessage(t("تم إنشاء الفعالية", "Event created"));
+      setShowForm(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("فشل الإنشاء", "Create failed"));
+    } finally {
+      setSaving(false);
     }
-
-    const local: Event = {
-      id: `event-local-${Date.now()}`,
-      ...payload,
-      registrationsCount: 0,
-    };
-    persistLocal([local, ...localEvents]);
-    setMessage(t("تم حفظ الفعالية محلياً", "Event saved locally"));
-    setShowForm(false);
-    setSaving(false);
   };
 
-  const saveEdit = (id: string) => {
-    const next = localEvents.map((e) =>
-      e.id === id
-        ? { ...e, title: editTitle.trim() || e.title, location: editLocation.trim() || e.location }
-        : e
-    );
-    const existing = localEvents.find((e) => e.id === id);
-    if (!existing) {
-      const fromApi = universityEvents.find((e) => e.id === id);
-      if (fromApi) {
-        persistLocal([
-          {
-            ...fromApi,
-            title: editTitle.trim() || fromApi.title,
-            location: editLocation.trim() || fromApi.location,
-          },
-          ...localEvents,
-        ]);
-      }
-    } else {
-      persistLocal(next);
+  const saveEdit = async (id: string) => {
+    setMessage("");
+    setError("");
+    try {
+      const res = await fetch("/api/data/events", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          title: editTitle.trim(),
+          location: editLocation.trim(),
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      await refetch();
+      setExpandedId(null);
+      setMessage(t("تم حفظ التعديل", "Edit saved"));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("فشل الحفظ", "Save failed"));
     }
-    setExpandedId(null);
-    setMessage(t("تم حفظ التعديل", "Edit saved"));
   };
 
   return (
@@ -161,6 +122,7 @@ export default function UniversityEventsPage() {
         }
       >
         {message && <p className="mb-4 text-sm text-emerald-600 dark:text-emerald-400">{message}</p>}
+        {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
         {showForm && (
           <PanelCard title={t("فعالية جديدة", "New Event")} className="mb-6">
@@ -204,7 +166,7 @@ export default function UniversityEventsPage() {
               />
             </div>
             <div className="flex gap-2 mt-4">
-              <Button size="sm" onClick={createEvent} disabled={saving}>
+              <Button size="sm" onClick={() => void createEvent()} disabled={saving}>
                 {t("إنشاء", "Create")}
               </Button>
               <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>
@@ -295,7 +257,7 @@ export default function UniversityEventsPage() {
                         >
                           {t("تعديل", "Edit")}
                         </Button>
-                        <Link href="/events">
+                        <Link href={`/dashboard/university/events/${event.id}/registrants`}>
                           <Button size="sm">{t("المسجلون", "Registrants")}</Button>
                         </Link>
                       </div>
@@ -314,7 +276,7 @@ export default function UniversityEventsPage() {
                           onChange={(e) => setEditLocation(e.target.value)}
                           className="flex-1 min-w-[160px] px-3 py-2 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
                         />
-                        <Button size="sm" onClick={() => saveEdit(event.id)}>
+                        <Button size="sm" onClick={() => void saveEdit(event.id)}>
                           {t("حفظ", "Save")}
                         </Button>
                       </div>

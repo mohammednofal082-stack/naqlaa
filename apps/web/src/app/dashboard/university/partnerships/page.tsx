@@ -77,7 +77,7 @@ export default function UniversityPartnershipsPage() {
                       />
                       <p className="text-xs text-text-muted mt-3 mr-12">{t("منذ", "Since")} {formatDate(partnership.startDate)}</p>
                       <div className="flex gap-2 mt-3 mr-12">
-                        <Link href={`/companies/${partnership.companyId}`}>
+                        <Link href={`/dashboard/university/partnerships/${partnership.id}`}>
                           <Button size="sm" variant="outline">
                             <Handshake className="w-4 h-4" />
                             {t("التفاصيل", "Details")}

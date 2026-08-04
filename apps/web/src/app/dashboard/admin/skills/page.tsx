@@ -11,19 +11,7 @@ import { useProfile } from "@/hooks/data";
 import { Plus, Target, TrendingUp, X } from "lucide-react";
 import { useI18n } from "@/i18n";
 
-const STORAGE_KEY = "naqlah-admin-skills";
-
 type SkillItem = { name: string; demand: number; category: string };
-
-function loadCustomSkills(): SkillItem[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as SkillItem[]) : [];
-  } catch {
-    return [];
-  }
-}
 
 export default function AdminSkillsPage() {
   const { t } = useI18n();
@@ -39,33 +27,34 @@ export default function AdminSkillsPage() {
   const [formDemand, setFormDemand] = useState(50);
   const [formCategory, setFormCategory] = useState("");
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    setCustomSkills(loadCustomSkills());
-    void (async () => {
-      try {
-        const res = await fetch("/api/data/skills");
-        const json = await res.json();
-        if (!res.ok || !Array.isArray(json.data)) return;
-        const fromApi = (json.data as { name: string; demand: number; category: string }[]).map((s) => ({
+  const loadSkills = async () => {
+    setError("");
+    try {
+      const res = await fetch("/api/data/skills");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      if (!Array.isArray(json.data)) {
+        setCustomSkills([]);
+        return;
+      }
+      setCustomSkills(
+        (json.data as { name: string; demand: number; category: string }[]).map((s) => ({
           name: s.name,
           demand: s.demand,
           category: s.category,
-        }));
-        if (fromApi.length) {
-          setCustomSkills(fromApi);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(fromApi));
-        }
-      } catch {
-        /* keep local */
-      }
-    })();
-  }, []);
-
-  const persist = (next: SkillItem[]) => {
-    setCustomSkills(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        }))
+      );
+    } catch (e) {
+      setCustomSkills([]);
+      setError(e instanceof Error ? e.message : t("فشل التحميل", "Load failed"));
+    }
   };
+
+  useEffect(() => {
+    void loadSkills();
+  }, []);
 
   const platformSkills: SkillItem[] = [
     ...skillLevels.map((s) => ({ name: s.skill, demand: s.value, category: t("تقنية", "Technical") })),
@@ -89,6 +78,7 @@ export default function AdminSkillsPage() {
     setFormCategory(t("تقنية", "Technical"));
     setShowForm(true);
     setMessage("");
+    setError("");
   };
 
   const openEdit = (skill: SkillItem) => {
@@ -98,11 +88,18 @@ export default function AdminSkillsPage() {
     setFormCategory(skill.category);
     setShowForm(true);
     setMessage("");
+    setError("");
   };
 
   const saveSkill = async () => {
     const name = formName.trim();
     if (!name) return;
+    setMessage("");
+    setError("");
+    if (!editingName && platformSkills.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
+      setError(t("المهارة موجودة مسبقاً", "Skill already exists"));
+      return;
+    }
     const item: SkillItem = { name, demand: formDemand, category: formCategory.trim() || t("تقنية", "Technical") };
     try {
       const res = await fetch("/api/data/skills", {
@@ -110,33 +107,14 @@ export default function AdminSkillsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(item),
       });
-      if (res.ok) {
-        const json = await res.json();
-        const saved = json.data as SkillItem;
-        const next = [...customSkills.filter((s) => s.name !== editingName && s.name !== saved.name), saved];
-        persist(next);
-        setMessage(t("تم حفظ المهارة في قاعدة البيانات", "Skill saved to database"));
-        setShowForm(false);
-        return;
-      }
-    } catch {
-      /* fall through */
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      await loadSkills();
+      setMessage(t("تم حفظ المهارة في قاعدة البيانات", "Skill saved to database"));
+      setShowForm(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("فشل الحفظ", "Save failed"));
     }
-    if (editingName) {
-      const next = customSkills.some((s) => s.name === editingName)
-        ? customSkills.map((s) => (s.name === editingName ? item : s))
-        : [...customSkills.filter((s) => s.name !== item.name), item];
-      persist(next);
-      setMessage(t("تم تحديث المهارة محلياً", "Skill updated locally"));
-    } else {
-      if (platformSkills.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
-        setMessage(t("المهارة موجودة مسبقاً", "Skill already exists"));
-        return;
-      }
-      persist([...customSkills, item]);
-      setMessage(t("تمت إضافة المهارة محلياً", "Skill added locally"));
-    }
-    setShowForm(false);
   };
 
   return (
@@ -155,6 +133,7 @@ export default function AdminSkillsPage() {
         {message && (
           <p className="mb-4 text-sm text-emerald-600 dark:text-emerald-400">{message}</p>
         )}
+        {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
         {showForm && (
           <PanelCard title={editingName ? t("تعديل مهارة", "Edit Skill") : t("مهارة جديدة", "New Skill")} className="mb-6">

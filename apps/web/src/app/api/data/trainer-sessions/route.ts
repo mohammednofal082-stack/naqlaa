@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
       date: String(data.scheduled_at),
       attendees: Number(data.attendees ?? 0),
       status: String(data.status),
+      meetingUrl: data.meeting_url ? String(data.meeting_url) : undefined,
     };
   });
 }

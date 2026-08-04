@@ -10,6 +10,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const body = await req.json();
     return getRepo().updateApplicationStatus(id, body.status as ApplicationStatus, {
       interviewDate: body.interviewDate ? String(body.interviewDate) : undefined,
+      meetingUrl: body.meetingUrl !== undefined ? String(body.meetingUrl || '') : undefined,
     });
   });
 }

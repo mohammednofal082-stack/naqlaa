@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea, Select } from "@/components/ui/input";
 import { createJob, useJobs } from "@/hooks/data";
 import { useApp } from "@/contexts/app-context";
+import Link from "next/link";
 import { Plus, Briefcase, X } from "lucide-react";
 import { useI18n } from "@/i18n";
 
@@ -186,7 +187,12 @@ export default function CompanyJobsPage() {
                       {job.location} · {job.workType} · {job.applicants} {t("متقدم", "applicants")}
                     </p>
                   </div>
-                  <span className="nq-chip shrink-0">{job.status}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="nq-chip">{job.status}</span>
+                    <Link href={`/dashboard/company/jobs/${job.id}/edit`}>
+                      <Button size="sm" variant="outline">{t("تعديل", "Edit")}</Button>
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>

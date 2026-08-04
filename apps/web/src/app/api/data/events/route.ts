@@ -23,3 +23,16 @@ export async function POST(req: NextRequest) {
     });
   });
 }
+
+export async function PUT(req: NextRequest) {
+  return mutationResponse(async () => {
+    await requireAuth();
+    const body = await req.json();
+    if (!body.id) throw new Error('INVALID_INPUT');
+    return getRepo().updateEvent(String(body.id), {
+      title: body.title !== undefined ? String(body.title) : undefined,
+      location: body.location !== undefined ? String(body.location) : undefined,
+      description: body.description !== undefined ? String(body.description) : undefined,
+    });
+  });
+}

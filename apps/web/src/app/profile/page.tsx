@@ -176,12 +176,35 @@ export default function ProfilePage() {
 
           <Card>
             <CardTitle className="font-display mb-4">{t("السيرة الذاتية", "Resume")}</CardTitle>
-            <Link href="/ai/cv-builder">
-              <Button variant="outline" className="w-full">
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  void (async () => {
+                    try {
+                      const res = await fetch("/api/data/cv");
+                      const json = await res.json();
+                      if (!res.ok || !json.data?.publicUrl) {
+                        alert(t("لا توجد سيرة ذاتية مرفوعة", "No uploaded CV found"));
+                        return;
+                      }
+                      window.open(String(json.data.publicUrl), "_blank", "noopener,noreferrer");
+                    } catch {
+                      alert(t("فشل تحميل السيرة", "Failed to download CV"));
+                    }
+                  })();
+                }}
+              >
                 <Download className="w-4 h-4" />
-                {t("بناء / تصدير CV", "Build / Export CV")}
+                {t("تحميل السيرة", "Download CV")}
               </Button>
-            </Link>
+              <Link href="/ai/cv-builder">
+                <Button variant="outline" className="w-full">
+                  {t("بناء / تصدير CV", "Build / Export CV")}
+                </Button>
+              </Link>
+            </div>
           </Card>
 
           <Card>

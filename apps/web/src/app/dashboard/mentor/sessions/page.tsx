@@ -80,16 +80,21 @@ export default function MentorSessionsPage() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    {(session.meetingLink || session.status === "accepted") && tab === "upcoming" && (
+                    {session.meetingLink && tab === "upcoming" && (
                       <Button
                         size="sm"
                         onClick={() => {
-                          const link = session.meetingLink || `https://meet.naqlah.ps/session/${session.id}`;
-                          window.open(link, "_blank", "noopener,noreferrer");
+                          window.open(session.meetingLink!, "_blank", "noopener,noreferrer");
                         }}
                       >
                         <Video className="w-4 h-4" />
                         {t("انضم", "Join")}
+                      </Button>
+                    )}
+                    {!session.meetingLink && tab === "upcoming" && session.status === "accepted" && (
+                      <Button size="sm" variant="outline" disabled title={t("لا يوجد رابط اجتماع بعد", "No meeting link yet")}>
+                        <Video className="w-4 h-4" />
+                        {t("بانتظار الرابط", "Awaiting link")}
                       </Button>
                     )}
                     {tab === "past" && (
