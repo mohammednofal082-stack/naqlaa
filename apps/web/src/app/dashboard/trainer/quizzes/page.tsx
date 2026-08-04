@@ -6,161 +6,143 @@ import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { PanelCard } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { CheckSquare, Plus, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useCourses } from "@/hooks/data";
+import { CheckSquare, Plus } from "lucide-react";
 import { useI18n } from "@/i18n";
 
-const STORAGE_KEY = "naqlah-trainer-quizzes";
-
-type QuizItem = {
+type QuizRow = {
   id: string;
   title: string;
-  questions: number;
-  pass: string;
-  course: string;
+  course_id: string;
+  pass_score: number;
+  questions: unknown[];
 };
-
-const DEFAULT_QUIZZES: QuizItem[] = [
-  { id: "q1", title: "React Fundamentals Quiz", questions: 15, pass: "70%", course: "React.js" },
-  { id: "q2", title: "JavaScript ES6 Quiz", questions: 20, pass: "75%", course: "Node.js" },
-  { id: "q3", title: "UI Principles Assessment", questions: 10, pass: "60%", course: "UI/UX" },
-];
-
-function loadQuizzes(): QuizItem[] {
-  if (typeof window === "undefined") return DEFAULT_QUIZZES;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as QuizItem[]) : DEFAULT_QUIZZES;
-  } catch {
-    return DEFAULT_QUIZZES;
-  }
-}
 
 export default function TrainerQuizzesPage() {
   const { t } = useI18n();
-  const [quizzes, setQuizzes] = useState<QuizItem[]>(DEFAULT_QUIZZES);
+  const { data: courses } = useCourses();
+  const [quizzes, setQuizzes] = useState<QuizRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
-  const [course, setCourse] = useState("");
-  const [questions, setQuestions] = useState(10);
-  const [pass, setPass] = useState("70%");
+  const [courseId, setCourseId] = useState("");
+  const [passScore, setPassScore] = useState(70);
+  const [q1, setQ1] = useState("");
+  const [a1, setA1] = useState("");
+  const [msg, setMsg] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/data/quizzes");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      setQuizzes(json.data ?? []);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : t("فشل التحميل", "Load failed"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setQuizzes(loadQuizzes());
+    void load();
   }, []);
 
-  const persist = (next: QuizItem[]) => {
-    setQuizzes(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  const createQuiz = async () => {
+    if (!title.trim() || !courseId) return;
+    setMsg("");
+    try {
+      const res = await fetch("/api/data/quizzes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId,
+          title: title.trim(),
+          passScore,
+          questions: q1.trim()
+            ? [{ prompt: q1.trim(), answer: a1.trim() || "—" }]
+            : [{ prompt: "Sample question", answer: "Sample" }],
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      setShowForm(false);
+      setTitle("");
+      setQ1("");
+      setA1("");
+      await load();
+      setMsg(t("تم إنشاء الاختبار في قاعدة البيانات", "Quiz created in database"));
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : t("فشل الإنشاء", "Create failed"));
+    }
   };
 
-  const openForm = () => {
-    setTitle("");
-    setCourse("");
-    setQuestions(10);
-    setPass("70%");
-    setShowForm(true);
-  };
-
-  const addQuiz = () => {
-    if (!title.trim()) return;
-    const item: QuizItem = {
-      id: `q-${Date.now()}`,
-      title: title.trim(),
-      questions: questions || 1,
-      pass: pass.trim() || "70%",
-      course: course.trim() || t("عام", "General"),
-    };
-    persist([item, ...quizzes]);
-    setShowForm(false);
-  };
+  const courseTitle = (id: string) => courses?.find((c) => c.id === id)?.title ?? id;
 
   return (
     <DashboardLayout>
       <DashboardSubPage
         meta={t("لوحة المدرب", "Trainer Dashboard")}
-        title={t("بناء الاختبارات", "Quiz Builder")}
-        subtitle={t("MCQ، صح/خطأ، وأسئلة قصيرة", "MCQ, true/false, and short-answer questions")}
+        title={t("الاختبارات", "Quizzes")}
+        subtitle={t("إنشاء وتصحيح اختبارات الكورسات", "Create and grade course quizzes")}
         actions={
-          <Button size="sm" onClick={openForm}>
+          <Button size="sm" onClick={() => setShowForm((v) => !v)}>
             <Plus className="w-4 h-4" /> {t("اختبار جديد", "New Quiz")}
           </Button>
         }
       >
+        {msg && <p className="text-sm text-text-secondary mb-4">{msg}</p>}
+
         {showForm && (
-          <PanelCard title={t("اختبار جديد", "New Quiz")} className="mb-6">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <input
-                type="text"
-                placeholder={t("عنوان الاختبار", "Quiz title")}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="px-4 py-2.5 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
-              />
-              <input
-                type="text"
-                placeholder={t("الكورس", "Course")}
-                value={course}
-                onChange={(e) => setCourse(e.target.value)}
-                className="px-4 py-2.5 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
-              />
-              <input
-                type="number"
-                min={1}
-                placeholder={t("عدد الأسئلة", "Questions")}
-                value={questions}
-                onChange={(e) => setQuestions(Number(e.target.value) || 1)}
-                className="px-4 py-2.5 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
-              />
-              <input
-                type="text"
-                placeholder={t("نسبة النجاح", "Pass score")}
-                value={pass}
-                onChange={(e) => setPass(e.target.value)}
-                className="px-4 py-2.5 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
-              />
+          <PanelCard title={t("إنشاء اختبار", "Create quiz")} className="mb-6">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("عنوان الاختبار", "Quiz title")} />
+              <select
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-surface text-sm"
+                value={courseId}
+                onChange={(e) => setCourseId(e.target.value)}
+              >
+                <option value="">{t("اختر كورس", "Select course")}</option>
+                {(courses ?? []).map((c) => (
+                  <option key={c.id} value={c.id}>{c.title}</option>
+                ))}
+              </select>
+              <Input type="number" value={passScore} onChange={(e) => setPassScore(Number(e.target.value) || 70)} placeholder="Pass %" />
+              <Input value={q1} onChange={(e) => setQ1(e.target.value)} placeholder={t("سؤال", "Question")} />
+              <Input value={a1} onChange={(e) => setA1(e.target.value)} placeholder={t("الإجابة الصحيحة", "Correct answer")} />
             </div>
-            <div className="flex gap-2 mt-4">
-              <Button size="sm" onClick={addQuiz}>{t("إنشاء", "Create")}</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>
-                <X className="w-4 h-4" /> {t("إلغاء", "Cancel")}
-              </Button>
-            </div>
+            <Button className="mt-3" size="sm" onClick={() => void createQuiz()} disabled={!title.trim() || !courseId}>
+              {t("حفظ", "Save")}
+            </Button>
           </PanelCard>
         )}
 
-        <PanelCard title={t("الاختبارات المنشورة", "Published Quizzes")}>
-          {quizzes.length === 0 ? (
-            <EmptyState
-              icon={CheckSquare}
-              title={t("لا اختبارات", "No Quizzes")}
-              description={t("أنشئ اختباراً جديداً لطلابك.", "Create a new quiz for your students.")}
-              action={
-                <Button size="sm" onClick={openForm}>
-                  <Plus className="w-4 h-4" /> {t("اختبار جديد", "New Quiz")}
-                </Button>
-              }
-            />
-          ) : (
+        {loading ? (
+          <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="nq-skeleton h-20" />)}</div>
+        ) : quizzes.length === 0 ? (
+          <EmptyState
+            icon={CheckSquare}
+            title={t("لا اختبارات", "No quizzes")}
+            description={t("أنشئ اختباراً جديداً أو نفّذ migration 009.", "Create a quiz or run migration 009.")}
+          />
+        ) : (
+          <PanelCard title={t(`${quizzes.length} اختبار`, `${quizzes.length} quiz(zes)`)}>
             <div className="space-y-3">
               {quizzes.map((q) => (
-                <div key={q.id} className="nq-lift flex items-center justify-between p-4 rounded-xl border border-border bg-surface-hover/40">
-                  <div className="flex items-center gap-4">
-                    <div className="w-11 h-11 rounded-xl bg-purple/10 border border-purple/20 flex items-center justify-center">
-                      <CheckSquare className="w-5 h-5 text-purple" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-text">{q.title}</p>
-                      <p className="text-sm text-text-muted">
-                        {q.course} · {t(`${q.questions} سؤال`, `${q.questions} questions`)} · {t("نجاح", "Pass")} {q.pass}
-                      </p>
-                    </div>
+                <div key={q.id} className="nq-lift flex items-center justify-between p-4 rounded-xl border border-border">
+                  <div>
+                    <p className="font-semibold text-text">{q.title}</p>
+                    <p className="text-sm text-text-muted">
+                      {courseTitle(q.course_id)} · {(q.questions as unknown[])?.length ?? 0} {t("أسئلة", "questions")} · {t("نجاح", "pass")} {q.pass_score}%
+                    </p>
                   </div>
-                  <span className="nq-chip nq-chip-emerald">{t("نشط", "Active")}</span>
                 </div>
               ))}
             </div>
-          )}
-        </PanelCard>
+          </PanelCard>
+        )}
       </DashboardSubPage>
     </DashboardLayout>
   );

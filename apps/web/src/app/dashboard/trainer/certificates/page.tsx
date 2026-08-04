@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { EmptyState } from "@/components/layout/page-header";
@@ -10,71 +10,77 @@ import { useCourses, useUsers } from "@/hooks/data";
 import { Award, Download } from "lucide-react";
 import { useI18n } from "@/i18n";
 
-const STORAGE_KEY = "naqlah-trainer-certificates-issued";
+type Cert = {
+  id: string;
+  course_id: string;
+  student_id: string;
+  certificate_code: string;
+  qr_payload?: string;
+  issued_at: string;
+  courses?: { title?: string } | null;
+};
 
 export default function TrainerCertificatesPage() {
   const { t } = useI18n();
   const { data: courses, loading: coursesLoading } = useCourses();
   const { data: users, loading: usersLoading } = useUsers();
+  const [certs, setCerts] = useState<Cert[]>([]);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
   const loading = coursesLoading || usersLoading;
-  const courseItems = courses ?? [];
-  const [issuedIds, setIssuedIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
+  const load = async () => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setIssuedIds(new Set(JSON.parse(raw) as string[]));
+      const res = await fetch("/api/data/certificates");
+      const json = await res.json();
+      if (res.ok) setCerts(json.data ?? []);
     } catch {
       /* ignore */
     }
-  }, []);
-
-  const baseCertificates = useMemo(
-    () =>
-      (users ?? [])
-        .filter((u) => u.role === "student")
-        .flatMap((student, i) =>
-          courseItems
-            .filter((c) => c.certificateEnabled)
-            .slice(0, i + 1)
-            .map((course) => ({
-              id: `cert-${student.id}-${course.id}`,
-              student,
-              course,
-              issuedAt: "2025-06-01",
-              initiallyIssued: i === 0,
-            }))
-        )
-        .slice(0, 5),
-    [users, courseItems]
-  );
-
-  const certificates = baseCertificates.map((cert) => ({
-    ...cert,
-    status: cert.initiallyIssued || issuedIds.has(cert.id) ? "issued" : "pending",
-  }));
-
-  const markIssued = (id: string) => {
-    const next = new Set(issuedIds);
-    next.add(id);
-    setIssuedIds(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
   };
 
-  const downloadCert = (cert: (typeof certificates)[0]) => {
-    const text = [
-      "Naqlah Certificate of Completion",
-      "================================",
-      `Course: ${cert.course.title}`,
-      `Student: ${cert.student.firstName} ${cert.student.lastName}`,
-      `Issued: ${cert.issuedAt}`,
-      `Certificate ID: ${cert.id}`,
-    ].join("\n");
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const students = (users ?? []).filter((u) => u.role === "student" || u.role === "graduate");
+  const publishable = (courses ?? []).filter((c) => c.certificateEnabled);
+
+  const issue = async (courseId: string, studentId: string) => {
+    const key = `${courseId}:${studentId}`;
+    setBusy(key);
+    setMsg("");
+    try {
+      const res = await fetch("/api/data/certificates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId, studentId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      await load();
+      setMsg(t("تم إصدار الشهادة", "Certificate issued"));
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : t("فشل الإصدار", "Issue failed"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const download = (cert: Cert) => {
+    const courseTitle = cert.courses?.title ?? courses?.find((c) => c.id === cert.course_id)?.title ?? "Course";
+    const student = users?.find((u) => u.id === cert.student_id);
+    const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"/><title>${cert.certificate_code}</title>
+<style>body{font-family:Cairo,sans-serif;padding:48px;text-align:center}h1{color:#0f172a}.code{margin-top:24px;font-family:monospace}</style></head>
+<body><h1>شهادة إتمام — Naqla</h1><p>${student?.firstName ?? ""} ${student?.lastName ?? ""}</p>
+<p>أتمّ بنجاح: <strong>${courseTitle}</strong></p>
+<p class="code">${cert.certificate_code}</p><p>${cert.qr_payload ?? ""}</p>
+<p>${new Date(cert.issued_at).toLocaleDateString("ar-PS")}</p></body></html>`;
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${cert.id}.txt`;
+    a.download = `${cert.certificate_code}.html`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -84,58 +90,58 @@ export default function TrainerCertificatesPage() {
       <DashboardSubPage
         meta={t("لوحة المدرب", "Trainer Dashboard")}
         title={t("الشهادات", "Certificates")}
-        subtitle={t("إصدار وإدارة شهادات الإتمام", "Issue and manage completion certificates")}
+        subtitle={t("إصدار وتحميل شهادات إتمام الكورسات", "Issue and download course completion certificates")}
       >
+        {msg && <p className="text-sm text-text-secondary mb-4">{msg}</p>}
+
         {loading ? (
-          <div className="space-y-4">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="nq-skeleton h-24" />
-            ))}
-          </div>
-        ) : certificates.length === 0 ? (
-          <EmptyState
-            icon={Award}
-            title={t("لا شهادات", "No Certificates")}
-            description={t("عند إتمام الطلاب للكورسات ستظهر الشهادات هنا.", "Certificates will appear here once students complete their courses.")}
-          />
+          <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="nq-skeleton h-24" />)}</div>
         ) : (
-          <div className="space-y-4">
-            {certificates.map((cert) => (
-              <Card key={cert.id} className="nq-lift">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-amber/10 border border-amber/20 flex items-center justify-center">
-                      <Award className="w-6 h-6 text-amber" />
-                    </div>
+          <>
+            <div className="space-y-3 mb-8">
+              <p className="text-sm font-semibold text-text">{t("إصدار شهادة جديدة", "Issue a new certificate")}</p>
+              {students.slice(0, 6).flatMap((student) =>
+                publishable.slice(0, 2).map((course) => {
+                  const key = `${course.id}:${student.id}`;
+                  const already = certs.some((c) => c.course_id === course.id && c.student_id === student.id);
+                  return (
+                    <Card key={key} className="p-4 flex items-center justify-between gap-3">
+                      <div>
+                        <CardTitle className="text-sm">{student.firstName} {student.lastName}</CardTitle>
+                        <p className="text-xs text-text-muted">{course.title}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        disabled={already || busy === key}
+                        onClick={() => void issue(course.id, student.id)}
+                      >
+                        <Award className="w-4 h-4" />
+                        {already ? t("صادرة", "Issued") : t("إصدار", "Issue")}
+                      </Button>
+                    </Card>
+                  );
+                }),
+              )}
+            </div>
+
+            {certs.length === 0 ? (
+              <EmptyState icon={Award} title={t("لا شهادات صادرة", "No issued certificates")} description={t("أصدر شهادة من القائمة أعلاه.", "Issue a certificate from the list above.")} />
+            ) : (
+              <div className="space-y-3">
+                {certs.map((cert) => (
+                  <Card key={cert.id} className="p-4 flex items-center justify-between gap-3">
                     <div>
-                      <CardTitle className="text-base">{cert.course.title}</CardTitle>
-                      <p className="text-sm text-text-secondary">
-                        {cert.student.firstName} {cert.student.lastName}
-                      </p>
-                      <p className="text-xs text-text-muted mt-1">
-                        {t("تاريخ الإصدار:", "Issue Date:")} {cert.issuedAt}
-                      </p>
+                      <p className="font-semibold text-sm text-text">{cert.certificate_code}</p>
+                      <p className="text-xs text-text-muted">{cert.courses?.title ?? cert.course_id}</p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={cert.status === "issued" ? "nq-chip nq-chip-emerald" : "nq-chip"}>
-                      {cert.status === "issued" ? t("صادرة", "Issued") : t("بانتظار الإصدار", "Awaiting Issuance")}
-                    </span>
-                    {cert.status === "issued" ? (
-                      <Button size="sm" variant="outline" onClick={() => downloadCert(cert)}>
-                        <Download className="w-4 h-4" />
-                        {t("تحميل", "Download")}
-                      </Button>
-                    ) : (
-                      <Button size="sm" onClick={() => markIssued(cert.id)}>
-                        {t("إصدار", "Issue")}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                    <Button size="sm" variant="outline" onClick={() => download(cert)}>
+                      <Download className="w-4 h-4" /> {t("تحميل", "Download")}
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </DashboardSubPage>
     </DashboardLayout>

@@ -6,96 +6,64 @@ import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { PanelCard } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { FileText, Plus, X } from "lucide-react";
+import { Input, Textarea } from "@/components/ui/input";
+import { FileText, Plus } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { formatDate } from "@/lib/utils";
 
-const STORAGE_KEY = "naqlah-mentor-notes";
-
-type NoteItem = {
+type Note = {
   id: string;
-  student: string;
-  session: string;
-  date: string;
-  preview: string;
-  full: string;
+  title: string;
+  body: string;
+  createdAt: string;
 };
-
-const DEFAULT_NOTES: NoteItem[] = [
-  {
-    id: "n1",
-    student: "Ameer Abu Shams",
-    session: "CV Review",
-    date: "2025-06-22",
-    preview: "Needs to improve the projects section and add metrics...",
-    full: "Needs to improve the projects section and add metrics. Ask for quantified impact (users, performance, revenue). Also tighten the summary to 3 lines.",
-  },
-  {
-    id: "n2",
-    student: "Layla Ahmed",
-    session: "Career Path",
-    date: "2025-06-20",
-    preview: "Focus on Frontend first, then transition to Full Stack...",
-    full: "Focus on Frontend first, then transition to Full Stack. Recommended path: React → TypeScript → Node basics → portfolio project.",
-  },
-  {
-    id: "n3",
-    student: "Mohamed Omar",
-    session: "Mock Interview",
-    date: "2025-06-18",
-    preview: "Good communication skills; needs more preparation for technical questions...",
-    full: "Good communication skills; needs more preparation for technical questions. Practice system design light + common JS/React interview prompts twice a week.",
-  },
-];
-
-function loadNotes(): NoteItem[] {
-  if (typeof window === "undefined") return DEFAULT_NOTES;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as NoteItem[]) : DEFAULT_NOTES;
-  } catch {
-    return DEFAULT_NOTES;
-  }
-}
 
 export default function MentorNotesPage() {
   const { t } = useI18n();
-  const [notes, setNotes] = useState<NoteItem[]>(DEFAULT_NOTES);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [student, setStudent] = useState("");
-  const [session, setSession] = useState("");
+  const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [msg, setMsg] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/data/mentor-notes");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      setNotes(json.data ?? []);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : t("فشل التحميل", "Load failed"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setNotes(loadNotes());
+    void load();
   }, []);
 
-  const persist = (next: NoteItem[]) => {
-    setNotes(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  };
-
-  const openForm = () => {
-    setStudent("");
-    setSession("");
-    setBody("");
-    setShowForm(true);
-  };
-
-  const addNote = () => {
-    if (!student.trim() || !body.trim()) return;
-    const full = body.trim();
-    const item: NoteItem = {
-      id: `n-${Date.now()}`,
-      student: student.trim(),
-      session: session.trim() || t("جلسة عامة", "General session"),
-      date: new Date().toISOString().slice(0, 10),
-      preview: full.length > 80 ? `${full.slice(0, 80)}...` : full,
-      full,
-    };
-    persist([item, ...notes]);
-    setShowForm(false);
-    setExpandedId(item.id);
+  const addNote = async () => {
+    if (!title.trim() || !body.trim()) return;
+    try {
+      const res = await fetch("/api/data/mentor-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), body: body.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      setTitle("");
+      setBody("");
+      setShowForm(false);
+      await load();
+      setMsg(t("تم حفظ الملاحظة", "Note saved"));
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : t("فشل الحفظ", "Save failed"));
+    }
   };
 
   return (
@@ -103,86 +71,44 @@ export default function MentorNotesPage() {
       <DashboardSubPage
         meta={t("لوحة المرشد", "Mentor Panel")}
         title={t("ملاحظات الجلسات", "Session Notes")}
-        subtitle={t("ملاحظات وخطوات عمل لكل متدرب", "Notes and action items for each mentee")}
+        subtitle={t("سجّل ملاحظاتك بعد كل جلسة", "Save notes after each session")}
         actions={
-          <Button size="sm" onClick={openForm}>
+          <Button size="sm" onClick={() => setShowForm((v) => !v)}>
             <Plus className="w-4 h-4" /> {t("ملاحظة جديدة", "New Note")}
           </Button>
         }
       >
+        {msg && <p className="text-sm text-text-secondary mb-4">{msg}</p>}
+
         {showForm && (
-          <PanelCard title={t("ملاحظة جديدة", "New Note")} className="mb-6">
-            <div className="grid sm:grid-cols-2 gap-3 mb-3">
-              <input
-                type="text"
-                placeholder={t("اسم المتدرب", "Student name")}
-                value={student}
-                onChange={(e) => setStudent(e.target.value)}
-                className="px-4 py-2.5 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
-              />
-              <input
-                type="text"
-                placeholder={t("موضوع الجلسة", "Session topic")}
-                value={session}
-                onChange={(e) => setSession(e.target.value)}
-                className="px-4 py-2.5 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
-              />
-            </div>
-            <textarea
-              rows={4}
-              placeholder={t("نص الملاحظة", "Note content")}
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
-            />
-            <div className="flex gap-2 mt-4">
-              <Button size="sm" onClick={addNote}>{t("حفظ", "Save")}</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>
-                <X className="w-4 h-4" /> {t("إلغاء", "Cancel")}
-              </Button>
-            </div>
+          <PanelCard title={t("ملاحظة جديدة", "New note")} className="mb-6">
+            <Input className="mb-3" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("العنوان", "Title")} />
+            <Textarea rows={4} value={body} onChange={(e) => setBody(e.target.value)} placeholder={t("المحتوى", "Content")} />
+            <Button className="mt-3" size="sm" onClick={() => void addNote()}>{t("حفظ", "Save")}</Button>
           </PanelCard>
         )}
 
-        <PanelCard title={t("الملاحظات المحفوظة", "Saved Notes")}>
-          {notes.length === 0 ? (
-            <EmptyState
-              icon={FileText}
-              title={t("لا ملاحظات", "No Notes")}
-              description={t("أضف ملاحظات بعد كل جلسة إرشادية.", "Add notes after each mentorship session.")}
-              action={
-                <Button size="sm" onClick={openForm}>
-                  <Plus className="w-4 h-4" /> {t("ملاحظة جديدة", "New Note")}
-                </Button>
-              }
-            />
-          ) : (
-            <div className="space-y-3">
-              {notes.map((n) => (
-                <div key={n.id} className="nq-lift p-4 rounded-xl border border-border bg-surface-hover/40">
-                  <div className="flex items-center justify-between mb-2 gap-2">
-                    <p className="font-semibold text-text">
-                      {n.student} — {n.session}
-                    </p>
-                    <span className="nq-chip shrink-0">{n.date}</span>
-                  </div>
-                  <p className="text-sm text-text-secondary leading-relaxed">
-                    {expandedId === n.id ? n.full || n.preview : n.preview}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-3"
-                    onClick={() => setExpandedId(expandedId === n.id ? null : n.id)}
-                  >
-                    <FileText className="w-4 h-4" />{" "}
-                    {expandedId === n.id ? t("إخفاء", "Hide") : t("عرض كامل", "View Full")}
+        {loading ? (
+          <div className="space-y-3">{[0, 1].map((i) => <div key={i} className="nq-skeleton h-24" />)}</div>
+        ) : notes.length === 0 ? (
+          <EmptyState icon={FileText} title={t("لا ملاحظات", "No notes")} description={t("أضف أول ملاحظة بعد جلسة.", "Add your first note after a session.")} />
+        ) : (
+          <div className="space-y-3">
+            {notes.map((n) => (
+              <PanelCard key={n.id} title={n.title}>
+                <p className="text-xs text-text-muted mb-2">{formatDate(n.createdAt)}</p>
+                <p className="text-sm text-text-secondary whitespace-pre-wrap">
+                  {expanded === n.id ? n.body : `${n.body.slice(0, 120)}${n.body.length > 120 ? "…" : ""}`}
+                </p>
+                {n.body.length > 120 && (
+                  <Button size="sm" variant="outline" className="mt-3" onClick={() => setExpanded(expanded === n.id ? null : n.id)}>
+                    {expanded === n.id ? t("طي", "Collapse") : t("عرض كامل", "View Full")}
                   </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </PanelCard>
+                )}
+              </PanelCard>
+            ))}
+          </div>
+        )}
       </DashboardSubPage>
     </DashboardLayout>
   );

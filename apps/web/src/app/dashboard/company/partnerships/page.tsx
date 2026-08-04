@@ -15,6 +15,8 @@ import type { Partnership } from "@careerlink/shared";
 
 const STORAGE_KEY = "naqlah-company-partnerships";
 
+type UniRow = { id: string; name: string };
+
 function loadLocal(): Partnership[] {
   if (typeof window === "undefined") return [];
   try {
@@ -30,6 +32,7 @@ export default function CompanyPartnershipsPage() {
   const { data: partnerships, loading, refetch } = usePartnerships();
   const { data: companies } = useCompanies();
   const [localItems, setLocalItems] = useState<Partnership[]>([]);
+  const [universities, setUniversities] = useState<UniRow[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [universityId, setUniversityId] = useState("");
   const [companyId, setCompanyId] = useState("");
@@ -38,11 +41,25 @@ export default function CompanyPartnershipsPage() {
 
   useEffect(() => {
     setLocalItems(loadLocal());
+    void fetch("/api/data/universities")
+      .then((r) => r.json())
+      .then((json) => {
+        if (Array.isArray(json.data)) {
+          setUniversities(
+            (json.data as UniRow[]).map((u) => ({ id: String(u.id), name: String(u.name) }))
+          );
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (companies?.[0]?.id && !companyId) setCompanyId(companies[0].id);
   }, [companies, companyId]);
+
+  useEffect(() => {
+    if (universities[0]?.id && !universityId) setUniversityId(universities[0].id);
+  }, [universities, universityId]);
 
   const persist = (next: Partnership[]) => {
     setLocalItems(next);
@@ -51,10 +68,10 @@ export default function CompanyPartnershipsPage() {
 
   const apiItems = partnerships ?? [];
   const items = [...localItems, ...apiItems.filter((p) => !localItems.some((l) => l.id === p.id))];
-  const universityLabel = t("جامعة النجاح الوطنية", "An-Najah National University");
+
+  const uniName = (id: string) => universities.find((u) => u.id === id)?.name ?? id;
 
   const openForm = () => {
-    setUniversityId(universityLabel);
     setShowForm(true);
     setMessage("");
   };
@@ -117,13 +134,23 @@ export default function CompanyPartnershipsPage() {
         {showForm && (
           <PanelCard title={t("طلب شراكة", "Request Partnership")} className="mb-6">
             <div className="grid sm:grid-cols-2 gap-3">
-              <input
-                type="text"
-                placeholder={t("اسم الجامعة / المؤسسة", "University / institution")}
+              <select
                 value={universityId}
                 onChange={(e) => setUniversityId(e.target.value)}
                 className="px-4 py-2.5 rounded-lg border border-border bg-surface-hover focus:outline-none focus:ring-2 focus:ring-brand/20"
-              />
+              >
+                {universities.length === 0 ? (
+                  <option value="">
+                    {t("لا جامعات — شغّل migration 009", "No universities — run migration 009")}
+                  </option>
+                ) : (
+                  universities.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))
+                )}
+              </select>
               <select
                 value={companyId}
                 onChange={(e) => setCompanyId(e.target.value)}
@@ -137,7 +164,11 @@ export default function CompanyPartnershipsPage() {
               </select>
             </div>
             <div className="flex gap-2 mt-4">
-              <Button size="sm" onClick={requestPartnership} disabled={saving}>
+              <Button
+                size="sm"
+                onClick={() => void requestPartnership()}
+                disabled={saving || !universityId}
+              >
                 {t("إرسال الطلب", "Send Request")}
               </Button>
               <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>
@@ -174,32 +205,39 @@ export default function CompanyPartnershipsPage() {
                 const company = companies?.find((c) => c.id === partnership.companyId);
 
                 return (
-                  <div key={partnership.id} className="nq-lift p-4 rounded-lg border border-border bg-surface-hover/40">
+                  <div
+                    key={partnership.id}
+                    className="nq-lift p-4 rounded-lg border border-border bg-surface-hover/40"
+                  >
                     <ActivityRow
                       avatar={
                         <div className="w-9 h-9 rounded-lg bg-brand-muted border border-border flex items-center justify-center">
                           <Handshake className="w-4 h-4 text-brand" />
                         </div>
                       }
-                      title={partnership.universityId || universityLabel}
+                      title={uniName(partnership.universityId)}
                       subtitle={company?.name ?? partnership.companyId}
                       badge={
-                        <span className={partnership.status === "active" ? "nq-chip nq-chip-emerald" : "nq-chip"}>
+                        <span
+                          className={
+                            partnership.status === "active" ? "nq-chip nq-chip-emerald" : "nq-chip"
+                          }
+                        >
                           {partnership.status === "active" ? t("نشط", "Active") : t("معلق", "Pending")}
                         </span>
                       }
                     />
                     <p className="text-xs text-text-muted mt-3 mr-12">
-                      {t(`بدأت ${formatDate(partnership.startDate)}`, `Started ${formatDate(partnership.startDate)}`)}
+                      {t(
+                        `بدأت ${formatDate(partnership.startDate)}`,
+                        `Started ${formatDate(partnership.startDate)}`
+                      )}
                     </p>
                     <div className="flex gap-2 mt-3 mr-12">
                       <Link href={`/companies/${partnership.companyId}`}>
                         <Button size="sm" variant="outline">
                           {t("التفاصيل", "Details")}
                         </Button>
-                      </Link>
-                      <Link href="/events">
-                        <Button size="sm">{t("الفعاليات المشتركة", "Joint Events")}</Button>
                       </Link>
                     </div>
                   </div>

@@ -159,6 +159,7 @@ export interface DataRepositories {
   getMarketAnalysis(): Promise<JobMarketAnalysis>;
   getPartnerships(): Promise<Partnership[]>;
   getAssessments(): Promise<Assessment[]>;
+  createAssessment(input: { jobId: string; title: string; type: Assessment['type']; deadline?: string; status?: string }): Promise<Assessment>;
   search(query: string): Promise<{ jobs: JobWithCompany[]; companies: Company[] }>;
 
   apply(input: ApplyInput): Promise<Application>;

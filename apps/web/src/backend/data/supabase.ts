@@ -599,6 +599,31 @@ export const supabaseRepositories: DataRepositories = {
     }));
   },
 
+  async createAssessment(input) {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from('assessments')
+      .insert({
+        job_id: input.jobId,
+        title: input.title,
+        type: input.type,
+        deadline: input.deadline ?? null,
+        status: input.status ?? 'active',
+      })
+      .select('*')
+      .single();
+    if (error) throw error;
+    return {
+      id: String(data.id),
+      jobId: String(data.job_id),
+      title: String(data.title),
+      type: data.type as 'mcq' | 'coding' | 'upload' | 'video',
+      deadline: String(data.deadline ?? ''),
+      status: String(data.status ?? 'active'),
+    };
+  },
+
   async getMarketAnalysis() {
     const jobs = await this.getJobs();
     const internships = await this.getInternships();
@@ -708,14 +733,22 @@ export const supabaseRepositories: DataRepositories = {
       to_status: status,
       changed_by: user?.id ?? null,
     });
-    await supabase.from('notifications').insert({
-      user_id: prev.student_id,
-      type: 'application-update',
-      title: 'تحديث على طلبك',
-      message: `حالة الطلب أصبحت: ${status}`,
-      link: '/applications',
-      read: false,
-    });
+    {
+      const { data: student } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', prev.student_id)
+        .maybeSingle();
+      const { notifyUser } = await import('@/backend/notify/email');
+      await notifyUser({
+        userId: String(prev.student_id),
+        type: 'application-update',
+        title: 'تحديث على طلبك',
+        message: `حالة الطلب أصبحت: ${status}`,
+        link: '/applications',
+        email: student?.email ? String(student.email) : undefined,
+      });
+    }
     await supabase.from('audit_logs').insert({
       action: 'application_status_changed',
       entity_type: 'application',

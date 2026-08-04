@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -29,6 +30,7 @@ const SocialContext = createContext<SocialContextValue | null>(null);
 
 const LIKED_KEY = "naqlah_liked_posts";
 const EXTRA_POSTS_KEY = "naqlah_extra_posts";
+const POLL_MS = 8000;
 
 export function SocialProvider({ children }: { children: ReactNode }) {
   const { user } = useApp();
@@ -37,8 +39,11 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   const [extraPosts, setExtraPosts] = useState<FeedPost[]>([]);
   const [basePosts, setBasePosts] = useState<FeedPost[]>([]);
   const [convs, setConvs] = useState<Conversation[]>([]);
-  const [msgs, setMsgs] = useState<Message[]>([]);
+  const [msgsByConv, setMsgsByConv] = useState<Record<string, Message[]>>({});
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const activeConvRef = useRef<string | null>(null);
+  activeConvRef.current = activeConvId;
 
   useEffect(() => {
     try {
@@ -47,6 +52,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       const posts = JSON.parse(localStorage.getItem(EXTRA_POSTS_KEY) || "[]") as FeedPost[];
       setExtraPosts(posts);
     } catch {
+      /* ignore */
     }
   }, []);
 
@@ -62,8 +68,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         if (feedRes.data) setBasePosts(feedRes.data as FeedPost[]);
         if (convRes.data) setConvs(convRes.data as Conversation[]);
       })
-      .catch(() => {
-      })
+      .catch(() => {})
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
@@ -81,6 +86,11 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       likes: p.likes + (likedIds.has(p.id) ? 1 : 0),
     }));
   }, [extraPosts, basePosts, likedIds]);
+
+  const messages = useMemo(
+    () => Object.values(msgsByConv).flat(),
+    [msgsByConv]
+  );
 
   const persistLikes = (ids: Set<string>) => {
     localStorage.setItem(LIKED_KEY, JSON.stringify([...ids]));
@@ -122,31 +132,19 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     const res = await fetch(`/api/data/messages?conversationId=${encodeURIComponent(conversationId)}`);
     const json = await res.json();
     if (!res.ok) return;
-    const fetched = json.data as Message[];
-    setMsgs((prev) => {
-      const ids = new Set(prev.map((m) => m.id));
-      const merged = [...prev];
-      for (const m of fetched) {
-        if (!ids.has(m.id)) merged.push(m);
-      }
-      return merged;
-    });
+    const fetched = (json.data as Message[]) ?? [];
+    setMsgsByConv((prev) => ({ ...prev, [conversationId]: fetched }));
+    setActiveConvId(conversationId);
   }, []);
 
   const getConversationMessages = useCallback(
     (conversationId: string) => {
-      const conv = convs.find((c) => c.id === conversationId);
-      if (!conv) return [];
-      const [a, b] = conv.participantIds;
-      return msgs
-        .filter(
-          (m) =>
-            (m.senderId === a && m.receiverId === b) ||
-            (m.senderId === b && m.receiverId === a)
-        )
-        .sort((x, y) => new Date(x.timestamp).getTime() - new Date(y.timestamp).getTime());
+      const list = msgsByConv[conversationId] ?? [];
+      return [...list].sort(
+        (x, y) => new Date(x.timestamp).getTime() - new Date(y.timestamp).getTime()
+      );
     },
-    [convs, msgs]
+    [msgsByConv]
   );
 
   useEffect(() => {
@@ -156,6 +154,23 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     });
   }, [convs, loadMessages]);
 
+  // Poll open conversation + refresh conversation list
+  useEffect(() => {
+    if (!activeUserId) return;
+    const tick = () => {
+      const id = activeConvRef.current;
+      if (id) void loadMessages(id);
+      void fetch("/api/data/conversations")
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.data) setConvs(json.data as Conversation[]);
+        })
+        .catch(() => {});
+    };
+    const timer = window.setInterval(tick, POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [activeUserId, loadMessages]);
+
   const sendMessage = useCallback(
     (conversationId: string, content: string) => {
       const trimmed = content.trim();
@@ -164,7 +179,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       const conv = convs.find((c) => c.id === conversationId);
       if (!conv) return;
 
-      const otherId = conv.participantIds.find((id) => id !== activeUserId)!;
+      const otherId = conv.participantIds.find((id) => id !== activeUserId) ?? "";
 
       void fetch("/api/data/messages", {
         method: "POST",
@@ -182,12 +197,17 @@ export function SocialProvider({ children }: { children: ReactNode }) {
             read: true,
           }) as Message;
 
-          setMsgs((prev) => [...prev, msg]);
+          setMsgsByConv((prev) => {
+            const existing = prev[conversationId] ?? [];
+            if (existing.some((m) => m.id === msg.id)) return prev;
+            return { ...prev, [conversationId]: [...existing, msg] };
+          });
           setConvs((prev) =>
             prev.map((c) =>
               c.id === conversationId ? { ...c, lastMessage: msg, unreadCount: 0 } : c
             )
           );
+          setActiveConvId(conversationId);
         })
         .catch(() => {
           const msg: Message = {
@@ -198,7 +218,10 @@ export function SocialProvider({ children }: { children: ReactNode }) {
             timestamp: new Date().toISOString(),
             read: true,
           };
-          setMsgs((prev) => [...prev, msg]);
+          setMsgsByConv((prev) => ({
+            ...prev,
+            [conversationId]: [...(prev[conversationId] ?? []), msg],
+          }));
         });
     },
     [convs, activeUserId]
@@ -231,7 +254,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       };
 
       setConvs((prev) => [newConv, ...prev]);
-      setMsgs((prev) => [...prev, welcome]);
+      setMsgsByConv((prev) => ({ ...prev, [newConv.id]: [welcome] }));
+      setActiveConvId(newConv.id);
       return newConv.id;
     },
     [convs, activeUserId, loadMessages]
@@ -247,7 +271,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         toggleLike,
         isPostLiked,
         conversations: convs,
-        messages: msgs,
+        messages,
         sendMessage,
         openConversationWith,
         getConversationMessages,

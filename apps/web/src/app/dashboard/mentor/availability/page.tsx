@@ -46,6 +46,24 @@ export default function MentorAvailabilityPage() {
     } catch {
       /* ignore */
     }
+    void (async () => {
+      try {
+        const res = await fetch("/api/data/mentor-availability");
+        const json = await res.json();
+        if (!res.ok || !Array.isArray(json.data)) return;
+        const dayNames = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+        const next: Record<string, string[]> = {};
+        for (const slot of json.data as { dayOfWeek: number; startTime: string; isActive?: boolean }[]) {
+          if (slot.isActive === false) continue;
+          const day = dayNames[slot.dayOfWeek] ?? "الأحد";
+          const time = String(slot.startTime).slice(0, 5);
+          next[day] = [...(next[day] ?? []), time].sort();
+        }
+        if (Object.keys(next).length) setAvailability(next);
+      } catch {
+        /* keep local */
+      }
+    })();
   }, []);
 
   const toggleSlot = (slot: string) => {

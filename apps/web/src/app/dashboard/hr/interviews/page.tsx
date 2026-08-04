@@ -7,9 +7,9 @@ import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { ActivityRow, PanelCard } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, Textarea } from "@/components/ui/input";
 import { useAllApplications, updateApplicationStatus } from "@/hooks/data";
-import { Calendar, Clock, Plus, Video } from "lucide-react";
+import { Calendar, Clock, Plus, Star, Video } from "lucide-react";
 import { formatDateTime, cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { applicationStatusLabel } from "@/i18n/labels";
@@ -30,6 +30,13 @@ export default function HRInterviewsPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
+  const [evalId, setEvalId] = useState<string | null>(null);
+  const [score, setScore] = useState("7");
+  const [strengths, setStrengths] = useState("");
+  const [weaknesses, setWeaknesses] = useState("");
+  const [recommendation, setRecommendation] = useState("hire");
+  const [notes, setNotes] = useState("");
+
   const schedule = async () => {
     if (!selectedId) return;
     setBusy(true);
@@ -47,6 +54,34 @@ export default function HRInterviewsPage() {
       setMsg(t("تمت جدولة المقابلة", "Interview scheduled"));
     } catch (e) {
       setMsg(e instanceof Error ? e.message : t("فشل الجدولة", "Schedule failed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveEval = async () => {
+    if (!evalId) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      const res = await fetch("/api/data/interview-evaluations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          applicationId: evalId,
+          score: Number(score),
+          strengths,
+          weaknesses,
+          recommendation,
+          notes,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      setEvalId(null);
+      setMsg(t("تم حفظ تقييم المقابلة", "Interview evaluation saved"));
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : t("فشل الحفظ", "Save failed"));
     } finally {
       setBusy(false);
     }
@@ -84,11 +119,70 @@ export default function HRInterviewsPage() {
               </select>
               <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
             </div>
+            <p className="text-xs text-text-muted mt-2">
+              {t(
+                "المقابلات تُجدول خارج المنصة (بريد/رابط خارجي) — لا مقابلات فيديو داخلية.",
+                "Interviews are scheduled off-platform (email/external link) — no in-app video."
+              )}
+            </p>
             <div className="flex gap-2 mt-3">
               <Button size="sm" disabled={busy || !selectedId} onClick={() => void schedule()}>
                 {t("تأكيد", "Confirm")}
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setOpen(false)}>{t("إلغاء", "Cancel")}</Button>
+              <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
+                {t("إلغاء", "Cancel")}
+              </Button>
+            </div>
+          </PanelCard>
+        )}
+
+        {evalId && (
+          <PanelCard title={t("تقييم المقابلة", "Interview evaluation")} className="mb-6">
+            <div className="grid sm:grid-cols-2 gap-3">
+              <Input
+                type="number"
+                min={0}
+                max={10}
+                value={score}
+                onChange={(e) => setScore(e.target.value)}
+                placeholder={t("الدرجة /10", "Score /10")}
+              />
+              <select
+                className="w-full px-3 py-2.5 rounded-lg bg-surface border border-border text-text text-sm"
+                value={recommendation}
+                onChange={(e) => setRecommendation(e.target.value)}
+              >
+                <option value="hire">{t("توظيف", "Hire")}</option>
+                <option value="maybe">{t("ربما", "Maybe")}</option>
+                <option value="reject">{t("رفض", "Reject")}</option>
+              </select>
+              <Textarea
+                rows={2}
+                value={strengths}
+                onChange={(e) => setStrengths(e.target.value)}
+                placeholder={t("نقاط القوة", "Strengths")}
+              />
+              <Textarea
+                rows={2}
+                value={weaknesses}
+                onChange={(e) => setWeaknesses(e.target.value)}
+                placeholder={t("نقاط الضعف", "Weaknesses")}
+              />
+              <Textarea
+                rows={2}
+                className="sm:col-span-2"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={t("ملاحظات", "Notes")}
+              />
+            </div>
+            <div className="flex gap-2 mt-3">
+              <Button size="sm" disabled={busy} onClick={() => void saveEval()}>
+                {t("حفظ التقييم", "Save evaluation")}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setEvalId(null)}>
+                {t("إلغاء", "Cancel")}
+              </Button>
             </div>
           </PanelCard>
         )}
@@ -97,7 +191,11 @@ export default function HRInterviewsPage() {
           <Button variant={view === "list" ? "primary" : "outline"} size="sm" onClick={() => setView("list")}>
             {t("قائمة", "List")}
           </Button>
-          <Button variant={view === "calendar" ? "primary" : "outline"} size="sm" onClick={() => setView("calendar")}>
+          <Button
+            variant={view === "calendar" ? "primary" : "outline"}
+            size="sm"
+            onClick={() => setView("calendar")}
+          >
             {t("تقويم", "Calendar")}
           </Button>
         </div>
@@ -105,8 +203,18 @@ export default function HRInterviewsPage() {
         {view === "calendar" ? (
           <PanelCard title={t("تقويم المقابلات", "Interview Calendar")}>
             <div className="grid grid-cols-7 gap-2 text-center text-sm">
-              {[t("أحد", "Sun"), t("إثن", "Mon"), t("ثلا", "Tue"), t("أرب", "Wed"), t("خم", "Thu"), t("جم", "Fri"), t("سب", "Sat")].map((day) => (
-                <div key={day} className="p-2 font-medium text-text-secondary">{day}</div>
+              {[
+                t("أحد", "Sun"),
+                t("إثن", "Mon"),
+                t("ثلا", "Tue"),
+                t("أرب", "Wed"),
+                t("خم", "Thu"),
+                t("جم", "Fri"),
+                t("سب", "Sat"),
+              ].map((day) => (
+                <div key={day} className="p-2 font-medium text-text-secondary">
+                  {day}
+                </div>
               ))}
               {Array.from({ length: 28 }, (_, i) => {
                 const dayInterviews = interviews.filter((iv) => {
@@ -142,8 +250,15 @@ export default function HRInterviewsPage() {
               <EmptyState
                 icon={Calendar}
                 title={t("لا مقابلات مجدولة", "No Scheduled Interviews")}
-                description={t("ابدأ بجدولة مقابلة جديدة مع أحد المرشحين.", "Start by scheduling a new interview with a candidate.")}
-                action={<Button size="sm" onClick={() => setOpen(true)}><Plus className="w-4 h-4" /> {t("جدولة جديدة", "New Schedule")}</Button>}
+                description={t(
+                  "ابدأ بجدولة مقابلة جديدة مع أحد المرشحين.",
+                  "Start by scheduling a new interview with a candidate."
+                )}
+                action={
+                  <Button size="sm" onClick={() => setOpen(true)}>
+                    <Plus className="w-4 h-4" /> {t("جدولة جديدة", "New Schedule")}
+                  </Button>
+                }
               />
             ) : (
               <div className="space-y-3">
@@ -173,11 +288,28 @@ export default function HRInterviewsPage() {
                       <Button
                         size="sm"
                         onClick={() => {
-                          window.location.href = `mailto:${item.student?.email ?? ""}?subject=${encodeURIComponent(t("مقابلة نقلة", "Naqla Interview"))}`;
+                          window.location.href = `mailto:${item.student?.email ?? ""}?subject=${encodeURIComponent(
+                            t("مقابلة نقلة", "Naqla Interview")
+                          )}`;
                         }}
                       >
                         <Video className="w-4 h-4" />
-                        {t("بدء", "Start")}
+                        {t("دعوة بريد", "Email invite")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEvalId(item.id);
+                          setScore("7");
+                          setStrengths("");
+                          setWeaknesses("");
+                          setNotes("");
+                          setRecommendation("hire");
+                        }}
+                      >
+                        <Star className="w-4 h-4" />
+                        {t("تقييم", "Evaluate")}
                       </Button>
                       <Button
                         size="sm"

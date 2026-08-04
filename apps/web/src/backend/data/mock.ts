@@ -1,4 +1,5 @@
 import { getSmartRecommendations, analyzeJobMarket } from '@careerlink/shared';
+import type { Assessment } from '@careerlink/shared';
 import type {
   DataRepositories,
   ApplyInput,
@@ -222,6 +223,20 @@ export const mockRepositories: DataRepositories = {
   async getAssessments() {
     ensureInit();
     return memoryStore.assessments;
+  },
+
+  async createAssessment(input) {
+    ensureInit();
+    const item: Assessment = {
+      id: `assess-${Date.now()}`,
+      jobId: input.jobId,
+      title: input.title,
+      type: input.type,
+      deadline: input.deadline ?? new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+      status: input.status ?? 'active',
+    };
+    memoryStore.assessments = [item, ...memoryStore.assessments];
+    return item;
   },
 
   async search(query) {

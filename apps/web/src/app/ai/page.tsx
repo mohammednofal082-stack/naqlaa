@@ -38,6 +38,15 @@ export default function AiHubPage() {
       ),
     },
     {
+      href: "/ai/cv-builder",
+      icon: FileText,
+      title: t("بناء السيرة الذاتية", "CV Builder"),
+      description: t(
+        "قوالب جاهزة وتصدير HTML/PDF للطباعة",
+        "Ready templates with HTML/PDF export for printing"
+      ),
+    },
+    {
       href: "/ai/career-path",
       icon: Map,
       title: t("خارطة المسار المهني", "Career Path"),

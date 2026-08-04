@@ -15,7 +15,7 @@ export function FeedProfileCard() {
   if (!user) return null;
 
   const myApps = (apps ?? []).length;
-  const headline = profileData?.profile.headline ?? user.headline ?? "";
+  const headline = profileData?.profile.headline ?? "";
   const completion = profileData?.profile.profileCompletion ?? 0;
 
   return (

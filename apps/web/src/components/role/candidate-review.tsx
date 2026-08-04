@@ -90,7 +90,7 @@ export function CandidateReviewStack({
           </div>
 
           <p className="text-sm text-text-secondary leading-relaxed mb-6">
-            {current.coverLetter ||
+            {current.coverNote ||
               t(
                 "ملف المرشح جاهز للمراجعة. استخدم القبول أو الرفض لحفظ القرار في قاعدة البيانات.",
                 "Candidate profile is ready for review. Accept or reject to persist the decision in the database.",

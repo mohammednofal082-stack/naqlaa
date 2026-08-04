@@ -18,7 +18,7 @@ import { workTypeLabel, experienceLabel } from "@/i18n/labels";
 
 interface JobCardProps {
   job: Job;
-  company: Company;
+  company: Pick<Company, "name"> & Partial<Company>;
   compact?: boolean;
 }
 
@@ -50,7 +50,7 @@ export function JobCard({ job, company, compact }: JobCardProps) {
         <Link href={`/jobs/${job.id}`}>
           <div className="flex items-start gap-4 pr-2">
             <div className="relative w-14 h-14 rounded-[6px] overflow-hidden bg-cream border border-border flex-shrink-0">
-              <Image src={company.logo} alt={company.name} fill className="object-cover" />
+              <Image src={company.logo || "/globe.svg"} alt={company.name} fill className="object-cover" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
@@ -63,7 +63,7 @@ export function JobCard({ job, company, compact }: JobCardProps) {
               </div>
               <p className="text-text-muted text-sm mb-2">
                 {company.name}
-                <span className="text-text-muted"> · {company.industry}</span>
+                {company.industry ? <span className="text-text-muted"> · {company.industry}</span> : null}
               </p>
               {!compact && (
                 <p className="text-sm text-text-secondary line-clamp-2 mb-3">{job.description}</p>

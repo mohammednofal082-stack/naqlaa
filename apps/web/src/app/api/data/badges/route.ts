@@ -11,7 +11,7 @@ export async function GET() {
       .eq('user_id', user.userId);
     if (error) throw error;
     return (data ?? []).map((row) => {
-      const b = row.badges as Record<string, unknown> | null;
+      const b = row.badges as unknown as Record<string, unknown> | null;
       return {
         awardedAt: String(row.awarded_at),
         code: b ? String(b.code) : '',

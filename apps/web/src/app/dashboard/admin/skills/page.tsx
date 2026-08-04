@@ -42,6 +42,24 @@ export default function AdminSkillsPage() {
 
   useEffect(() => {
     setCustomSkills(loadCustomSkills());
+    void (async () => {
+      try {
+        const res = await fetch("/api/data/skills");
+        const json = await res.json();
+        if (!res.ok || !Array.isArray(json.data)) return;
+        const fromApi = (json.data as { name: string; demand: number; category: string }[]).map((s) => ({
+          name: s.name,
+          demand: s.demand,
+          category: s.category,
+        }));
+        if (fromApi.length) {
+          setCustomSkills(fromApi);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(fromApi));
+        }
+      } catch {
+        /* keep local */
+      }
+    })();
   }, []);
 
   const persist = (next: SkillItem[]) => {
@@ -82,23 +100,41 @@ export default function AdminSkillsPage() {
     setMessage("");
   };
 
-  const saveSkill = () => {
+  const saveSkill = async () => {
     const name = formName.trim();
     if (!name) return;
     const item: SkillItem = { name, demand: formDemand, category: formCategory.trim() || t("تقنية", "Technical") };
+    try {
+      const res = await fetch("/api/data/skills", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const saved = json.data as SkillItem;
+        const next = [...customSkills.filter((s) => s.name !== editingName && s.name !== saved.name), saved];
+        persist(next);
+        setMessage(t("تم حفظ المهارة في قاعدة البيانات", "Skill saved to database"));
+        setShowForm(false);
+        return;
+      }
+    } catch {
+      /* fall through */
+    }
     if (editingName) {
       const next = customSkills.some((s) => s.name === editingName)
         ? customSkills.map((s) => (s.name === editingName ? item : s))
         : [...customSkills.filter((s) => s.name !== item.name), item];
       persist(next);
-      setMessage(t("تم تحديث المهارة", "Skill updated"));
+      setMessage(t("تم تحديث المهارة محلياً", "Skill updated locally"));
     } else {
       if (platformSkills.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
         setMessage(t("المهارة موجودة مسبقاً", "Skill already exists"));
         return;
       }
       persist([...customSkills, item]);
-      setMessage(t("تمت إضافة المهارة", "Skill added"));
+      setMessage(t("تمت إضافة المهارة محلياً", "Skill added locally"));
     }
     setShowForm(false);
   };
@@ -148,7 +184,7 @@ export default function AdminSkillsPage() {
               />
             </div>
             <div className="flex gap-2 mt-4">
-              <Button size="sm" onClick={saveSkill}>{t("حفظ", "Save")}</Button>
+              <Button size="sm" onClick={() => void saveSkill()}>{t("حفظ", "Save")}</Button>
               <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>
                 <X className="w-4 h-4" />
                 {t("إلغاء", "Cancel")}

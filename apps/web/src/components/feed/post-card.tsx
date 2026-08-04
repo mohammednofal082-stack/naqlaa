@@ -26,7 +26,7 @@ function usePostAuthor(post: FeedPost) {
     ? {
         name: `${user.firstName} ${user.lastName}`,
         avatar: user.avatar,
-        subtitle: user.headline || user.role,
+        subtitle: user.role,
       }
     : { name: t("مستخدم", "User"), avatar: "", subtitle: "" };
 }

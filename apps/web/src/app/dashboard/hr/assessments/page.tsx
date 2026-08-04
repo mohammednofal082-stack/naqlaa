@@ -56,22 +56,45 @@ export default function HRAssessmentsPage() {
     coding: t("مهمة برمجية", "Coding Task"),
   };
 
-  const createAssessment = (type: "mcq" | "coding") => {
-    const jobId = jobs?.[0]?.id ?? "job-local";
+  const createAssessment = async (type: "mcq" | "coding") => {
+    const jobId = jobs?.[0]?.id;
+    const title =
+      type === "mcq"
+        ? t("اختبار MCQ جديد", "New MCQ Assessment")
+        : t("مهمة برمجية جديدة", "New Coding Task");
+    const deadline = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+
+    if (jobId) {
+      try {
+        const res = await fetch("/api/data/assessments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobId, title, type, deadline, status: "active" }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const item = json.data as Assessment;
+          persist([item, ...localItems.filter((a) => a.id !== item.id)]);
+          setExpandedId(item.id);
+          setMessage(t("تم إنشاء الاختبار في قاعدة البيانات", "Assessment saved to database"));
+          return;
+        }
+      } catch {
+        /* fall through */
+      }
+    }
+
     const item: Assessment = {
       id: `assess-local-${Date.now()}`,
-      jobId,
-      title:
-        type === "mcq"
-          ? t("اختبار MCQ جديد", "New MCQ Assessment")
-          : t("مهمة برمجية جديدة", "New Coding Task"),
+      jobId: jobId ?? "job-local",
+      title,
       type,
-      deadline: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+      deadline,
       status: "active",
     };
     persist([item, ...localItems]);
     setExpandedId(item.id);
-    setMessage(t("تم إنشاء الاختبار", "Assessment created"));
+    setMessage(t("تم إنشاء الاختبار محلياً", "Assessment created locally"));
   };
 
   const saveEdit = (id: string) => {
@@ -190,14 +213,14 @@ export default function HRAssessmentsPage() {
 
         <PanelCard title={t("إنشاء اختبار جديد", "Create New Assessment")} className="mt-6">
           <div className="grid sm:grid-cols-2 gap-3">
-            <Button variant="outline" className="justify-start h-auto py-4" onClick={() => createAssessment("mcq")}>
+            <Button variant="outline" className="justify-start h-auto py-4" onClick={() => void createAssessment("mcq")}>
               <FileQuestion className="w-5 h-5" />
               <div className="text-right">
                 <p className="font-medium">{t("اختبار MCQ", "MCQ Assessment")}</p>
                 <p className="text-xs text-text-secondary">{t("أسئلة اختيار من متعدد", "Multiple choice questions")}</p>
               </div>
             </Button>
-            <Button variant="outline" className="justify-start h-auto py-4" onClick={() => createAssessment("coding")}>
+            <Button variant="outline" className="justify-start h-auto py-4" onClick={() => void createAssessment("coding")}>
               <Code className="w-5 h-5" />
               <div className="text-right">
                 <p className="font-medium">{t("مهمة برمجية", "Coding Task")}</p>
