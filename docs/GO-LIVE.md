@@ -32,8 +32,10 @@ JWT_SECRET=naqlah-mvp-change-me-please-2026
 1. `supabase/migrations/005_jobs_write_rls.sql`
 2. `supabase/migrations/006_write_rls.sql`
 3. `supabase/migrations/007_storage_courses.sql`
-4. إنشاء Storage bucket باسم `cvs`
-5. من جذر المشروع: `npm run seed:demo-users` ← ينشئ 8 حسابات Auth + طلبات تجريبية
+4. `supabase/migrations/008_signup_role_trigger.sql`
+5. `supabase/migrations/009_full_platform.sql`
+6. إنشاء Storage bucket باسم `cvs`
+7. من جذر المشروع: `npm run seed:demo-users` ← ينشئ 8 حسابات Auth + طلبات تجريبية
 
 ثم:
 

@@ -111,6 +111,9 @@ export const supabaseRepositories: DataRepositories = {
     if (query?.scope !== 'all' && query?.userId) {
       q = q.eq('student_id', query.userId);
     }
+    if (query?.scope === 'all' && query?.companyId) {
+      q = q.eq('company_id', query.companyId);
+    }
 
     const { data, error } = await q;
     if (error) throw error;
@@ -324,13 +327,45 @@ export const supabaseRepositories: DataRepositories = {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('UNAUTHORIZED');
+
+    const { data: current } = await supabase
+      .from('student_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const headline = input.headline ?? current?.headline ?? '';
+    const about = input.about ?? current?.about ?? '';
+    const location = input.location ?? current?.location ?? '';
+    const skills = (input.skills ?? current?.skills ?? []) as string[];
+    const education = (current?.education as unknown[]) ?? [];
+    const projects = (current?.projects as unknown[]) ?? [];
+
+    let completion = 0;
+    if (headline) completion += 20;
+    if (about && String(about).length > 20) completion += 20;
+    if (location) completion += 10;
+    if (skills.length >= 3) completion += 20;
+    else if (skills.length > 0) completion += 10;
+    if (education.length > 0) completion += 15;
+    if (projects.length > 0) completion += 15;
+
     await supabase.from('student_profiles').update({
       headline: input.headline,
       about: input.about,
       location: input.location,
       skills: input.skills,
+      profile_completion: completion,
       updated_at: new Date().toISOString(),
     }).eq('user_id', user.id);
+
+    if (completion >= 80) {
+      const { data: badge } = await supabase.from('badges').select('id').eq('code', 'profile_80').maybeSingle();
+      if (badge?.id) {
+        await supabase.from('user_badges').upsert({ user_id: user.id, badge_id: badge.id });
+      }
+    }
+
     return (await this.getProfile(user.id))!;
   },
 
@@ -436,7 +471,19 @@ export const supabaseRepositories: DataRepositories = {
   },
 
   async getSettings() {
-    return { emailNotifications: true, pushNotifications: true, profilePublic: true };
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { emailNotifications: true, pushNotifications: true, profilePublic: true };
+    const { data } = await supabase.from('user_settings').select('*').eq('user_id', user.id).maybeSingle();
+    if (!data) {
+      return { emailNotifications: true, pushNotifications: true, profilePublic: true };
+    }
+    return {
+      emailNotifications: Boolean(data.email_notifications),
+      pushNotifications: Boolean(data.push_notifications),
+      profilePublic: Boolean(data.profile_public),
+    };
   },
 
   async getInternshipRequests() {
@@ -569,21 +616,84 @@ export const supabaseRepositories: DataRepositories = {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('UNAUTHORIZED');
+
+    if (input.jobId) {
+      const { data: existing } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('student_id', user.id)
+        .eq('job_id', input.jobId)
+        .maybeSingle();
+      if (existing) throw new Error('ALREADY_APPLIED');
+    }
+    if (input.internshipId) {
+      const { data: existing } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('student_id', user.id)
+        .eq('internship_id', input.internshipId)
+        .maybeSingle();
+      if (existing) throw new Error('ALREADY_APPLIED');
+    }
+
+    const companyId = input.jobId
+      ? (await this.getJobById(input.jobId))?.companyId
+      : (await this.getInternshipById(input.internshipId!))?.companyId;
+    if (!companyId) throw new Error('NOT_FOUND');
+
     const { data, error } = await supabase.from('applications').insert({
       student_id: user.id,
       job_id: input.jobId ?? null,
       internship_id: input.internshipId ?? null,
-      company_id: input.jobId ? (await this.getJobById(input.jobId))?.companyId : (await this.getInternshipById(input.internshipId!))?.companyId,
+      company_id: companyId,
       cover_letter: input.coverNote,
       status: 'applied',
     }).select().single();
-    if (error) throw error;
+    if (error) {
+      if (String(error.message).includes('duplicate') || error.code === '23505') {
+        throw new Error('ALREADY_APPLIED');
+      }
+      throw error;
+    }
+
+    await supabase.from('notifications').insert({
+      user_id: user.id,
+      type: 'application-update',
+      title: 'تم استلام طلبك',
+      message: 'تم تقديم طلبك بنجاح',
+      link: '/applications',
+      read: false,
+    });
+
+    const { count } = await supabase
+      .from('applications')
+      .select('*', { count: 'exact', head: true })
+      .eq('student_id', user.id);
+    if ((count ?? 0) <= 1) {
+      const { data: badge } = await supabase.from('badges').select('id').eq('code', 'first_apply').maybeSingle();
+      if (badge?.id) {
+        await supabase.from('user_badges').upsert({ user_id: user.id, badge_id: badge.id });
+      }
+    }
+
+    await supabase.from('application_status_history').insert({
+      application_id: data.id,
+      from_status: null,
+      to_status: 'applied',
+      changed_by: user.id,
+      note: 'Application created',
+    });
+
     return mapApplication(data);
   },
 
   async updateApplicationStatus(id, status, extras?: { interviewDate?: string }) {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: prev } = await supabase.from('applications').select('*').eq('id', id).maybeSingle();
+    if (!prev) throw new Error('NOT_FOUND');
+
     const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
     if (extras?.interviewDate) patch.interview_date = extras.interviewDate;
     else if (status === 'interview_scheduled') {
@@ -591,7 +701,53 @@ export const supabaseRepositories: DataRepositories = {
     }
     const { data, error } = await supabase.from('applications').update(patch).eq('id', id).select().single();
     if (error) throw error;
+
+    await supabase.from('application_status_history').insert({
+      application_id: id,
+      from_status: prev.status,
+      to_status: status,
+      changed_by: user?.id ?? null,
+    });
+    await supabase.from('notifications').insert({
+      user_id: prev.student_id,
+      type: 'application-update',
+      title: 'تحديث على طلبك',
+      message: `حالة الطلب أصبحت: ${status}`,
+      link: '/applications',
+      read: false,
+    });
+    await supabase.from('audit_logs').insert({
+      action: 'application_status_changed',
+      entity_type: 'application',
+      entity_id: id,
+      actor_id: user?.id ?? null,
+    });
+
     return mapApplication(data);
+  },
+
+  async createJob(input) {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const company = await this.getCompanyById(input.companyId);
+    if (!company) throw new Error('COMPANY_NOT_FOUND');
+    if (!company.verified) throw new Error('COMPANY_NOT_VERIFIED');
+
+    const { data, error } = await supabase.from('jobs').insert({
+      company_id: input.companyId,
+      title: input.title,
+      description: input.description,
+      requirements: input.requirements,
+      skills: input.skills,
+      salary_min: input.salaryMin,
+      salary_max: input.salaryMax,
+      location: input.location,
+      work_type: input.workType,
+      experience_level: input.experienceLevel,
+      status: 'published',
+    }).select().single();
+    if (error) throw error;
+    return mapJob(data);
   },
 
   async updateMentorshipStatus(id, status, extras) {
@@ -622,26 +778,6 @@ export const supabaseRepositories: DataRepositories = {
       feedback: data.feedback ? String(data.feedback) : undefined,
       rating: data.rating != null ? Number(data.rating) : undefined,
     };
-  },
-
-  async createJob(input) {
-    assertSupabase();
-    const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase.from('jobs').insert({
-      company_id: input.companyId,
-      title: input.title,
-      description: input.description,
-      requirements: input.requirements,
-      skills: input.skills,
-      salary_min: input.salaryMin,
-      salary_max: input.salaryMax,
-      location: input.location,
-      work_type: input.workType,
-      experience_level: input.experienceLevel,
-      status: 'published',
-    }).select().single();
-    if (error) throw error;
-    return mapJob(data);
   },
 
   async enrollCourse(courseId) {
@@ -725,7 +861,23 @@ export const supabaseRepositories: DataRepositories = {
   async saveCompany(_companyId) { return; },
 
   async updateSettings(settings) {
-    return { emailNotifications: settings.emailNotifications ?? true, pushNotifications: settings.pushNotifications ?? true, profilePublic: settings.profilePublic ?? true };
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('UNAUTHORIZED');
+    const row = {
+      user_id: user.id,
+      email_notifications: settings.emailNotifications ?? true,
+      push_notifications: settings.pushNotifications ?? true,
+      profile_public: settings.profilePublic ?? true,
+      updated_at: new Date().toISOString(),
+    };
+    await supabase.from('user_settings').upsert(row);
+    return {
+      emailNotifications: row.email_notifications,
+      pushNotifications: row.push_notifications,
+      profilePublic: row.profile_public,
+    };
   },
 
   async registerForEvent(eventId) {

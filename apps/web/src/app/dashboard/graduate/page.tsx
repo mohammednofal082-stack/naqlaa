@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { PageHeader, EmptyState } from "@/components/layout/page-header";
@@ -8,6 +9,7 @@ import { StatCard } from "@/components/dashboard/widgets";
 import { PanelCard, QuickAction } from "@/components/dashboard/dashboard-shell";
 import { JobCard } from "@/components/jobs/job-card";
 import { Button } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/input";
 import { useApplications, useJobs } from "@/hooks/data";
 import { useApp } from "@/contexts/app-context";
 import { Briefcase, CheckCircle, Handshake, BookOpen, FileText, Users } from "lucide-react";
@@ -22,9 +24,29 @@ export default function GraduateDashboard() {
   const { data: jobsData } = useJobs();
   const apps = applications ?? [];
   const jobs = (jobsData ?? []).slice(0, 3);
-  const employed = apps.some((a) => a.status === "accepted");
+  const [employmentStatus, setEmploymentStatus] = useState("seeking");
+  const [employmentCompany, setEmploymentCompany] = useState("");
+  const [employmentTitle, setEmploymentTitle] = useState("");
+  const [empMsg, setEmpMsg] = useState("");
+  const employed = employmentStatus === "employed" || apps.some((a) => a.status === "accepted");
   const firstName = user?.fullName.split(" ")[0] ?? t("خريج", "Graduate");
   const interviews = apps.filter((a) => a.status === "interview_scheduled" || a.interviewDate).length;
+
+  const saveEmployment = async () => {
+    setEmpMsg("");
+    try {
+      const res = await fetch("/api/data/employment", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employmentStatus, employmentCompany, employmentTitle }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      setEmpMsg(t("تم حفظ حالة التوظيف", "Employment status saved"));
+    } catch (e) {
+      setEmpMsg(e instanceof Error ? e.message : t("فشل الحفظ", "Save failed"));
+    }
+  };
 
   const kanbanColumns = [
     { key: "applied", label: t("تم التقديم", "Applied"), color: "bg-blue/10 border-blue/20" },
@@ -53,6 +75,22 @@ export default function GraduateDashboard() {
           <StatCard title={t("حالة التوظيف", "Employment Status")} value={employed ? t("موظف", "Employed") : t("باحث", "Job Seeker")} icon={CheckCircle} accent="emerald" />
           <StatCard title={t("جلسات إرشاد", "Mentorship Sessions")} value={2} icon={Handshake} accent="cyan" />
         </div>
+
+        <PanelCard title={t("تحديث حالة التوظيف", "Update employment status")} className="mb-6">
+          <div className="grid gap-3 sm:grid-cols-4">
+            <Select value={employmentStatus} onChange={(e) => setEmploymentStatus(e.target.value)}>
+              <option value="seeking">{t("باحث عن عمل", "Job seeking")}</option>
+              <option value="employed">{t("موظف", "Employed")}</option>
+              <option value="freelance">{t("عمل حر", "Freelance")}</option>
+              <option value="studying">{t("دراسة", "Studying")}</option>
+              <option value="other">{t("أخرى", "Other")}</option>
+            </Select>
+            <Input value={employmentCompany} onChange={(e) => setEmploymentCompany(e.target.value)} placeholder={t("الشركة", "Company")} />
+            <Input value={employmentTitle} onChange={(e) => setEmploymentTitle(e.target.value)} placeholder={t("المسمى", "Title")} />
+            <Button onClick={() => void saveEmployment()}>{t("حفظ", "Save")}</Button>
+          </div>
+          {empMsg && <p className="text-sm text-text-secondary mt-2">{empMsg}</p>}
+        </PanelCard>
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">

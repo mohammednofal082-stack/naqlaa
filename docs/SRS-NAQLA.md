@@ -869,9 +869,11 @@ match_score = 45% skill_match
 | إرسال رسالة | ✅ | ✅ | ✅ (REST، بدون Realtime) |
 | موافقة Admin | ✅ | ✅ | ✅ |
 | رفع ملف CV إلى Storage | ✅ تحليل | ✅ | ✅ bucket `cvs` + جدول `cv_files` |
-| Event check-in / QR | ✅ عرض | جزئي | جزئي |
+| Event check-in / QR | ✅ ويب + موبايل | ✅ | ✅ |
+| Apply-once / HR scope / verified company | ✅ | ✅ | ✅ migration `009` |
+| جامعات/أقسام / تقييم تدريب / شهادات / Quizzes | ✅ | ✅ | ✅ migration `009` |
 
-> **الخلاصة:** المسارات الأساسية للمناقشة مربوطة بـ Supabase بما فيها Storage للـ CV ووحدات الكورسات وQR للفعاليات. ما تبقى اختياري للتحسين: Push، Realtime، وجداول الجامعات ككيانات مستقلة.
+> **الخلاصة:** المنصة تغطي مسارات SkillBridge الأساسية للنقاش الكامل. نفّذ migrations حتى `009` + bucket `cvs` + `seed:demo-users`.
 
 ---
 

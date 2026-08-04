@@ -11,9 +11,16 @@ export async function GET(req: NextRequest) {
     const scopeParam = req.nextUrl.searchParams.get('scope');
     const scope =
       scopeParam === 'all' && user && ALL_SCOPE_ROLES.has(user.role) ? 'all' : 'mine';
+
+    const companyId =
+      scope === 'all' && (user?.role === 'hr' || user?.role === 'company')
+        ? user.organizationId
+        : undefined;
+
     return getRepo().getApplications({
       userId: user?.userId,
       scope,
+      companyId,
     });
   });
 }

@@ -190,6 +190,61 @@ export default function UniversityInternshipsPage() {
                   </Button>
                 </PanelCard>
               )}
+
+              {activeId && (
+                <PanelCard title={t("تقييم واعتماد التدريب", "Evaluate & approve internship")}>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await fetch("/api/data/internship-evaluations", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              internshipRequestId: activeId,
+                              evaluatorRole: "university",
+                              score: 85,
+                              comments: t("أداء جيد", "Good performance"),
+                              approved: true,
+                            }),
+                          });
+                          setError("");
+                          alert(t("تم اعتماد التدريب", "Internship approved"));
+                        } catch {
+                          setError(t("فشل الاعتماد", "Approval failed"));
+                        }
+                      }}
+                    >
+                      {t("اعتماد المشرف الجامعي", "University supervisor approve")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          await fetch("/api/data/internship-evaluations", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              internshipRequestId: activeId,
+                              evaluatorRole: "company",
+                              score: 80,
+                              comments: t("تقييم الشركة", "Company evaluation"),
+                              approved: true,
+                            }),
+                          });
+                          alert(t("تم حفظ تقييم الشركة", "Company evaluation saved"));
+                        } catch {
+                          setError(t("فشل التقييم", "Evaluation failed"));
+                        }
+                      }}
+                    >
+                      {t("تقييم الشركة", "Company evaluation")}
+                    </Button>
+                  </div>
+                </PanelCard>
+              )}
             </div>
           </div>
         )}

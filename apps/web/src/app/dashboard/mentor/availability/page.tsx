@@ -72,9 +72,33 @@ export default function MentorAvailabilityPage() {
     setMessage("");
   };
 
-  const saveChanges = () => {
+  const saveChanges = async () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(availability));
-    setMessage(t("تم حفظ الأوقات المتاحة", "Availability saved"));
+    try {
+      const dayIndex: Record<string, number> = {
+        "الأحد": 0, "الإثنين": 1, "الثلاثاء": 2, "الأربعاء": 3, "الخميس": 4, "الجمعة": 5, "السبت": 6,
+      };
+      const slots = Object.entries(availability).flatMap(([day, times]) =>
+        times.map((startTime) => ({
+          dayOfWeek: dayIndex[day] ?? 0,
+          startTime,
+          endTime: startTime,
+          isActive: true,
+        })),
+      );
+      const res = await fetch("/api/data/mentor-availability", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slots }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || "FAILED");
+      }
+      setMessage(t("تم حفظ الأوقات في قاعدة البيانات", "Availability saved to database"));
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : t("حُفظ محلياً — تأكد من migration 009", "Saved locally — ensure migration 009"));
+    }
   };
 
   const allSlots = Array.from(
@@ -157,7 +181,7 @@ export default function MentorAvailabilityPage() {
                 })}
               </div>
               {message && <p className="mt-4 text-sm text-emerald-600 dark:text-emerald-400">{message}</p>}
-              <Button className="w-full mt-6" onClick={saveChanges}>
+              <Button className="w-full mt-6" onClick={() => void saveChanges()}>
                 {t("حفظ التغييرات", "Save Changes")}
               </Button>
             </PanelCard>

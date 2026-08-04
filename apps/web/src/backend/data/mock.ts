@@ -290,6 +290,9 @@ export const mockRepositories: DataRepositories = {
 
   async createJob(input: CreateJobInput) {
     ensureInit();
+    const company = memoryStore.companies.find((c) => c.id === input.companyId);
+    if (!company) throw new Error('COMPANY_NOT_FOUND');
+    if (!company.verified) throw new Error('COMPANY_NOT_VERIFIED');
     const job = {
       id: `job-${Date.now()}`,
       companyId: input.companyId,

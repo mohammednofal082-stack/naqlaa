@@ -36,6 +36,7 @@ export type ApplicationWithDetails = Application & {
 export interface ApplicationsQuery {
   userId?: string;
   scope?: 'mine' | 'all';
+  companyId?: string;
 }
 
 export interface UserProfileBundle {
