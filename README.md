@@ -62,6 +62,7 @@ naqla/
    - `supabase/migrations/009_full_platform.sql`
    - `supabase/migrations/010_skills_sessions.sql`
    - `supabase/migrations/011_feed_social.sql`
+   - `supabase/migrations/012_comments_moderation.sql`
    - `supabase/seed.sql`
 3. في **Storage** أنشئ bucket باسم `cvs` (للسيرة الذاتية)
 4. من **Project Settings → API** انسخ:

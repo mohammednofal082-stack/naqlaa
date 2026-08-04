@@ -18,6 +18,7 @@ interface SocialContextValue {
   addPost: (content: string, tags?: string[]) => void;
   toggleLike: (postId: string) => void;
   isPostLiked: (postId: string) => boolean;
+  setPostCommentCount: (postId: string, count: number) => void;
   conversations: Conversation[];
   messages: Message[];
   sendMessage: (conversationId: string, content: string) => void;
@@ -314,6 +315,12 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
   const isPostLiked = useCallback((postId: string) => likedIds.has(postId), [likedIds]);
 
+  const setPostCommentCount = useCallback((postId: string, count: number) => {
+    setBasePosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, comments: count } : p))
+    );
+  }, []);
+
   return (
     <SocialContext.Provider
       value={{
@@ -321,6 +328,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         addPost,
         toggleLike,
         isPostLiked,
+        setPostCommentCount,
         conversations: convs,
         messages,
         sendMessage,

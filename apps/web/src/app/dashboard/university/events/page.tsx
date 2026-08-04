@@ -100,7 +100,6 @@ export default function UniversityEventsPage() {
       if (res.ok) {
         const json = await res.json();
         const created = json.data as Event;
-        persistLocal([created, ...localEvents.filter((e) => e.id !== created.id)]);
         await refetch();
         setMessage(t("تم إنشاء الفعالية", "Event created"));
         setShowForm(false);

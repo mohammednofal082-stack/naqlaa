@@ -19,7 +19,7 @@ import { useI18n } from "@/i18n";
 
 export default function FeedPage() {
   const { t } = useI18n();
-  const { posts, toggleLike, isPostLiked } = useSocial();
+  const { posts, toggleLike, isPostLiked, setPostCommentCount } = useSocial();
   const { user } = useApp();
   const filters: { key: "all" | FeedPost["type"]; label: string }[] = [
     { key: "all", label: t("الكل", "All") },
@@ -80,6 +80,7 @@ export default function FeedPage() {
                   post={post}
                   liked={isPostLiked(post.id)}
                   onLike={() => toggleLike(post.id)}
+                  onCommentCount={(id, count) => setPostCommentCount(id, count)}
                 />
               ))
             )}

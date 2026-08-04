@@ -1,18 +1,32 @@
-"use client";
+﻿"use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { DashboardLayout, Header } from "@/components/layout/sidebar";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress";
 import { useProfile } from "@/hooks/data";
-import { MapPin, Download, Edit } from "lucide-react";
+import { Award, MapPin, Download, Edit } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/i18n";
 
+type BadgeRow = { code: string; nameAr: string; nameEn: string; awardedAt: string };
+
 export default function ProfilePage() {
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   const { data, loading } = useProfile();
+  const [badges, setBadges] = useState<BadgeRow[]>([]);
+
+  useEffect(() => {
+    void fetch("/api/data/badges")
+      .then((r) => r.json())
+      .then((json) => {
+        if (Array.isArray(json.data)) setBadges(json.data as BadgeRow[]);
+      })
+      .catch(() => {});
+  }, []);
+
   if (loading || !data) {
     return (
       <DashboardLayout>
@@ -132,6 +146,25 @@ export default function ProfilePage() {
           </Card>
 
           <Card>
+            <CardTitle className="font-display mb-4 flex items-center gap-2">
+              <Award className="w-4 h-4 text-brand" />
+              {t("الشارات", "Badges")}
+            </CardTitle>
+            {badges.length === 0 ? (
+              <p className="text-sm text-text-muted">{t("لا شارات بعد — قدّم على وظيفة أو أكمل ملفك.", "No badges yet — apply for a job or complete your profile.")}</p>
+            ) : (
+              <div className="space-y-2">
+                {badges.map((b) => (
+                  <div key={`${b.code}-${b.awardedAt}`} className="flex items-center justify-between gap-2">
+                    <span className="nq-chip nq-chip-emerald">{isRTL ? (b.nameAr || b.code) : (b.nameEn || b.code)}</span>
+                    <span className="text-[11px] text-text-muted">{String(b.awardedAt).slice(0, 10)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card>
             <CardTitle className="font-display mb-4">{t("الشهادات", "Certifications")}</CardTitle>
             {profile.certifications.map((cert) => (
               <div key={cert.id} className="mb-3 last:mb-0">
@@ -143,10 +176,12 @@ export default function ProfilePage() {
 
           <Card>
             <CardTitle className="font-display mb-4">{t("السيرة الذاتية", "Resume")}</CardTitle>
-            <Button variant="outline" className="w-full">
-              <Download className="w-4 h-4" />
-              {t("تحميل CV", "Download CV")}
-            </Button>
+            <Link href="/ai/cv-builder">
+              <Button variant="outline" className="w-full">
+                <Download className="w-4 h-4" />
+                {t("بناء / تصدير CV", "Build / Export CV")}
+              </Button>
+            </Link>
           </Card>
 
           <Card>

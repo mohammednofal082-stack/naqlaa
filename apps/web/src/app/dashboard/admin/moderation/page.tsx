@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
@@ -11,10 +11,13 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, MessageSquare, Shield, User } from "lucide-react";
 import { useI18n } from "@/i18n";
 
-const typeIcons: Record<string, React.ComponentType<{ className?: string }> > = {
+const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   profile: User,
   message: MessageSquare,
   job: AlertTriangle,
+  post: MessageSquare,
+  company: Shield,
+  other: Shield,
 };
 
 type Report = {
@@ -30,30 +33,60 @@ type Report = {
 
 export default function AdminModerationPage() {
   const { t } = useI18n();
-  const initial: Report[] = [
-    { id: "mod-1", type: "profile", target: t("حساب مشبوه", "Suspicious account"), reporter: t("سارة خليل", "Sara Khalil"), reason: t("معلومات غير دقيقة", "Inaccurate information"), status: "pending", date: "2025-06-20", link: "/dashboard/admin/users" },
-    { id: "mod-2", type: "message", target: t("رسالة مسيئة", "Abusive message"), reporter: t("أمير أبو شمس", "Ameer Abu Shams"), reason: t("محتوى غير لائق", "Inappropriate content"), status: "pending", date: "2025-06-19", link: "/messages" },
-    { id: "mod-3", type: "job", target: t("وظيفة مزيفة", "Fake job posting"), reporter: t("مدير النظام", "System Administrator"), reason: t("شركة غير موثقة", "Unverified company"), status: "reviewed", date: "2025-06-18", link: "/dashboard/admin/companies" },
-  ];
-
   const typeLabels: Record<string, string> = {
     profile: t("ملف شخصي", "Profile"),
     message: t("رسالة", "Message"),
     job: t("وظيفة", "Job"),
+    post: t("منشور", "Post"),
+    company: t("شركة", "Company"),
+    other: t("أخرى", "Other"),
   };
 
-  const [items, setItems] = useState(initial);
+  const [items, setItems] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  const resolve = (id: string) => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, status: "reviewed" } : item)));
-    setMsg(t("تم تعليم البلاغ كمُعالَج", "Report marked as resolved"));
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/data/reports");
+      const json = await res.json();
+      if (res.ok && Array.isArray(json.data)) setItems(json.data as Report[]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const updateStatus = async (id: string, status: "reviewed" | "banned") => {
+    setBusyId(id);
+    setMsg("");
+    try {
+      const res = await fetch("/api/data/reports", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      setItems((prev) => prev.map((item) => (item.id === id ? { ...item, status } : item)));
+      setMsg(
+        status === "banned"
+          ? t("تم الحظر وتسجيل الإجراء", "Banned and logged in audit")
+          : t("تم تعليم البلاغ كمُعالَج", "Report marked as resolved")
+      );
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : t("فشل التحديث", "Update failed"));
+    } finally {
+      setBusyId(null);
+    }
   };
 
-  const ban = (id: string) => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, status: "banned" } : item)));
-    setMsg(t("تم حظر الهدف وربطه بقائمة الشركات/المستخدمين للمراجعة", "Target banned — review companies/users list"));
-  };
+  const pending = items.filter((i) => i.status === "pending");
 
   return (
     <DashboardLayout>
@@ -64,21 +97,34 @@ export default function AdminModerationPage() {
       >
         {msg && <p className="text-sm text-text-secondary mb-4">{msg}</p>}
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <StatCard title={t("بلاغات معلقة", "Pending Reports")} value={items.filter((i) => i.status === "pending").length} icon={AlertTriangle} />
-          <StatCard title={t("تمت المراجعة", "Reviewed")} value={items.filter((i) => i.status === "reviewed" || i.status === "banned").length} icon={Shield} />
+          <StatCard title={t("بلاغات معلقة", "Pending Reports")} value={pending.length} icon={AlertTriangle} />
+          <StatCard
+            title={t("تمت المراجعة", "Reviewed")}
+            value={items.filter((i) => i.status === "reviewed" || i.status === "banned").length}
+            icon={Shield}
+          />
           <StatCard title={t("إجمالي البلاغات", "Total Reports")} value={items.length} icon={MessageSquare} />
         </div>
 
         <PanelCard title={t("البلاغات", "Reports")}>
-          {items.filter((i) => i.status === "pending").length === 0 ? (
+          {loading ? (
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="nq-skeleton h-20" />
+              ))}
+            </div>
+          ) : pending.length === 0 ? (
             <EmptyState
               icon={Shield}
               title={t("لا بلاغات معلقة", "No Pending Reports")}
-              description={t("جميع البلاغات تمت معالجتها. أحسنت!", "All reports have been handled. Well done!")}
+              description={t(
+                "البلاغات من الفيد تظهر هنا بعد الإرسال.",
+                "Reports submitted from the feed appear here."
+              )}
             />
           ) : (
             <div className="space-y-2">
-              {items.filter((i) => i.status === "pending").map((report) => {
+              {pending.map((report) => {
                 const Icon = typeIcons[report.type] ?? Shield;
                 return (
                   <div key={report.id} className="nq-lift p-3 rounded-lg border border-border bg-surface-hover/40">
@@ -91,15 +137,32 @@ export default function AdminModerationPage() {
                       title={report.target}
                       subtitle={report.reason}
                       meta={report.date}
-                      badge={<span className="nq-chip">{typeLabels[report.type]}</span>}
+                      badge={<span className="nq-chip">{typeLabels[report.type] ?? report.type}</span>}
                     />
-                    <p className="text-xs text-text-muted mt-2 mr-12">{t("بلّغ", "Reported by")} {report.reporter}</p>
+                    <p className="text-xs text-text-muted mt-2 mr-12">
+                      {t("بلّغ", "Reported by")} {report.reporter}
+                    </p>
                     <div className="flex gap-2 mt-3 mr-12">
-                      <Link href={report.link ?? "/dashboard/admin/verification"}>
-                        <Button size="sm" variant="outline">{t("عرض", "View")}</Button>
+                      <Link href={report.link ?? "/dashboard/admin/users"}>
+                        <Button size="sm" variant="outline">
+                          {t("عرض", "View")}
+                        </Button>
                       </Link>
-                      <Button size="sm" onClick={() => resolve(report.id)}>{t("حل", "Resolve")}</Button>
-                      <Button size="sm" variant="danger" onClick={() => ban(report.id)}>{t("حظر", "Ban")}</Button>
+                      <Button
+                        size="sm"
+                        disabled={busyId === report.id}
+                        onClick={() => void updateStatus(report.id, "reviewed")}
+                      >
+                        {t("حل", "Resolve")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        disabled={busyId === report.id}
+                        onClick={() => void updateStatus(report.id, "banned")}
+                      >
+                        {t("حظر", "Ban")}
+                      </Button>
                     </div>
                   </div>
                 );
