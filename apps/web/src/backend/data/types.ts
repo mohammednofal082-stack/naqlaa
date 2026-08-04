@@ -143,11 +143,14 @@ export interface DataRepositories {
   getNotifications(userId?: string): Promise<Notification[]>;
   getCourses(): Promise<Course[]>;
   getFeedPosts(): Promise<FeedPost[]>;
+  createFeedPost(input: { content: string; type?: FeedPost['type']; tags?: string[]; jobId?: string }): Promise<FeedPost>;
+  toggleFeedLike(postId: string): Promise<{ liked: boolean; likes: number }>;
   getRecommendations(targetRole?: string): Promise<SmartRecommendations>;
   getEvents(): Promise<Event[]>;
   getMentors(): Promise<MentorProfile[]>;
   getMentorshipSessions(userId?: string): Promise<MentorshipSession[]>;
   getConversations(userId?: string): Promise<Conversation[]>;
+  createConversation(otherUserId: string): Promise<Conversation>;
   getMessages(conversationId: string): Promise<Message[]>;
   getSavedJobs(userId?: string): Promise<JobWithCompany[]>;
   getSavedCompanies(userId?: string): Promise<Company[]>;

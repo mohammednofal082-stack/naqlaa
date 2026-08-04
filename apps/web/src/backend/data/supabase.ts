@@ -288,14 +288,96 @@ export const supabaseRepositories: DataRepositories = {
   async getFeedPosts() {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { data, error } = await supabase
       .from('feed_posts')
-      .select('*')
+      .select('*, profiles:author_id(full_name, avatar_url)')
       .order('created_at', { ascending: false })
       .limit(50);
 
     if (error) throw error;
-    return (data ?? []).map(mapFeedPost);
+
+    let likedIds = new Set<string>();
+    if (user?.id) {
+      const { data: likes } = await supabase
+        .from('feed_post_likes')
+        .select('post_id')
+        .eq('user_id', user.id);
+      likedIds = new Set((likes ?? []).map((l) => String(l.post_id)));
+    }
+
+    return (data ?? []).map((row) =>
+      mapFeedPost({
+        ...row,
+        liked_by_me: likedIds.has(String(row.id)),
+      })
+    );
+  },
+
+  async createFeedPost(input) {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('UNAUTHORIZED');
+    const content = String(input.content ?? '').trim();
+    if (!content) throw new Error('INVALID_INPUT');
+
+    const { data, error } = await supabase
+      .from('feed_posts')
+      .insert({
+        author_id: user.id,
+        content,
+        post_type: input.type ?? 'update',
+        tags: input.tags ?? [],
+        job_id: input.jobId ?? null,
+        likes_count: 0,
+        comments_count: 0,
+      })
+      .select('*, profiles:author_id(full_name, avatar_url)')
+      .single();
+    if (error) throw error;
+    return mapFeedPost({ ...data, liked_by_me: false });
+  },
+
+  async toggleFeedLike(postId) {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('UNAUTHORIZED');
+
+    const { data: existing } = await supabase
+      .from('feed_post_likes')
+      .select('post_id')
+      .eq('post_id', postId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase
+        .from('feed_post_likes')
+        .delete()
+        .eq('post_id', postId)
+        .eq('user_id', user.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('feed_post_likes').insert({
+        post_id: postId,
+        user_id: user.id,
+      });
+      if (error) throw error;
+    }
+
+    const { data: post } = await supabase
+      .from('feed_posts')
+      .select('likes_count')
+      .eq('id', postId)
+      .maybeSingle();
+
+    return {
+      liked: !existing,
+      likes: Number(post?.likes_count ?? 0),
+    };
   },
 
   async getRecommendations(targetRole) {
@@ -435,9 +517,108 @@ export const supabaseRepositories: DataRepositories = {
     const { data: { user } } = await supabase.auth.getUser();
     const uid = userId ?? user?.id;
     if (!uid) return [];
-    const { data, error } = await supabase.from('conversations').select('*').contains('participant_ids', [uid]);
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .contains('participant_ids', [uid])
+      .order('last_message_at', { ascending: false });
     if (error) throw error;
-    return (data ?? []) as unknown as import('@careerlink/shared').Conversation[];
+
+    const convs = data ?? [];
+    const result: import('@careerlink/shared').Conversation[] = [];
+    for (const row of convs) {
+      const id = String(row.id);
+      const participantIds = (row.participant_ids as string[] | null)?.map(String) ?? [];
+      const { data: msgs } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const last = msgs?.[0];
+      const lastMessage = last
+        ? {
+            id: String(last.id),
+            senderId: String(last.sender_id),
+            receiverId: '',
+            content: String(last.content),
+            timestamp: String(last.created_at),
+            read: Boolean(last.read),
+          }
+        : {
+            id: `empty-${id}`,
+            senderId: uid,
+            receiverId: '',
+            content: '',
+            timestamp: String(row.created_at ?? new Date().toISOString()),
+            read: true,
+          };
+      result.push({
+        id,
+        participantIds,
+        lastMessage,
+        unreadCount: 0,
+      });
+    }
+    return result;
+  },
+
+  async createConversation(otherUserId) {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('UNAUTHORIZED');
+    if (!otherUserId || otherUserId === user.id) throw new Error('INVALID_INPUT');
+
+    const { data: existing } = await supabase
+      .from('conversations')
+      .select('*')
+      .contains('participant_ids', [user.id]);
+    const found = (existing ?? []).find((c) => {
+      const ids = (c.participant_ids as string[] | null)?.map(String) ?? [];
+      return ids.includes(otherUserId) && ids.includes(user.id);
+    });
+    if (found) {
+      const mapped = await this.getConversations(user.id);
+      return mapped.find((c) => c.id === String(found.id))!;
+    }
+
+    const { data, error } = await supabase
+      .from('conversations')
+      .insert({
+        participant_ids: [user.id, otherUserId],
+        last_message_at: new Date().toISOString(),
+      })
+      .select('*')
+      .single();
+    if (error) throw error;
+
+    const welcome = 'مرحباً، أود التواصل معك عبر منصة نقلة.';
+    const { data: msg, error: msgErr } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: data.id,
+        sender_id: user.id,
+        content: welcome,
+        read: true,
+      })
+      .select('*')
+      .single();
+    if (msgErr) throw msgErr;
+
+    return {
+      id: String(data.id),
+      participantIds: [user.id, otherUserId],
+      lastMessage: {
+        id: String(msg.id),
+        senderId: String(msg.sender_id),
+        receiverId: otherUserId,
+        content: String(msg.content),
+        timestamp: String(msg.created_at),
+        read: true,
+      },
+      unreadCount: 0,
+    };
   },
 
   async getMessages(conversationId) {
@@ -859,6 +1040,10 @@ export const supabaseRepositories: DataRepositories = {
       content: input.content,
     }).select().single();
     if (error) throw error;
+    await supabase
+      .from('conversations')
+      .update({ last_message_at: data.created_at })
+      .eq('id', input.conversationId);
     return {
       id: String(data.id),
       senderId: String(data.sender_id),

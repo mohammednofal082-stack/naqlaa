@@ -145,15 +145,38 @@ export function mapCourse(row: Record<string, unknown>): Course {
 }
 
 export function mapFeedPost(row: Record<string, unknown>): FeedPost {
+  const profile = row.profiles as Record<string, unknown> | null | undefined;
+  const postType = String(row.post_type ?? 'update') as FeedPost['type'];
+  const tagsRaw = row.tags;
+  const tags = Array.isArray(tagsRaw)
+    ? tagsRaw.map(String)
+    : typeof tagsRaw === 'string'
+      ? (() => {
+          try {
+            const parsed = JSON.parse(tagsRaw);
+            return Array.isArray(parsed) ? parsed.map(String) : [];
+          } catch {
+            return [];
+          }
+        })()
+      : [];
+
   return {
     id: String(row.id),
     authorId: String(row.author_id),
     authorType: 'user',
     content: String(row.content),
-    type: 'update',
-    tags: [],
+    type: (['update', 'job', 'achievement', 'event', 'article'] as const).includes(postType)
+      ? postType
+      : 'update',
+    tags,
     likes: Number(row.likes_count ?? 0),
     comments: Number(row.comments_count ?? 0),
     createdAt: String(row.created_at),
+    jobId: row.job_id ? String(row.job_id) : undefined,
+    eventId: row.event_id ? String(row.event_id) : undefined,
+    authorName: profile?.full_name ? String(profile.full_name) : undefined,
+    authorAvatar: profile?.avatar_url ? String(profile.avatar_url) : undefined,
+    likedByMe: Boolean(row.liked_by_me),
   };
 }

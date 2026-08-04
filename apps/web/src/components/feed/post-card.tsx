@@ -21,6 +21,14 @@ function usePostAuthor(post: FeedPost) {
       : { name: t("شركة", "Company"), avatar: "", subtitle: "" };
   }
 
+  if (post.authorName) {
+    return {
+      name: post.authorName,
+      avatar: post.authorAvatar ?? "",
+      subtitle: t("عضو نقلة", "Naqla member"),
+    };
+  }
+
   const user = users?.find((u) => u.id === post.authorId);
   return user
     ? {
@@ -102,7 +110,14 @@ export function PostCard({
           <MessageCircle className="w-4 h-4" />
           {post.comments}
         </span>
-        <button type="button" className="flex items-center gap-1.5 text-xs ms-auto hover:text-text">
+        <button
+          type="button"
+          className="flex items-center gap-1.5 text-xs ms-auto hover:text-text"
+          onClick={() => {
+            const url = typeof window !== "undefined" ? `${window.location.origin}/feed` : "/feed";
+            void navigator.clipboard?.writeText(url);
+          }}
+        >
           <Share2 className="w-4 h-4" />
           {t("مشاركة", "Share")}
         </button>

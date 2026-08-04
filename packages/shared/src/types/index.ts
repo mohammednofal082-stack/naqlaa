@@ -285,6 +285,9 @@ export interface FeedPost {
   createdAt: string;
   jobId?: string;
   eventId?: string;
+  authorName?: string;
+  authorAvatar?: string;
+  likedByMe?: boolean;
 }
 
 export type NotificationType =

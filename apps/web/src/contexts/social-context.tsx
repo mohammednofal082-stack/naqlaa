@@ -28,15 +28,12 @@ interface SocialContextValue {
 
 const SocialContext = createContext<SocialContextValue | null>(null);
 
-const LIKED_KEY = "naqlah_liked_posts";
-const EXTRA_POSTS_KEY = "naqlah_extra_posts";
 const POLL_MS = 8000;
 
 export function SocialProvider({ children }: { children: ReactNode }) {
   const { user } = useApp();
   const activeUserId = user?.userId ?? "";
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
-  const [extraPosts, setExtraPosts] = useState<FeedPost[]>([]);
   const [basePosts, setBasePosts] = useState<FeedPost[]>([]);
   const [convs, setConvs] = useState<Conversation[]>([]);
   const [msgsByConv, setMsgsByConv] = useState<Record<string, Message[]>>({});
@@ -45,16 +42,16 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   const activeConvRef = useRef<string | null>(null);
   activeConvRef.current = activeConvId;
 
-  useEffect(() => {
-    try {
-      const liked = JSON.parse(localStorage.getItem(LIKED_KEY) || "[]") as string[];
-      setLikedIds(new Set(liked));
-      const posts = JSON.parse(localStorage.getItem(EXTRA_POSTS_KEY) || "[]") as FeedPost[];
-      setExtraPosts(posts);
-    } catch {
-      /* ignore */
-    }
+  const applyFeed = useCallback((feed: FeedPost[]) => {
+    setBasePosts(feed);
+    setLikedIds(new Set(feed.filter((p) => p.likedByMe).map((p) => p.id)));
   }, []);
+
+  const refreshFeed = useCallback(async () => {
+    const res = await fetch("/api/data/feed");
+    const json = await res.json();
+    if (res.ok && Array.isArray(json.data)) applyFeed(json.data as FeedPost[]);
+  }, [applyFeed]);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,8 +62,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     ])
       .then(([feedRes, convRes]) => {
         if (cancelled) return;
-        if (feedRes.data) setBasePosts(feedRes.data as FeedPost[]);
-        if (convRes.data) setConvs(convRes.data as Conversation[]);
+        if (Array.isArray(feedRes.data)) applyFeed(feedRes.data as FeedPost[]);
+        if (Array.isArray(convRes.data)) setConvs(convRes.data as Conversation[]);
       })
       .catch(() => {})
       .finally(() => {
@@ -75,57 +72,98 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [activeUserId]);
+  }, [activeUserId, applyFeed]);
 
-  const posts = useMemo(() => {
-    const merged = [...extraPosts, ...basePosts].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-    return merged.map((p) => ({
-      ...p,
-      likes: p.likes + (likedIds.has(p.id) ? 1 : 0),
-    }));
-  }, [extraPosts, basePosts, likedIds]);
-
-  const messages = useMemo(
-    () => Object.values(msgsByConv).flat(),
-    [msgsByConv]
+  const posts = useMemo(
+    () =>
+      [...basePosts].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ),
+    [basePosts]
   );
 
-  const persistLikes = (ids: Set<string>) => {
-    localStorage.setItem(LIKED_KEY, JSON.stringify([...ids]));
-  };
+  const messages = useMemo(() => Object.values(msgsByConv).flat(), [msgsByConv]);
 
   const toggleLike = useCallback((postId: string) => {
     setLikedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(postId)) next.delete(postId);
+      const wasLiked = next.has(postId);
+      if (wasLiked) next.delete(postId);
       else next.add(postId);
-      persistLikes(next);
       return next;
     });
-  }, []);
+    setBasePosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        const wasLiked = Boolean(p.likedByMe);
+        return {
+          ...p,
+          likedByMe: !wasLiked,
+          likes: Math.max(0, p.likes + (wasLiked ? -1 : 1)),
+        };
+      })
+    );
+
+    void fetch(`/api/data/feed/${encodeURIComponent(postId)}/like`, { method: "POST" })
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json?.data) return;
+        const { liked, likes } = json.data as { liked: boolean; likes: number };
+        setLikedIds((prev) => {
+          const next = new Set(prev);
+          if (liked) next.add(postId);
+          else next.delete(postId);
+          return next;
+        });
+        setBasePosts((prev) =>
+          prev.map((p) => (p.id === postId ? { ...p, likedByMe: liked, likes } : p))
+        );
+      })
+      .catch(() => {
+        void refreshFeed();
+      });
+  }, [refreshFeed]);
 
   const addPost = useCallback(
     (content: string, tags: string[] = []) => {
-      const post: FeedPost = {
-        id: `post-user-${Date.now()}`,
+      const trimmed = content.trim();
+      if (!trimmed || !activeUserId) return;
+
+      const optimistic: FeedPost = {
+        id: `temp-${Date.now()}`,
         authorId: activeUserId,
         authorType: "user",
-        content,
+        content: trimmed,
         type: "update",
         tags,
         likes: 0,
         comments: 0,
         createdAt: new Date().toISOString(),
+        authorName: user?.fullName,
+        authorAvatar: user?.avatar,
+        likedByMe: false,
       };
-      setExtraPosts((prev) => {
-        const next = [post, ...prev];
-        localStorage.setItem(EXTRA_POSTS_KEY, JSON.stringify(next));
-        return next;
-      });
+      setBasePosts((prev) => [optimistic, ...prev]);
+
+      void fetch("/api/data/feed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: trimmed, tags, type: "update" }),
+      })
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.data) {
+            const created = json.data as FeedPost;
+            setBasePosts((prev) => [created, ...prev.filter((p) => p.id !== optimistic.id)]);
+          } else {
+            void refreshFeed();
+          }
+        })
+        .catch(() => {
+          setBasePosts((prev) => prev.filter((p) => p.id !== optimistic.id));
+        });
     },
-    [activeUserId]
+    [activeUserId, refreshFeed, user?.avatar, user?.fullName]
   );
 
   const loadMessages = useCallback(async (conversationId: string) => {
@@ -154,7 +192,6 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     });
   }, [convs, loadMessages]);
 
-  // Poll open conversation + refresh conversation list
   useEffect(() => {
     if (!activeUserId) return;
     const tick = () => {
@@ -163,13 +200,14 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       void fetch("/api/data/conversations")
         .then((r) => r.json())
         .then((json) => {
-          if (json.data) setConvs(json.data as Conversation[]);
+          if (Array.isArray(json.data)) setConvs(json.data as Conversation[]);
         })
         .catch(() => {});
+      void refreshFeed();
     };
     const timer = window.setInterval(tick, POLL_MS);
     return () => window.clearInterval(timer);
-  }, [activeUserId, loadMessages]);
+  }, [activeUserId, loadMessages, refreshFeed]);
 
   const sendMessage = useCallback(
     (conversationId: string, content: string) => {
@@ -209,20 +247,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           );
           setActiveConvId(conversationId);
         })
-        .catch(() => {
-          const msg: Message = {
-            id: `msg-${Date.now()}`,
-            senderId: activeUserId,
-            receiverId: otherId,
-            content: trimmed,
-            timestamp: new Date().toISOString(),
-            read: true,
-          };
-          setMsgsByConv((prev) => ({
-            ...prev,
-            [conversationId]: [...(prev[conversationId] ?? []), msg],
-          }));
-        });
+        .catch(() => {});
     },
     [convs, activeUserId]
   );
@@ -237,6 +262,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         return existing.id;
       }
 
+      const tempId = `temp-conv-${Date.now()}`;
       const welcome: Message = {
         id: `msg-welcome-${Date.now()}`,
         senderId: activeUserId,
@@ -245,18 +271,43 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         timestamp: new Date().toISOString(),
         read: true,
       };
-
-      const newConv: Conversation = {
-        id: `conv-${Date.now()}`,
+      const optimistic: Conversation = {
+        id: tempId,
         participantIds: [activeUserId, userId],
         lastMessage: welcome,
         unreadCount: 0,
       };
+      setConvs((prev) => [optimistic, ...prev]);
+      setMsgsByConv((prev) => ({ ...prev, [tempId]: [welcome] }));
+      setActiveConvId(tempId);
 
-      setConvs((prev) => [newConv, ...prev]);
-      setMsgsByConv((prev) => ({ ...prev, [newConv.id]: [welcome] }));
-      setActiveConvId(newConv.id);
-      return newConv.id;
+      void fetch("/api/data/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      })
+        .then((r) => r.json())
+        .then((json) => {
+          if (!json.data) return;
+          const created = json.data as Conversation;
+          setConvs((prev) => [created, ...prev.filter((c) => c.id !== tempId && c.id !== created.id)]);
+          setMsgsByConv((prev) => {
+            const next = { ...prev };
+            delete next[tempId];
+            return next;
+          });
+          void loadMessages(created.id);
+        })
+        .catch(() => {
+          setConvs((prev) => prev.filter((c) => c.id !== tempId));
+          setMsgsByConv((prev) => {
+            const next = { ...prev };
+            delete next[tempId];
+            return next;
+          });
+        });
+
+      return tempId;
     },
     [convs, activeUserId, loadMessages]
   );

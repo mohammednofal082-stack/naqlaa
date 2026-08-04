@@ -1,5 +1,5 @@
 import { getSmartRecommendations, analyzeJobMarket } from '@careerlink/shared';
-import type { Assessment } from '@careerlink/shared';
+import type { Assessment, FeedPost } from '@careerlink/shared';
 import type {
   DataRepositories,
   ApplyInput,
@@ -125,6 +125,35 @@ export const mockRepositories: DataRepositories = {
     return memoryStore.feedPosts;
   },
 
+  async createFeedPost(input) {
+    ensureInit();
+    const post: FeedPost = {
+      id: `post-${Date.now()}`,
+      authorId: memoryStore.currentUserId,
+      authorType: 'user',
+      content: input.content,
+      type: input.type ?? 'update',
+      tags: input.tags ?? [],
+      likes: 0,
+      comments: 0,
+      createdAt: new Date().toISOString(),
+      jobId: input.jobId,
+      likedByMe: false,
+    };
+    memoryStore.feedPosts = [post, ...memoryStore.feedPosts];
+    return post;
+  },
+
+  async toggleFeedLike(postId) {
+    ensureInit();
+    const post = memoryStore.feedPosts.find((p) => p.id === postId);
+    if (!post) throw new Error('NOT_FOUND');
+    const liked = !post.likedByMe;
+    post.likedByMe = liked;
+    post.likes = Math.max(0, post.likes + (liked ? 1 : -1));
+    return { liked, likes: post.likes };
+  },
+
   async getRecommendations(targetRole) {
     ensureInit();
     const jobs = await this.getJobs();
@@ -162,6 +191,32 @@ export const mockRepositories: DataRepositories = {
     ensureInit();
     const uid = userId ?? memoryStore.currentUserId;
     return memoryStore.conversations.filter((c) => c.participantIds.includes(uid));
+  },
+
+  async createConversation(otherUserId) {
+    ensureInit();
+    const uid = memoryStore.currentUserId;
+    const existing = memoryStore.conversations.find(
+      (c) => c.participantIds.includes(uid) && c.participantIds.includes(otherUserId)
+    );
+    if (existing) return existing;
+    const welcome: import('@careerlink/shared').Message = {
+      id: `msg-welcome-${Date.now()}`,
+      senderId: uid,
+      receiverId: otherUserId,
+      content: 'مرحباً، أود التواصل معك عبر منصة نقلة.',
+      timestamp: new Date().toISOString(),
+      read: true,
+    };
+    const conv: import('@careerlink/shared').Conversation = {
+      id: `conv-${Date.now()}`,
+      participantIds: [uid, otherUserId],
+      lastMessage: welcome,
+      unreadCount: 0,
+    };
+    memoryStore.conversations = [conv, ...memoryStore.conversations];
+    memoryStore.messages = [welcome, ...memoryStore.messages];
+    return conv;
   },
 
   async getMessages(conversationId) {
