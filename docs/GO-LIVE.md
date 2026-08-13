@@ -34,8 +34,16 @@ JWT_SECRET=naqlah-mvp-change-me-please-2026
 3. `supabase/migrations/007_storage_courses.sql`
 4. `supabase/migrations/008_signup_role_trigger.sql`
 5. `supabase/migrations/009_full_platform.sql`
-6. إنشاء Storage bucket باسم `cvs`
-7. من جذر المشروع: `npm run seed:demo-users` ← ينشئ 8 حسابات Auth + طلبات تجريبية
+6. `supabase/migrations/010_skills_sessions.sql`
+7. `supabase/migrations/011_feed_social.sql`
+8. `supabase/migrations/012_comments_moderation.sql`
+9. إنشاء Storage bucket باسم `cvs`
+10. من جذر المشروع: `npm run seed:demo-users` ← ينشئ 8 حسابات Auth + طلبات تجريبية
+
+**قبل المناقشة (مهم):** إذا ظهر خطأ Migrations أو أعمدة ناقصة، شغّل مرة واحدة في SQL Editor:
+
+- `supabase/scripts/defense_repair_013_015.sql`
+- اختياري للصور/مرفقات الرسائل: bucket `media` أو `supabase/scripts/create_media_bucket.sql`
 
 ثم:
 
@@ -71,10 +79,11 @@ npm run dev
 
 - Supabase Realtime للرسائل
 - Push notifications على الموبايل
-- كويزات/تقييمات كورس متقدمة
-- Email verification كامل + قوالب بريد مخصّصة
+- Email verification كامل + قوالب بريد مخصّصة (Resend)
 - Pagination و rate limiting و اختبارات CI
+- المدفوعات / الاشتراكات
+- مقابلات فيديو داخل المنصة
 
-**مضاف في هذا التجهيز:** Storage لـ CV (`cvs` + `cv_files`)، وحدات/دروس الكورس، تسجيل حضور فعاليات عبر QR، واستعادة كلمة المرور عبر Supabase Auth.
+**مضاف في هذا التجهيز:** Storage لـ CV (`cvs` + `cv_files`)، وحدات/دروس الكورس، كويزات/تقييمات، صور المنشورات ومرفقات الرسائل، تسجيل حضور فعاليات عبر QR، واستعادة كلمة المرور عبر Supabase Auth.
 
 هذه لا تمنع عرض الـ MVP للجنة إذا الواجهات والخوارزميات شغّالة مع Supabase.

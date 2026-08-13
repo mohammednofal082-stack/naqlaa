@@ -10,7 +10,9 @@
     "dev:mobile": "npm run start --workspace=@careerlink/mobile",
     "build:web": "npm run build --workspace=@careerlink/web",
     "pdf:handoff": "node docs/generate-handoff-pdf.mjs",
-    "seed:demo-users": "node scripts/seed-demo-users.mjs"
+    "seed:demo-users": "node scripts/seed-demo-users.mjs",
+    "defense:check": "node scripts/defense-ready-check.mjs",
+    "defense:buckets": "node scripts/ensure-storage-buckets.mjs"
   },
   "devDependencies": {
     "pdfkit": "^0.19.1"
