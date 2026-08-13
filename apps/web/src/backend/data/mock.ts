@@ -103,6 +103,9 @@ export const mockRepositories: DataRepositories = {
     if (input.about != null) memoryStore.studentProfile.about = input.about;
     if (input.location != null) memoryStore.studentProfile.location = input.location;
     if (input.skills != null) memoryStore.studentProfile.skills = input.skills;
+    if (input.education != null) memoryStore.studentProfile.education = input.education;
+    if (input.projects != null) memoryStore.studentProfile.projects = input.projects;
+    if (input.experience != null) memoryStore.studentProfile.experience = input.experience;
     pushAudit('profile_updated', 'profile', memoryStore.currentUserId);
     return this.getProfile() as Promise<import('./types').UserProfileBundle>;
   },
@@ -139,6 +142,7 @@ export const mockRepositories: DataRepositories = {
       comments: 0,
       createdAt: new Date().toISOString(),
       jobId: input.jobId,
+      imageUrl: input.imageUrl,
       likedByMe: false,
     };
     memoryStore.feedPosts = [post, ...memoryStore.feedPosts];
@@ -290,6 +294,8 @@ export const mockRepositories: DataRepositories = {
       type: input.type,
       deadline: input.deadline ?? new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
       status: input.status ?? 'active',
+      description: input.description,
+      questions: input.questions ?? [],
     };
     memoryStore.assessments = [item, ...memoryStore.assessments];
     return item;
@@ -305,6 +311,8 @@ export const mockRepositories: DataRepositories = {
       title: input.title ?? current.title,
       deadline: input.deadline ?? current.deadline,
       status: input.status ?? current.status,
+      description: input.description ?? current.description,
+      questions: input.questions ?? current.questions,
     };
     memoryStore.assessments[idx] = updated;
     return updated;
@@ -313,7 +321,7 @@ export const mockRepositories: DataRepositories = {
   async search(query) {
     ensureInit();
     const q = query.trim().toLowerCase();
-    if (!q) return { jobs: [], companies: [] };
+    if (!q) return { jobs: [], companies: [], people: [], posts: [] };
     const jobs = (await this.getJobs()).filter(
       (j) =>
         j.title.toLowerCase().includes(q) ||
@@ -323,7 +331,15 @@ export const mockRepositories: DataRepositories = {
     const companies = memoryStore.companies.filter(
       (c) => c.name.toLowerCase().includes(q) || c.industry.toLowerCase().includes(q)
     );
-    return { jobs, companies };
+    const people = memoryStore.users.filter((u) =>
+      `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(q)
+    );
+    const posts = memoryStore.feedPosts.filter(
+      (p) =>
+        p.content.toLowerCase().includes(q) ||
+        p.tags.some((tag) => tag.toLowerCase().includes(q))
+    );
+    return { jobs, companies, people, posts };
   },
 
   async apply(input: ApplyInput) {
@@ -471,6 +487,7 @@ export const mockRepositories: DataRepositories = {
       content: input.content,
       timestamp: new Date().toISOString(),
       read: false,
+      attachment: input.attachment,
     };
     memoryStore.messages.push(msg);
     conv.lastMessage = msg;

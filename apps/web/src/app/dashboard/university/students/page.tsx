@@ -15,7 +15,6 @@ import { useI18n } from "@/i18n";
 export default function UniversityStudentsPage() {
   const { t } = useI18n();
   const [search, setSearch] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data: users, loading } = useUsers();
   const students = (users ?? [])
     .filter((u) => u.role === "student")
@@ -77,30 +76,11 @@ export default function UniversityStudentsPage() {
                       subtitle={ROLE_LABELS[student.role] ?? student.role}
                       meta={student.email}
                       badge={
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setExpandedId(expandedId === student.id ? null : student.id)}
-                        >
-                          {t("عرض", "View")}
-                        </Button>
+                        <Link href={`/dashboard/university/students/${student.id}`}>
+                          <Button size="sm" variant="outline">{t("عرض", "View")}</Button>
+                        </Link>
                       }
                     />
-                    {expandedId === student.id && (
-                      <div className="px-3 pb-3 flex flex-wrap gap-2 text-sm">
-                        <span className="text-text-secondary">
-                          {t("البريد:", "Email:")} {student.email}
-                        </span>
-                        <Link href={`/messages?user=${student.id}`}>
-                          <Button size="sm">{t("مراسلة", "Message")}</Button>
-                        </Link>
-                        <a href={`mailto:${student.email}`}>
-                          <Button size="sm" variant="outline">
-                            {t("بريد", "Email")}
-                          </Button>
-                        </a>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>

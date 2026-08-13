@@ -286,6 +286,7 @@ export interface FeedPost {
   createdAt: string;
   jobId?: string;
   eventId?: string;
+  imageUrl?: string;
   authorName?: string;
   authorAvatar?: string;
   likedByMe?: boolean;
@@ -478,6 +479,12 @@ export interface Partnership {
   endDate?: string;
 }
 
+export interface AssessmentQuestion {
+  prompt: string;
+  answer?: string;
+  options?: string[];
+}
+
 export interface Assessment {
   id: string;
   jobId: string;
@@ -485,6 +492,8 @@ export interface Assessment {
   type: 'mcq' | 'coding' | 'upload' | 'video';
   deadline: string;
   status: string;
+  description?: string;
+  questions?: AssessmentQuestion[];
 }
 
 export interface AuditLog {

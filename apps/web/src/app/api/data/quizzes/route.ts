@@ -6,7 +6,28 @@ import { requirePermission, requireAnyRole } from '@/backend/auth/rbac';
 export async function GET(req: NextRequest) {
   return dataResponse(async () => {
     const courseId = req.nextUrl.searchParams.get('courseId');
+    const quizId = req.nextUrl.searchParams.get('id');
+    const attempts = req.nextUrl.searchParams.get('attempts') === '1';
     const supabase = await createSupabaseServerClient();
+
+    if (attempts) {
+      await requireAnyRole('trainer', 'admin');
+      if (!quizId) return [];
+      const { data, error } = await supabase
+        .from('quiz_attempts')
+        .select('*, profiles:student_id(full_name, email)')
+        .eq('quiz_id', quizId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    }
+
+    if (quizId) {
+      const { data, error } = await supabase.from('course_quizzes').select('*').eq('id', quizId).maybeSingle();
+      if (error) throw error;
+      return data;
+    }
+
     let q = supabase.from('course_quizzes').select('*').order('created_at', { ascending: false });
     if (courseId) q = q.eq('course_id', courseId);
     const { data, error } = await q;
@@ -58,6 +79,23 @@ export async function POST(req: NextRequest) {
       questions: body.questions ?? [],
       pass_score: Number(body.passScore ?? 60),
     }).select().single();
+    if (error) throw error;
+    return data;
+  });
+}
+
+export async function PUT(req: NextRequest) {
+  return mutationResponse(async () => {
+    await requirePermission('course.create');
+    const body = await req.json();
+    if (!body.id) throw new Error('INVALID_INPUT');
+    const supabase = await createSupabaseServerClient();
+    const patch: Record<string, unknown> = {};
+    if (body.title !== undefined) patch.title = String(body.title);
+    if (body.passScore !== undefined) patch.pass_score = Number(body.passScore);
+    if (body.questions !== undefined) patch.questions = body.questions;
+    if (body.courseId !== undefined) patch.course_id = String(body.courseId);
+    const { data, error } = await supabase.from('course_quizzes').update(patch).eq('id', body.id).select().single();
     if (error) throw error;
     return data;
   });

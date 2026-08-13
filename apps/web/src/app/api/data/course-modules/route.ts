@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
           id: String(l.id),
           title: String(l.title),
           content: String(l.content ?? ''),
+          videoUrl: l.video_url ? String(l.video_url) : '',
           durationMinutes: Number(l.duration_minutes ?? 10),
           sortOrder: Number(l.sort_order),
         })),
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
           module_id: body.moduleId,
           title: body.title,
           content: body.content ?? '',
+          video_url: body.videoUrl ?? null,
           duration_minutes: Number(body.durationMinutes ?? 10),
           sort_order: Number(body.sortOrder ?? 1),
         })
@@ -70,6 +72,31 @@ export async function POST(req: NextRequest) {
       })
       .select()
       .single();
+    if (error) throw error;
+    return data;
+  });
+}
+
+export async function PATCH(req: NextRequest) {
+  return mutationResponse(async () => {
+    await requirePermission('course.create');
+    const body = await req.json();
+    const supabase = await createSupabaseServerClient();
+    if (body.type === 'lesson') {
+      if (!body.id) throw new Error('INVALID_INPUT');
+      const patch: Record<string, unknown> = {};
+      if (body.title !== undefined) patch.title = String(body.title);
+      if (body.content !== undefined) patch.content = String(body.content);
+      if (body.videoUrl !== undefined) patch.video_url = body.videoUrl ? String(body.videoUrl) : null;
+      if (body.durationMinutes !== undefined) patch.duration_minutes = Number(body.durationMinutes);
+      const { data, error } = await supabase.from('course_lessons').update(patch).eq('id', body.id).select().single();
+      if (error) throw error;
+      return data;
+    }
+    if (!body.id) throw new Error('INVALID_INPUT');
+    const patch: Record<string, unknown> = {};
+    if (body.title !== undefined) patch.title = String(body.title);
+    const { data, error } = await supabase.from('course_modules').update(patch).eq('id', body.id).select().single();
     if (error) throw error;
     return data;
   });

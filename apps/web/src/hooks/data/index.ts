@@ -79,7 +79,7 @@ export const useProfile = () => useDataApi<UserProfileBundle | null>("profile");
 export const useCompanies = () => useDataApi<Company[]>("companies");
 export const useCompany = (id: string) => useDataApi<Company | null>(`companies/${id}`);
 export const useNotifications = () => useDataApi<Notification[]>("notifications");
-export const useCourses = () => useDataApi<Course[]>("courses");
+export const useCourses = (mine = false) => useDataApi<Course[]>(mine ? "courses?mine=1" : "courses");
 export const useFeedPosts = () => useDataApi<FeedPost[]>("feed");
 export const useEvents = () => useDataApi<Event[]>("events");
 export const useMentors = () => useDataApi<MentorProfile[]>("mentors");
@@ -103,7 +103,12 @@ export function useRecommendations(role?: string) {
 
 export function useSearch(query: string) {
   const endpoint = query ? `search?q=${encodeURIComponent(query)}` : "search?q=";
-  return useDataApi<{ jobs: JobWithCompany[]; companies: Company[] }>(endpoint);
+  return useDataApi<{
+    jobs: JobWithCompany[];
+    companies: Company[];
+    people: User[];
+    posts: FeedPost[];
+  }>(endpoint);
 }
 
 export async function applyToJob(jobId: string, coverNote?: string) {

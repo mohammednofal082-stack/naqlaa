@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { ActivityRow, PanelCard } from "@/components/dashboard/dashboard-shell";
@@ -137,12 +138,12 @@ export default function HRAssessmentsPage() {
                       {t("موعد نهائي", "Deadline")} {formatDate(assessment.deadline)}
                     </p>
                     <div className="flex gap-2 mt-3 mr-12">
-                      <Button
-                        size="sm"
-                        onClick={() => setExpandedId(isExpanded ? null : assessment.id)}
-                      >
-                        {t("عرض النتائج", "View Results")}
-                      </Button>
+                      <Link href={`/dashboard/hr/assessments/${assessment.id}/results`}>
+                        <Button size="sm">{t("عرض النتائج", "View Results")}</Button>
+                      </Link>
+                      <Link href={`/assessments/${assessment.id}`}>
+                        <Button size="sm" variant="outline">{t("رابط المرشح", "Candidate link")}</Button>
+                      </Link>
                       <Button
                         size="sm"
                         variant="outline"

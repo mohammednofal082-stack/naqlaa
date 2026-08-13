@@ -35,8 +35,18 @@ export async function dataResponse<T>(handler: () => Promise<T>) {
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : 'DATA_ERROR';
+    const lower = message.toLowerCase();
+    const supabaseDown =
+      lower.includes('fetch failed') ||
+      lower.includes('failed to fetch') ||
+      lower.includes('network') ||
+      lower.includes('econnrefused') ||
+      lower.includes('enotfound') ||
+      lower.includes('503') ||
+      lower.includes('521') ||
+      lower.includes('timeout');
     const status =
-      message === 'SUPABASE_NOT_CONFIGURED' || message === 'SUPABASE_REQUIRED' ? 503 :
+      message === 'SUPABASE_NOT_CONFIGURED' || message === 'SUPABASE_REQUIRED' || supabaseDown ? 503 :
       message === 'UNAUTHORIZED' ? 401 :
       message === 'FORBIDDEN' ? 403 :
       message === 'NOT_FOUND' ? 404 :
@@ -45,7 +55,9 @@ export async function dataResponse<T>(handler: () => Promise<T>) {
       NextResponse.json(
         {
           error:
-            message === 'SUPABASE_NOT_CONFIGURED' || message === 'SUPABASE_REQUIRED'
+            supabaseDown
+              ? 'قاعدة البيانات غير متاحة حالياً — افتح مشروع Supabase واضغط Restore إن كان متوقفاً، ثم أعد تحميل الصفحة'
+              : message === 'SUPABASE_NOT_CONFIGURED' || message === 'SUPABASE_REQUIRED'
               ? 'Supabase غير مُعدّ — أضف المفاتيح في .env.local'
               : message === 'ALREADY_APPLIED'
                 ? 'لقد تقدمت مسبقاً على هذه الفرصة'
@@ -54,7 +66,7 @@ export async function dataResponse<T>(handler: () => Promise<T>) {
                   : message === 'FORBIDDEN'
                     ? 'ليس لديك صلاحية لهذا الإجراء'
                     : 'فشل العملية',
-          code: message,
+          code: supabaseDown ? 'SUPABASE_UNAVAILABLE' : message,
           provider: activeProvider(),
         },
         { status }

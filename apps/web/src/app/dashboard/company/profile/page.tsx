@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { DashboardSubPage } from "@/components/dashboard/role-page-shell";
 import { ActivityRow, PanelCard } from "@/components/dashboard/dashboard-shell";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import { Input, Textarea } from "@/components/ui/input";
 import { useCompany, useJobs } from "@/hooks/data";
 import { useApp } from "@/contexts/app-context";
 import { Briefcase, Building2, CheckCircle, Globe, MapPin, Users } from "lucide-react";
@@ -15,9 +17,58 @@ export default function CompanyProfilePage() {
   const { t } = useI18n();
   const { user } = useApp();
   const companyId = user?.organizationId ?? "comp-1";
-  const { data: company } = useCompany(companyId);
+  const { data: company, refetch } = useCompany(companyId);
   const { data: jobs } = useJobs();
   const companyJobs = (jobs ?? []).filter((j) => j.companyId === companyId);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ name: "", about: "", industry: "", website: "", location: "", email: "", employees: "", founded: "" });
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  const startEdit = () => {
+    if (!company) return;
+    setForm({
+      name: company.name,
+      about: company.about,
+      industry: company.industry,
+      website: company.website,
+      location: company.location,
+      email: company.email,
+      employees: String(company.employees || ""),
+      founded: String(company.founded || ""),
+    });
+    setEditing(true);
+  };
+
+  const saveCompany = async () => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const res = await fetch(`/api/data/companies/${encodeURIComponent(companyId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          about: form.about,
+          industry: form.industry,
+          website: form.website,
+          location: form.location,
+          email: form.email,
+          employees: Number(form.employees) || 0,
+          founded: Number(form.founded) || 0,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "FAILED");
+      await refetch();
+      setEditing(false);
+      setMsg(t("تم حفظ ملف الشركة", "Company profile saved"));
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : t("فشل الحفظ", "Save failed"));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (!company) {
     return (
@@ -116,12 +167,31 @@ export default function CompanyProfilePage() {
             </PanelCard>
 
             <PanelCard title={t("تعديل الملف", "Edit Profile")}>
-              <Link href="/dashboard/company/jobs" className="block">
-                <Button className="w-full">{t("إدارة الوظائف", "Manage jobs")}</Button>
-              </Link>
-              <Link href="/dashboard/company/applications" className="block mt-2">
-                <Button variant="outline" className="w-full">{t("مراجعة المتقدمين", "Review applicants")}</Button>
-              </Link>
+              {msg && <p className="text-sm text-text-secondary mb-2">{msg}</p>}
+              {editing ? (
+                <div className="space-y-2">
+                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("الاسم", "Name")} />
+                  <Input value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} placeholder={t("القطاع", "Industry")} />
+                  <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder={t("الموقع", "Location")} />
+                  <Input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://" />
+                  <Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email" />
+                  <Input value={form.employees} onChange={(e) => setForm({ ...form, employees: e.target.value })} placeholder={t("عدد الموظفين", "Employees")} />
+                  <Input value={form.founded} onChange={(e) => setForm({ ...form, founded: e.target.value })} placeholder={t("سنة التأسيس", "Founded")} />
+                  <Textarea rows={4} value={form.about} onChange={(e) => setForm({ ...form, about: e.target.value })} />
+                  <Button className="w-full" disabled={busy} onClick={() => void saveCompany()}>{t("حفظ", "Save")}</Button>
+                  <Button className="w-full" variant="outline" onClick={() => setEditing(false)}>{t("إلغاء", "Cancel")}</Button>
+                </div>
+              ) : (
+                <>
+                  <Button className="w-full" onClick={startEdit}>{t("تعديل بيانات الشركة", "Edit company details")}</Button>
+                  <Link href="/dashboard/company/jobs" className="block mt-2">
+                    <Button variant="outline" className="w-full">{t("إدارة الوظائف", "Manage jobs")}</Button>
+                  </Link>
+                  <Link href="/dashboard/company/applications" className="block mt-2">
+                    <Button variant="outline" className="w-full">{t("مراجعة المتقدمين", "Review applicants")}</Button>
+                  </Link>
+                </>
+              )}
             </PanelCard>
           </div>
         </div>

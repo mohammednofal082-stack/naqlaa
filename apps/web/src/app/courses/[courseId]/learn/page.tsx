@@ -11,7 +11,7 @@ import { BookOpen, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { notFound } from "next/navigation";
 
-type Lesson = { id: string; title: string; content?: string };
+type Lesson = { id: string; title: string; content?: string; videoUrl?: string };
 type Module = { id: string; title: string; lessons?: Lesson[] };
 
 export default function CourseLearnPage({ params }: { params: Promise<{ courseId: string }> }) {
@@ -23,6 +23,7 @@ export default function CourseLearnPage({ params }: { params: Promise<{ courseId
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [done, setDone] = useState<Set<string>>(new Set());
   const [msg, setMsg] = useState("");
+  const [quizzes, setQuizzes] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => {
     void fetch(`/api/data/course-modules?courseId=${encodeURIComponent(courseId)}`)
@@ -33,6 +34,12 @@ export default function CourseLearnPage({ params }: { params: Promise<{ courseId
           const first = (json.data as Module[])[0]?.lessons?.[0];
           if (first) setActiveLessonId(first.id);
         }
+      })
+      .catch(() => {});
+    void fetch(`/api/data/quizzes?courseId=${encodeURIComponent(courseId)}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (Array.isArray(json.data)) setQuizzes(json.data as { id: string; title: string }[]);
       })
       .catch(() => {});
   }, [courseId]);
@@ -51,7 +58,18 @@ export default function CourseLearnPage({ params }: { params: Promise<{ courseId
     const next = new Set(done);
     next.add(active.id);
     setDone(next);
-    setMsg(t("تم حفظ تقدم الدرس محلياً في هذه الجلسة", "Lesson progress saved for this session"));
+    const pct = allLessons.length ? Math.round((next.size / allLessons.length) * 100) : 0;
+    void fetch("/api/data/course-enrollments", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId, progress: pct }),
+    })
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.error) setMsg(t("تم حفظ التقدم", "Progress saved"));
+        else setMsg(String(json.error));
+      })
+      .catch(() => setMsg(t("تعذّر حفظ التقدم", "Could not save progress")));
   };
 
   return (
@@ -116,13 +134,34 @@ export default function CourseLearnPage({ params }: { params: Promise<{ courseId
               <>
                 <h2 className="font-display font-bold text-xl text-text">{active.title}</h2>
                 <p className="text-sm text-text-muted">{(active as { moduleTitle?: string }).moduleTitle}</p>
-                <div className="prose prose-sm max-w-none text-text-secondary whitespace-pre-wrap leading-relaxed min-h-[200px]">
+                {active.videoUrl && (
+                  <div className="aspect-video rounded-xl overflow-hidden border border-border bg-black">
+                    <iframe
+                      src={active.videoUrl.replace("watch?v=", "embed/")}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title={active.title}
+                    />
+                  </div>
+                )}
+                <div className="prose prose-sm max-w-none text-text-secondary whitespace-pre-wrap leading-relaxed min-h-[120px]">
                   {active.content ||
                     t(
                       "محتوى الدرس سيظهر هنا. أكمل الدرس لتحديث نسبة التقدم.",
                       "Lesson content will appear here. Complete the lesson to update progress."
                     )}
                 </div>
+                {quizzes.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold">{t("اختبارات الكورس", "Course quizzes")}</p>
+                    {quizzes.map((q) => (
+                      <Link key={q.id} href={`/courses/${courseId}/quiz/${q.id}`}>
+                        <Button size="sm" variant="outline">{q.title}</Button>
+                      </Link>
+                    ))}
+                  </div>
+                )}
                 {msg && <p className="text-sm text-emerald-600">{msg}</p>}
                 <Button onClick={() => void markDone()} disabled={done.has(active.id)}>
                   <CheckCircle className="w-4 h-4" />

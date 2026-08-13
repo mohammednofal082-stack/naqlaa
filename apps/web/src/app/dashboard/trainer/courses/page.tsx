@@ -8,6 +8,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCourses } from "@/hooks/data";
+import Link from "next/link";
 import { BookOpen, Plus, Star, Users, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useI18n } from "@/i18n";
 
@@ -24,7 +25,11 @@ type Module = {
 export default function TrainerCoursesPage() {
   const { t } = useI18n();
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
-  const { data: courses, loading } = useCourses();
+  const { data: courses, loading, refetch } = useCourses(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [newCategory, setNewCategory] = useState("برمجة");
   const filtered = (courses ?? []).filter((c) => filter === "all" || c.status === filter);
   const [openCourseId, setOpenCourseId] = useState<string | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
@@ -122,7 +127,49 @@ export default function TrainerCoursesPage() {
         meta={t("لوحة المدرب", "Trainer Dashboard")}
         title={t("بناء الكورسات", "Course Builder")}
         subtitle={t("إدارة الوحدات والدروس ونشر الكورسات", "Manage modules, lessons, and publish courses")}
+        actions={
+          <Button size="sm" onClick={() => setShowCreate((v) => !v)}>
+            <Plus className="w-4 h-4" /> {t("كورس جديد", "New course")}
+          </Button>
+        }
       >
+        {showCreate && (
+          <div className="mb-6 p-4 rounded-xl border border-border bg-surface space-y-3">
+            <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={t("عنوان الكورس", "Course title")} />
+            <Input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder={t("وصف مختصر", "Short description")} />
+            <Input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder={t("التصنيف", "Category")} />
+            <Button
+              size="sm"
+              disabled={saving || !newTitle.trim()}
+              onClick={() => {
+                void (async () => {
+                  setSaving(true);
+                  setMsg("");
+                  try {
+                    const res = await fetch("/api/data/courses", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ title: newTitle.trim(), description: newDesc, category: newCategory, status: "draft" }),
+                    });
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error || "FAILED");
+                    setShowCreate(false);
+                    setNewTitle("");
+                    setNewDesc("");
+                    await refetch();
+                    setMsg(t("تم إنشاء الكورس — افتح المحرر لإضافة المحتوى", "Course created — open the builder to add content"));
+                  } catch (e) {
+                    setMsg(e instanceof Error ? e.message : t("فشل الإنشاء", "Create failed"));
+                  } finally {
+                    setSaving(false);
+                  }
+                })();
+              }}
+            >
+              {t("إنشاء", "Create")}
+            </Button>
+          </div>
+        )}
         <div className="flex gap-2 mb-6">
           <Button variant={filter === "all" ? "primary" : "outline"} size="sm" onClick={() => setFilter("all")}>{t("الكل", "All")}</Button>
           <Button variant={filter === "published" ? "primary" : "outline"} size="sm" onClick={() => setFilter("published")}>{t("منشور", "Published")}</Button>
@@ -168,6 +215,9 @@ export default function TrainerCoursesPage() {
                       <span className={course.status === "published" ? "nq-chip nq-chip-emerald" : "nq-chip"}>
                         {course.status === "published" ? t("منشور", "Published") : t("مسودة", "Draft")}
                       </span>
+                      <Link href={`/dashboard/trainer/courses/${course.id}/builder`}>
+                        <Button size="sm">{t("المحرر", "Builder")}</Button>
+                      </Link>
                       <Button size="sm" variant="outline" onClick={() => toggleModules(course.id)}>
                         {t("الوحدات", "Modules")}
                         {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

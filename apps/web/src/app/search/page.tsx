@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { DashboardLayout, Header } from "@/components/layout/sidebar";
 import { JobCard, CompanyCard } from "@/components/jobs/job-card";
@@ -34,10 +35,14 @@ function SearchContent() {
 
   const jobs = searchResults?.jobs ?? [];
   const companies = searchResults?.companies ?? [];
-  const total = jobs.length + companies.length;
+  const people = searchResults?.people ?? [];
+  const posts = searchResults?.posts ?? [];
+  const total = jobs.length + companies.length + people.length + posts.length;
 
   const showJobs = tab === "الكل" || tab === "وظائف";
   const showCompanies = tab === "الكل" || tab === "شركات";
+  const showPeople = tab === "الكل" || tab === "أشخاص";
+  const showPosts = tab === "الكل" || tab === "منشورات";
 
   return (
     <>
@@ -107,12 +112,32 @@ function SearchContent() {
             </section>
           )}
 
-          {(tab === "الكل" || tab === "أشخاص" || tab === "منشورات") && (
-            <p className="text-text-muted text-sm text-center py-6">
-              {tab === "أشخاص" || tab === "منشورات"
-                ? t("البحث في الأشخاص والمنشورات غير متاح حالياً عبر واجهة البيانات.", "Searching people and posts is not available yet through the data interface.")
-                : null}
-            </p>
+          {showPeople && people.length > 0 && (
+            <section>
+              <h2 className="font-display font-bold text-text mb-3">{t(`أشخاص (${people.length})`, `People (${people.length})`)}</h2>
+              <div className="grid gap-2">
+                {people.map((p) => (
+                  <Link key={p.id} href={`/profile/${p.id}`} className="nq-lift p-3 rounded-lg border border-border flex justify-between">
+                    <span className="font-medium text-text">{p.firstName} {p.lastName}</span>
+                    <span className="text-xs text-text-muted">{p.email}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {showPosts && posts.length > 0 && (
+            <section>
+              <h2 className="font-display font-bold text-text mb-3">{t(`منشورات (${posts.length})`, `Posts (${posts.length})`)}</h2>
+              <div className="grid gap-2">
+                {posts.map((p) => (
+                  <Link key={p.id} href={`/feed/${p.id}`} className="nq-lift p-3 rounded-lg border border-border">
+                    <p className="text-sm text-text line-clamp-2">{p.content}</p>
+                    <p className="text-xs text-text-muted mt-1">{p.authorName}</p>
+                  </Link>
+                ))}
+              </div>
+            </section>
           )}
         </div>
       )}

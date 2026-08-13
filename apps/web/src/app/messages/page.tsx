@@ -33,6 +33,9 @@ function MessagesContent() {
 
   const [activeConv, setActiveConv] = useState(conversations[0]?.id || "");
   const [newMessage, setNewMessage] = useState("");
+  const [attachUrl, setAttachUrl] = useState("");
+  const [attachName, setAttachName] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,9 +55,11 @@ function MessagesContent() {
   }, [convMessages.length, activeConv]);
 
   const handleSend = () => {
-    if (!activeConv || !newMessage.trim()) return;
-    sendMessage(activeConv, newMessage);
+    if (!activeConv || (!newMessage.trim() && !attachUrl)) return;
+    sendMessage(activeConv, newMessage, attachUrl || undefined);
     setNewMessage("");
+    setAttachUrl("");
+    setAttachName("");
   };
 
   return (
@@ -118,6 +123,11 @@ function MessagesContent() {
                       }`}
                     >
                       {msg.content}
+                      {msg.attachment && (
+                        <a href={msg.attachment} target="_blank" rel="noreferrer" className="block text-xs underline mt-1">
+                          📎 {t("مرفق", "Attachment")}
+                        </a>
+                      )}
                       <p className={`text-[10px] mt-1 ${isMine ? "text-white/70" : "text-text-muted"}`}>
                         {formatDateTime(msg.timestamp)}
                       </p>
@@ -135,16 +145,37 @@ function MessagesContent() {
                 handleSend();
               }}
             >
-              <button type="button" className="p-2 rounded-lg hover:bg-surface-hover text-text-muted" title={t("قريباً", "Coming soon")}>
+              <input
+                ref={fileRef}
+                type="file"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const form = new FormData();
+                  form.append("file", file);
+                  form.append("folder", "messages");
+                  void fetch("/api/data/media", { method: "POST", body: form })
+                    .then((r) => r.json())
+                    .then((json) => {
+                      if (json.data?.url) {
+                        setAttachUrl(String(json.data.url));
+                        setAttachName(file.name);
+                      }
+                    });
+                }}
+              />
+              <button type="button" className="p-2 rounded-lg hover:bg-surface-hover text-text-muted" title={t("إرفاق", "Attach")} onClick={() => fileRef.current?.click()}>
                 <Paperclip className="w-5 h-5" />
               </button>
+              {attachName && <span className="text-xs text-text-muted max-w-[7rem] truncate">{attachName}</span>}
               <input
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder={t("اكتب رسالة...", "Type a message...")}
                 className="flex-1 h-10 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:border-brand/40"
               />
-              <Button type="submit" size="sm" disabled={!newMessage.trim()}>
+              <Button type="submit" size="sm" disabled={!newMessage.trim() && !attachUrl}>
                 <Send className="w-4 h-4" />
               </Button>
             </form>

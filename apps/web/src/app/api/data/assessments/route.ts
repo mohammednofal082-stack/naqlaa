@@ -2,8 +2,13 @@ import { NextRequest } from 'next/server';
 import { dataResponse, mutationResponse, getRepo, requireAuth } from '@/backend/data/api';
 import { requireAnyRole } from '@/backend/auth/rbac';
 
-export async function GET() {
-  return dataResponse(() => getRepo().getAssessments());
+export async function GET(req: NextRequest) {
+  return dataResponse(async () => {
+    const id = req.nextUrl.searchParams.get('id');
+    const all = await getRepo().getAssessments();
+    if (!id) return all;
+    return all.find((a) => a.id === id) ?? null;
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -18,6 +23,8 @@ export async function POST(req: NextRequest) {
       type: body.type,
       deadline: body.deadline ? String(body.deadline) : undefined,
       status: body.status ? String(body.status) : 'active',
+      description: body.description ? String(body.description) : undefined,
+      questions: Array.isArray(body.questions) ? body.questions : undefined,
     });
   });
 }
@@ -32,6 +39,8 @@ export async function PUT(req: NextRequest) {
       title: body.title !== undefined ? String(body.title) : undefined,
       deadline: body.deadline !== undefined ? String(body.deadline) : undefined,
       status: body.status !== undefined ? String(body.status) : undefined,
+      description: body.description !== undefined ? String(body.description) : undefined,
+      questions: Array.isArray(body.questions) ? body.questions : undefined,
     });
   });
 }

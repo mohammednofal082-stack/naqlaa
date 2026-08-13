@@ -19,6 +19,19 @@ function assertSupabase() {
   }
 }
 
+function mapAssessmentRow(row: Record<string, unknown>) {
+  return {
+    id: String(row.id),
+    jobId: String(row.job_id),
+    title: String(row.title),
+    type: row.type as 'mcq' | 'coding' | 'upload' | 'video',
+    deadline: String(row.deadline ?? ''),
+    status: String(row.status ?? 'active'),
+    description: row.description ? String(row.description) : undefined,
+    questions: Array.isArray(row.questions) ? (row.questions as { prompt: string; answer?: string; options?: string[] }[]) : [],
+  };
+}
+
 export const supabaseRepositories: DataRepositories = {
   async getJobs() {
     assertSupabase();
@@ -331,6 +344,7 @@ export const supabaseRepositories: DataRepositories = {
         post_type: input.type ?? 'update',
         tags: input.tags ?? [],
         job_id: input.jobId ?? null,
+        image_url: input.imageUrl ?? null,
         likes_count: 0,
         comments_count: 0,
       })
@@ -420,8 +434,8 @@ export const supabaseRepositories: DataRepositories = {
     const about = input.about ?? current?.about ?? '';
     const location = input.location ?? current?.location ?? '';
     const skills = (input.skills ?? current?.skills ?? []) as string[];
-    const education = (current?.education as unknown[]) ?? [];
-    const projects = (current?.projects as unknown[]) ?? [];
+    const education = (input.education ?? current?.education ?? []) as unknown[];
+    const projects = (input.projects ?? current?.projects ?? []) as unknown[];
 
     let completion = 0;
     if (headline) completion += 20;
@@ -432,14 +446,19 @@ export const supabaseRepositories: DataRepositories = {
     if (education.length > 0) completion += 15;
     if (projects.length > 0) completion += 15;
 
-    await supabase.from('student_profiles').update({
-      headline: input.headline,
-      about: input.about,
-      location: input.location,
-      skills: input.skills,
+    const patch: Record<string, unknown> = {
       profile_completion: completion,
       updated_at: new Date().toISOString(),
-    }).eq('user_id', user.id);
+    };
+    if (input.headline !== undefined) patch.headline = input.headline;
+    if (input.about !== undefined) patch.about = input.about;
+    if (input.location !== undefined) patch.location = input.location;
+    if (input.skills !== undefined) patch.skills = input.skills;
+    if (input.education !== undefined) patch.education = input.education;
+    if (input.projects !== undefined) patch.projects = input.projects;
+    if (input.experience !== undefined) patch.experience = input.experience;
+
+    await supabase.from('student_profiles').update(patch).eq('user_id', user.id);
 
     if (completion >= 80) {
       const { data: badge } = await supabase.from('badges').select('id').eq('code', 'profile_80').maybeSingle();
@@ -630,9 +649,10 @@ export const supabaseRepositories: DataRepositories = {
       id: String(row.id),
       senderId: String(row.sender_id),
       receiverId: '',
-      content: String(row.content),
+      content: String(row.content ?? ''),
       timestamp: String(row.created_at),
       read: Boolean(row.read),
+      attachment: row.attachment_url ? String(row.attachment_url) : undefined,
     }));
   },
 
@@ -770,14 +790,7 @@ export const supabaseRepositories: DataRepositories = {
       .select('*')
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return (data ?? []).map((row) => ({
-      id: String(row.id),
-      jobId: String(row.job_id),
-      title: String(row.title),
-      type: row.type as 'mcq' | 'coding' | 'upload' | 'video',
-      deadline: String(row.deadline ?? ''),
-      status: String(row.status ?? 'active'),
-    }));
+    return (data ?? []).map((row) => mapAssessmentRow(row));
   },
 
   async createAssessment(input) {
@@ -791,18 +804,13 @@ export const supabaseRepositories: DataRepositories = {
         type: input.type,
         deadline: input.deadline ?? null,
         status: input.status ?? 'active',
+        description: input.description ?? null,
+        questions: input.questions ?? [],
       })
       .select('*')
       .single();
     if (error) throw error;
-    return {
-      id: String(data.id),
-      jobId: String(data.job_id),
-      title: String(data.title),
-      type: data.type as 'mcq' | 'coding' | 'upload' | 'video',
-      deadline: String(data.deadline ?? ''),
-      status: String(data.status ?? 'active'),
-    };
+    return mapAssessmentRow(data);
   },
 
   async updateAssessment(id, input) {
@@ -812,6 +820,8 @@ export const supabaseRepositories: DataRepositories = {
     if (input.title !== undefined) patch.title = input.title;
     if (input.deadline !== undefined) patch.deadline = input.deadline;
     if (input.status !== undefined) patch.status = input.status;
+    if (input.description !== undefined) patch.description = input.description;
+    if (input.questions !== undefined) patch.questions = input.questions;
     const { data, error } = await supabase
       .from('assessments')
       .update(patch)
@@ -820,14 +830,7 @@ export const supabaseRepositories: DataRepositories = {
       .single();
     if (error) throw error;
     if (!data) throw new Error('NOT_FOUND');
-    return {
-      id: String(data.id),
-      jobId: String(data.job_id),
-      title: String(data.title),
-      type: data.type as 'mcq' | 'coding' | 'upload' | 'video',
-      deadline: String(data.deadline ?? ''),
-      status: String(data.status ?? 'active'),
-    };
+    return mapAssessmentRow(data);
   },
 
   async getMarketAnalysis() {
@@ -837,9 +840,27 @@ export const supabaseRepositories: DataRepositories = {
   },
 
   async search(query) {
-    const jobs = (await this.getJobs()).filter((j) => j.title.includes(query) || j.company.name.includes(query));
-    const companies = (await this.getCompanies()).filter((c) => c.name.includes(query));
-    return { jobs, companies };
+    const q = query.trim().toLowerCase();
+    const jobs = (await this.getJobs()).filter(
+      (j) =>
+        j.title.toLowerCase().includes(q) ||
+        j.company.name.toLowerCase().includes(q) ||
+        j.skills.some((s) => s.toLowerCase().includes(q))
+    );
+    const companies = (await this.getCompanies()).filter(
+      (c) => c.name.toLowerCase().includes(q) || c.industry.toLowerCase().includes(q)
+    );
+    const people = (await this.getUsers()).filter((u) => {
+      const hay = `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase();
+      return hay.includes(q);
+    });
+    const posts = (await this.getFeedPosts()).filter(
+      (p) =>
+        p.content.toLowerCase().includes(q) ||
+        p.tags.some((tag) => tag.toLowerCase().includes(q)) ||
+        (p.authorName ?? '').toLowerCase().includes(q)
+    );
+    return { jobs, companies, people, posts };
   },
 
   async apply(input) {
@@ -1085,7 +1106,8 @@ export const supabaseRepositories: DataRepositories = {
     const { data, error } = await supabase.from('messages').insert({
       conversation_id: input.conversationId,
       sender_id: user.id,
-      content: input.content,
+      content: input.content || (input.attachment ? '📎' : ''),
+      attachment_url: input.attachment ?? null,
     }).select().single();
     if (error) throw error;
     await supabase
@@ -1096,9 +1118,10 @@ export const supabaseRepositories: DataRepositories = {
       id: String(data.id),
       senderId: String(data.sender_id),
       receiverId: '',
-      content: String(data.content),
+      content: String(data.content ?? ''),
       timestamp: String(data.created_at),
       read: false,
+      attachment: data.attachment_url ? String(data.attachment_url) : undefined,
     };
   },
 

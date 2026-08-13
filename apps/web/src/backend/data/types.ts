@@ -95,11 +95,15 @@ export interface UpdateProfileInput {
   about?: string;
   location?: string;
   skills?: string[];
+  education?: StudentProfile['education'];
+  projects?: StudentProfile['projects'];
+  experience?: StudentProfile['experience'];
 }
 
 export interface SendMessageInput {
   conversationId: string;
   content: string;
+  attachment?: string;
 }
 
 export interface WeeklyReportInput {
@@ -156,7 +160,7 @@ export interface DataRepositories {
   getNotifications(userId?: string): Promise<Notification[]>;
   getCourses(): Promise<Course[]>;
   getFeedPosts(): Promise<FeedPost[]>;
-  createFeedPost(input: { content: string; type?: FeedPost['type']; tags?: string[]; jobId?: string }): Promise<FeedPost>;
+  createFeedPost(input: { content: string; type?: FeedPost['type']; tags?: string[]; jobId?: string; imageUrl?: string }): Promise<FeedPost>;
   toggleFeedLike(postId: string): Promise<{ liked: boolean; likes: number }>;
   getRecommendations(targetRole?: string): Promise<SmartRecommendations>;
   getEvents(): Promise<Event[]>;
@@ -175,9 +179,9 @@ export interface DataRepositories {
   getMarketAnalysis(): Promise<JobMarketAnalysis>;
   getPartnerships(): Promise<Partnership[]>;
   getAssessments(): Promise<Assessment[]>;
-  createAssessment(input: { jobId: string; title: string; type: Assessment['type']; deadline?: string; status?: string }): Promise<Assessment>;
-  updateAssessment(id: string, input: { title?: string; deadline?: string; status?: string }): Promise<Assessment>;
-  search(query: string): Promise<{ jobs: JobWithCompany[]; companies: Company[] }>;
+  createAssessment(input: { jobId: string; title: string; type: Assessment['type']; deadline?: string; status?: string; description?: string; questions?: Assessment['questions'] }): Promise<Assessment>;
+  updateAssessment(id: string, input: { title?: string; deadline?: string; status?: string; description?: string; questions?: Assessment['questions'] }): Promise<Assessment>;
+  search(query: string): Promise<{ jobs: JobWithCompany[]; companies: Company[]; people: User[]; posts: FeedPost[] }>;
 
   apply(input: ApplyInput): Promise<Application>;
   updateApplicationStatus(id: string, status: ApplicationStatus, extras?: { interviewDate?: string; meetingUrl?: string }): Promise<Application>;

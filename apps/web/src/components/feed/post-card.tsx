@@ -131,7 +131,7 @@ export function PostCard({
           targetId: post.id,
           targetLabel: post.content.slice(0, 80),
           reason: t("محتوى غير مناسب", "Inappropriate content"),
-          link: "/feed",
+          link: `/feed/${post.id}`,
         }),
       });
       if (!res.ok) {
@@ -161,6 +161,12 @@ export function PostCard({
       </div>
 
       <p className="text-sm text-text leading-relaxed whitespace-pre-wrap mb-3">{post.content}</p>
+      {post.imageUrl && (
+        <div className="relative mb-3 rounded-xl overflow-hidden border border-border">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={post.imageUrl} alt="" className="w-full max-h-96 object-cover" />
+        </div>
+      )}
 
       {post.tags.length > 0 && (
         <p className="text-xs text-text-muted mb-3">
@@ -215,8 +221,15 @@ export function PostCard({
           type="button"
           className="flex items-center gap-1.5 text-xs ms-auto hover:text-text"
           onClick={() => {
-            const url = typeof window !== "undefined" ? `${window.location.origin}/feed` : "/feed";
-            void navigator.clipboard?.writeText(url);
+            const path = `/feed/${post.id}`;
+            const url = typeof window !== "undefined" ? `${window.location.origin}${path}` : path;
+            if (navigator.share) {
+              void navigator.share({ url, text: post.content.slice(0, 120) }).catch(() => {
+                void navigator.clipboard?.writeText(url);
+              });
+            } else {
+              void navigator.clipboard?.writeText(url);
+            }
           }}
         >
           <Share2 className="w-4 h-4" />

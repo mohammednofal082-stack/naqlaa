@@ -22,6 +22,8 @@ export default function ProfileEditPage() {
   const [careerGoal, setCareerGoal] = useState("frontend");
   const [skills, setSkills] = useState<string[]>([]);
   const [newSkill, setNewSkill] = useState("");
+  const [education, setEducation] = useState<{ university: string; major: string; degree: string; startYear: number; endYear: number; gpa?: number }[]>([]);
+  const [projects, setProjects] = useState<{ id: string; title: string; description: string; technologies: string[]; image: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [hydrated, setHydrated] = useState(false);
@@ -32,6 +34,8 @@ export default function ProfileEditPage() {
     setAbout(profile.about ?? "");
     setLocation(profile.location ?? "");
     setSkills(profile.skills ?? []);
+    setEducation(profile.education ?? []);
+    setProjects(profile.projects?.length ? profile.projects : [{ id: `proj-${Date.now()}`, title: "", description: "", technologies: [], image: "" }]);
     setHydrated(true);
   }, [profile, hydrated]);
 
@@ -55,6 +59,8 @@ export default function ProfileEditPage() {
         about: note ? `${about.trim()}${about.trim() ? "\n\n" : ""}${note}` : about.trim(),
         location: location.trim(),
         skills,
+        education,
+        projects: projects.filter((p) => p.title.trim()),
       });
       await refetch();
       router.push("/profile");
@@ -122,24 +128,44 @@ export default function ProfileEditPage() {
 
           <Card>
             <CardTitle className="font-display mb-4">{t("التعليم", "Education")}</CardTitle>
-            {profile.education.map((edu) => (
-              <div key={edu.university} className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-border last:border-0">
-                <Input defaultValue={edu.university} readOnly />
-                <Input defaultValue={edu.major} readOnly />
-                <Input defaultValue={String(edu.startYear)} readOnly placeholder={t("سنة البداية", "Start Year")} />
-                <Input defaultValue={String(edu.endYear)} readOnly placeholder={t("سنة التخرج", "Graduation Year")} />
+            {education.map((edu, idx) => (
+              <div key={`${edu.university}-${idx}`} className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-border last:border-0">
+                <Input value={edu.university} onChange={(e) => setEducation((rows) => rows.map((r, i) => i === idx ? { ...r, university: e.target.value } : r))} placeholder={t("الجامعة", "University")} />
+                <Input value={edu.major} onChange={(e) => setEducation((rows) => rows.map((r, i) => i === idx ? { ...r, major: e.target.value } : r))} placeholder={t("التخصص", "Major")} />
+                <Input value={edu.degree} onChange={(e) => setEducation((rows) => rows.map((r, i) => i === idx ? { ...r, degree: e.target.value } : r))} placeholder={t("الدرجة", "Degree")} />
+                <Input type="number" value={edu.startYear || ""} onChange={(e) => setEducation((rows) => rows.map((r, i) => i === idx ? { ...r, startYear: Number(e.target.value) || 0 } : r))} placeholder={t("سنة البداية", "Start Year")} />
+                <Input type="number" value={edu.endYear || ""} onChange={(e) => setEducation((rows) => rows.map((r, i) => i === idx ? { ...r, endYear: Number(e.target.value) || 0 } : r))} placeholder={t("سنة التخرج", "Graduation Year")} />
               </div>
             ))}
-            <p className="text-xs text-text-muted">{t("التعليم يُحدَّث من بيانات الجامعة المرتبطة بالحساب.", "Education is synced from the university data linked to your account.")}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEducation((rows) => [...rows, { university: "", major: "", degree: "", startYear: new Date().getFullYear(), endYear: new Date().getFullYear() }])}
+            >
+              <Plus className="w-4 h-4" /> {t("إضافة تعليم", "Add education")}
+            </Button>
           </Card>
 
           <Card>
-            <CardTitle className="font-display mb-4">{t("مشروع مميز", "Featured Project")}</CardTitle>
-            <div className="space-y-4">
-              <Input defaultValue={profile.projects[0]?.title} readOnly placeholder={t("اسم المشروع", "Project Name")} />
-              <Textarea rows={3} defaultValue={profile.projects[0]?.description} readOnly placeholder={t("ماذا بنيت؟ ما التقنيات؟ ما النتيجة؟", "What did you build? Which technologies? What was the outcome?")} />
-              <p className="text-xs text-text-muted">{t("أضف تفاصيل المشروع في النبذة أو Portfolio حالياً.", "Add project details in About or Portfolio for now.")}</p>
-            </div>
+            <CardTitle className="font-display mb-4">{t("المشاريع", "Projects")}</CardTitle>
+            {projects.map((proj, idx) => (
+              <div key={proj.id || idx} className="space-y-3 mb-4 pb-4 border-b border-border last:border-0">
+                <Input value={proj.title} onChange={(e) => setProjects((rows) => rows.map((r, i) => i === idx ? { ...r, title: e.target.value } : r))} placeholder={t("اسم المشروع", "Project Name")} />
+                <Textarea rows={3} value={proj.description} onChange={(e) => setProjects((rows) => rows.map((r, i) => i === idx ? { ...r, description: e.target.value } : r))} placeholder={t("ماذا بنيت؟ ما التقنيات؟ ما النتيجة؟", "What did you build? Which technologies? What was the outcome?")} />
+                <Input
+                  value={proj.technologies.join(", ")}
+                  onChange={(e) => setProjects((rows) => rows.map((r, i) => i === idx ? { ...r, technologies: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) } : r))}
+                  placeholder={t("تقنيات مفصولة بفاصلة", "Comma-separated technologies")}
+                />
+              </div>
+            ))}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setProjects((rows) => [...rows, { id: `proj-${Date.now()}`, title: "", description: "", technologies: [], image: "" }])}
+            >
+              <Plus className="w-4 h-4" /> {t("إضافة مشروع", "Add project")}
+            </Button>
           </Card>
         </div>
 

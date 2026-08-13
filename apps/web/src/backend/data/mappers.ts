@@ -176,6 +176,7 @@ export function mapFeedPost(row: Record<string, unknown>): FeedPost {
     createdAt: String(row.created_at),
     jobId: row.job_id ? String(row.job_id) : undefined,
     eventId: row.event_id ? String(row.event_id) : undefined,
+    imageUrl: row.image_url ? String(row.image_url) : undefined,
     authorName: profile?.full_name ? String(profile.full_name) : undefined,
     authorAvatar: profile?.avatar_url ? String(profile.avatar_url) : undefined,
     likedByMe: Boolean(row.liked_by_me),

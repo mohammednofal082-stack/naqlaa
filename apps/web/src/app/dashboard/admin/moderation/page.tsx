@@ -143,7 +143,7 @@ export default function AdminModerationPage() {
                       {t("بلّغ", "Reported by")} {report.reporter}
                     </p>
                     <div className="flex gap-2 mt-3 mr-12">
-                      <Link href={report.link ?? "/dashboard/admin/users"}>
+                      <Link href={`/dashboard/admin/moderation/${report.id}`}>
                         <Button size="sm" variant="outline">
                           {t("عرض", "View")}
                         </Button>

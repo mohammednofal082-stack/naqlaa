@@ -3,16 +3,19 @@ import { dataResponse, mutationResponse, requireAuth } from '@/backend/data/api'
 import { createSupabaseServerClient } from '@/backend/supabase/server';
 import { requireAnyRole } from '@/backend/auth/rbac';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   return dataResponse(async () => {
     await requireAnyRole('admin');
+    const id = req.nextUrl.searchParams.get('id');
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
+    let q = supabase
       .from('content_reports')
       .select('*, reporter:reporter_id(full_name, email)')
       .order('created_at', { ascending: false });
+    if (id) q = q.eq('id', id);
+    const { data, error } = await q;
     if (error) throw error;
-    return (data ?? []).map((row) => {
+    const mapped = (data ?? []).map((row) => {
       const reporter = row.reporter as { full_name?: string; email?: string } | null;
       return {
         id: String(row.id),
@@ -26,6 +29,7 @@ export async function GET() {
         link: row.link ? String(row.link) : undefined,
       };
     });
+    return mapped;
   });
 }
 

@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCourses } from "@/hooks/data";
+import Link from "next/link";
 import { CheckSquare, Plus } from "lucide-react";
 import { useI18n } from "@/i18n";
 
@@ -21,15 +22,14 @@ type QuizRow = {
 
 export default function TrainerQuizzesPage() {
   const { t } = useI18n();
-  const { data: courses } = useCourses();
+  const { data: courses } = useCourses(true);
   const [quizzes, setQuizzes] = useState<QuizRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [courseId, setCourseId] = useState("");
   const [passScore, setPassScore] = useState(70);
-  const [q1, setQ1] = useState("");
-  const [a1, setA1] = useState("");
+  const [questions, setQuestions] = useState([{ prompt: "", answer: "", options: "" }]);
   const [msg, setMsg] = useState("");
 
   const load = async () => {
@@ -61,17 +61,20 @@ export default function TrainerQuizzesPage() {
           courseId,
           title: title.trim(),
           passScore,
-          questions: q1.trim()
-            ? [{ prompt: q1.trim(), answer: a1.trim() || "—" }]
-            : [{ prompt: "Sample question", answer: "Sample" }],
+          questions: questions
+            .filter((q) => q.prompt.trim())
+            .map((q) => ({
+              prompt: q.prompt.trim(),
+              answer: q.answer.trim(),
+              options: q.options.split(",").map((s) => s.trim()).filter(Boolean),
+            })),
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "FAILED");
       setShowForm(false);
       setTitle("");
-      setQ1("");
-      setA1("");
+      setQuestions([{ prompt: "", answer: "", options: "" }]);
       await load();
       setMsg(t("تم إنشاء الاختبار في قاعدة البيانات", "Quiz created in database"));
     } catch (e) {
@@ -110,12 +113,22 @@ export default function TrainerQuizzesPage() {
                 ))}
               </select>
               <Input type="number" value={passScore} onChange={(e) => setPassScore(Number(e.target.value) || 70)} placeholder="Pass %" />
-              <Input value={q1} onChange={(e) => setQ1(e.target.value)} placeholder={t("سؤال", "Question")} />
-              <Input value={a1} onChange={(e) => setA1(e.target.value)} placeholder={t("الإجابة الصحيحة", "Correct answer")} />
             </div>
-            <Button className="mt-3" size="sm" onClick={() => void createQuiz()} disabled={!title.trim() || !courseId}>
-              {t("حفظ", "Save")}
+            {questions.map((q, i) => (
+              <div key={i} className="grid sm:grid-cols-2 gap-2 mt-3">
+                <Input value={q.prompt} onChange={(e) => setQuestions((rows) => rows.map((r, idx) => idx === i ? { ...r, prompt: e.target.value } : r))} placeholder={t("سؤال", "Question")} />
+                <Input value={q.answer} onChange={(e) => setQuestions((rows) => rows.map((r, idx) => idx === i ? { ...r, answer: e.target.value } : r))} placeholder={t("الإجابة الصحيحة", "Correct answer")} />
+                <Input className="sm:col-span-2" value={q.options} onChange={(e) => setQuestions((rows) => rows.map((r, idx) => idx === i ? { ...r, options: e.target.value } : r))} placeholder={t("خيارات مفصولة بفاصلة", "Comma-separated options")} />
+              </div>
+            ))}
+            <Button size="sm" variant="outline" className="mt-2" onClick={() => setQuestions((rows) => [...rows, { prompt: "", answer: "", options: "" }])}>
+              {t("سؤال إضافي", "Add question")}
             </Button>
+            <div className="mt-3">
+              <Button className="mt-3" size="sm" onClick={() => void createQuiz()} disabled={!title.trim() || !courseId}>
+                {t("حفظ", "Save")}
+              </Button>
+            </div>
           </PanelCard>
         )}
 
@@ -137,6 +150,10 @@ export default function TrainerQuizzesPage() {
                     <p className="text-sm text-text-muted">
                       {courseTitle(q.course_id)} · {(q.questions as unknown[])?.length ?? 0} {t("أسئلة", "questions")} · {t("نجاح", "pass")} {q.pass_score}%
                     </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link href={`/dashboard/trainer/quizzes/${q.id}`}><Button size="sm" variant="outline">{t("تعديل", "Edit")}</Button></Link>
+                    <Link href={`/dashboard/trainer/quizzes/${q.id}/results`}><Button size="sm">{t("نتائج", "Results")}</Button></Link>
                   </div>
                 </div>
               ))}

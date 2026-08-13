@@ -15,13 +15,13 @@ import { useApp } from "@/contexts/app-context";
 
 interface SocialContextValue {
   posts: FeedPost[];
-  addPost: (content: string, tags?: string[]) => void;
+  addPost: (content: string, tags?: string[], imageUrl?: string) => void;
   toggleLike: (postId: string) => void;
   isPostLiked: (postId: string) => boolean;
   setPostCommentCount: (postId: string, count: number) => void;
   conversations: Conversation[];
   messages: Message[];
-  sendMessage: (conversationId: string, content: string) => void;
+  sendMessage: (conversationId: string, content: string, attachment?: string) => void;
   openConversationWith: (userId: string) => string;
   getConversationMessages: (conversationId: string) => Message[];
   loading: boolean;
@@ -126,20 +126,21 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   }, [refreshFeed]);
 
   const addPost = useCallback(
-    (content: string, tags: string[] = []) => {
+    (content: string, tags: string[] = [], imageUrl?: string) => {
       const trimmed = content.trim();
-      if (!trimmed || !activeUserId) return;
+      if ((!trimmed && !imageUrl) || !activeUserId) return;
 
       const optimistic: FeedPost = {
         id: `temp-${Date.now()}`,
         authorId: activeUserId,
         authorType: "user",
-        content: trimmed,
+        content: trimmed || (imageUrl ? "📷" : ""),
         type: "update",
         tags,
         likes: 0,
         comments: 0,
         createdAt: new Date().toISOString(),
+        imageUrl,
         authorName: user?.fullName,
         authorAvatar: user?.avatar,
         likedByMe: false,
@@ -149,7 +150,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       void fetch("/api/data/feed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: trimmed, tags, type: "update" }),
+        body: JSON.stringify({ content: trimmed || "📷", tags, type: "update", imageUrl }),
       })
         .then((r) => r.json())
         .then((json) => {
@@ -211,9 +212,9 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   }, [activeUserId, loadMessages, refreshFeed]);
 
   const sendMessage = useCallback(
-    (conversationId: string, content: string) => {
+    (conversationId: string, content: string, attachment?: string) => {
       const trimmed = content.trim();
-      if (!trimmed) return;
+      if (!trimmed && !attachment) return;
 
       const conv = convs.find((c) => c.id === conversationId);
       if (!conv) return;
@@ -223,7 +224,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       void fetch("/api/data/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId, content: trimmed }),
+        body: JSON.stringify({ conversationId, content: trimmed || "📎", attachment }),
       })
         .then((r) => r.json())
         .then((json) => {

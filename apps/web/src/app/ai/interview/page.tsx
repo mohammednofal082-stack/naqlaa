@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,10 @@ export default function InterviewPage() {
   const [currentQ, setCurrentQ] = useState(0);
   const [answer, setAnswer] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [recordError, setRecordError] = useState("");
+  const mediaRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const recognitionRef = useRef<{ stop: () => void } | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [scores, setScores] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +55,63 @@ export default function InterviewPage() {
     startSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const stopRecording = () => {
+    mediaRef.current?.stop();
+    mediaRef.current = null;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    setIsRecording(false);
+  };
+
+  const toggleRecording = async () => {
+    setRecordError("");
+    if (isRecording) {
+      stopRecording();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const rec = new MediaRecorder(stream);
+      mediaRef.current = rec;
+      rec.start();
+      setIsRecording(true);
+
+      const w = window as unknown as {
+        SpeechRecognition?: new () => {
+          lang: string; continuous: boolean; interimResults: boolean;
+          onresult: ((ev: { results: ArrayLike<{ 0: { transcript: string } }> }) => void) | null;
+          start: () => void; stop: () => void;
+        };
+        webkitSpeechRecognition?: new () => {
+          lang: string; continuous: boolean; interimResults: boolean;
+          onresult: ((ev: { results: ArrayLike<{ 0: { transcript: string } }> }) => void) | null;
+          start: () => void; stop: () => void;
+        };
+      };
+      const SpeechRecognition = w.SpeechRecognition || w.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.lang = isRTL ? "ar-SA" : "en-US";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.onresult = (event) => {
+          let text = "";
+          for (let i = 0; i < event.results.length; i++) {
+            text += event.results[i][0].transcript + " ";
+          }
+          setAnswer(text.trim());
+        };
+        recognition.start();
+        recognitionRef.current = recognition;
+      }
+    } catch {
+      setRecordError(t("تعذّر الوصول للميكروفون", "Microphone access denied"));
+    }
+  };
 
   const handleSubmit = async () => {
     if (!question || !answer.trim()) return;
@@ -186,9 +247,10 @@ export default function InterviewPage() {
                     className="w-full h-32 px-4 py-3 rounded-xl bg-surface border border-border text-text placeholder:text-text-muted focus:outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/10 resize-none"
                   />
                   <div className="flex items-center gap-4">
+                    {recordError && <p className="text-xs text-red-500">{recordError}</p>}
                     <Button
                       variant={isRecording ? "danger" : "outline"}
-                      onClick={() => setIsRecording(!isRecording)}
+                      onClick={() => void toggleRecording()}
                       type="button"
                     >
                       {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}

@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
       type: body.type,
       tags: Array.isArray(body.tags) ? body.tags.map(String) : undefined,
       jobId: body.jobId ? String(body.jobId) : undefined,
+      imageUrl: body.imageUrl ? String(body.imageUrl) : undefined,
     });
   });
 }
