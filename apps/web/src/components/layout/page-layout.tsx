@@ -24,8 +24,8 @@ export function PageLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cream dot-grid flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-navy border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[var(--li-bg)] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -40,13 +40,13 @@ export function PageLayout({
   }
 
   return (
-    <div className="min-h-screen bg-cream dot-grid">
+    <div className="min-h-screen bg-[var(--li-bg)]">
       <PublicHeader />
       <main className="pt-20 pb-16">
-        <div className="shell">
+        <div className="nq-shell">
           <p className="text-[13px] text-text-muted mb-8 py-4 border-b border-border">
             {t("تصفّح الفرص —", "Browse opportunities —")}{" "}
-            <Link href="/auth/login" className="text-navy font-semibold underline underline-offset-4 decoration-border-strong hover:decoration-navy">
+            <Link href="/auth/login" className="text-brand font-semibold underline underline-offset-4 decoration-border-strong hover:decoration-brand">
               {t("سجّل للدخول والتقديم", "Sign in to apply")}
             </Link>
           </p>

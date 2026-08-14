@@ -30,12 +30,9 @@ import {
 } from "lucide-react";
 import { SmoothScroll } from "./naqla/smooth-scroll";
 import {
-  Float,
   Magnetic,
   Reveal,
   SpotlightCard,
-  TextReveal,
-  TiltCard,
 } from "@/components/ui/motion";
 
 const BRAND = "#1d4ed8";
@@ -83,15 +80,13 @@ function LandingNav() {
           >
             {t("تسجيل الدخول", "Sign in")}
           </Link>
-          <Magnetic strength={0.2}>
-            <Link
-              href="/auth/register"
-              className="nq-pulse-ring inline-flex px-3 sm:px-4 py-2 sm:py-2.5 text-sm font-semibold rounded-xl text-white transition-all hover:brightness-110 whitespace-nowrap"
-              style={{ background: BRAND, boxShadow: "0 0 36px rgba(29,78,216,0.4)" }}
-            >
-              {t("إنشاء حساب", "Create account")}
-            </Link>
-          </Magnetic>
+          <Link
+            href="/auth/register"
+            className="inline-flex px-3 sm:px-4 py-2 sm:py-2.5 text-sm font-semibold rounded-xl text-white transition-colors hover:brightness-110 whitespace-nowrap"
+            style={{ background: BRAND }}
+          >
+            {t("إنشاء حساب", "Create account")}
+          </Link>
           <button type="button" className="md:hidden p-2 text-text-secondary" onClick={() => setOpen(!open)} aria-label={t("القائمة", "Menu")}>
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -134,113 +129,64 @@ function HeroSection() {
   return (
     <section className="relative min-h-[100svh] flex items-center pt-16 overflow-hidden">
       <div className="absolute inset-0 pointer-events-none" aria-hidden>
-        <motion.div
-          className="absolute inset-0"
-          initial={{ scale: 1.08 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 12, ease: "easeOut" }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/media/naqla-hero.jpg"
-            alt=""
-            className="nq-kenburns absolute inset-0 w-full h-full object-cover opacity-[0.22] dark:opacity-[0.32]"
-          />
-        </motion.div>
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/85 to-background" />
-        <div className="absolute inset-0 bg-gradient-to-l from-background via-transparent to-background/80" />
-        <div className="nq-hero-glow top-[-20%] left-[-15%] bg-blue-500/25 dark:bg-blue-600/30" />
-        <div className="nq-hero-glow bottom-[-20%] right-[-10%] bg-indigo-500/15 dark:bg-indigo-600/20" style={{ animationDelay: "-4s" }} />
-        <div className="nq-hero-glow top-[35%] right-[15%] w-[28rem] h-[28rem] bg-cyan-400/10 dark:bg-cyan-500/12" style={{ animationDelay: "-7s" }} />
-        <div
-          className="landing-grid absolute inset-0 opacity-40"
-          style={{ maskImage: "radial-gradient(ellipse 80% 70% at 50% 20%, #000 40%, transparent 100%)" }}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/media/naqla-hero.jpg"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.18] dark:opacity-[0.28]"
         />
-        <div className="nq-grain" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/90 to-background" />
       </div>
 
       <div className="shell-wide relative z-10 py-16 lg:py-20">
         <div className="grid lg:grid-cols-[1.08fr_0.92fr] gap-12 lg:gap-16 items-center">
           <div>
-            <h1 className="font-display text-[clamp(2.5rem,6vw,4.25rem)] font-bold text-text leading-[1.1] tracking-tight mb-6 mt-2">
-              <TextReveal text={t("من مقاعد الجامعة", "From the classroom")} delay={0.1} as="span" className="block" />
-              <span className="block mt-1 bg-gradient-to-l from-blue-500 via-cyan-500 to-indigo-500 dark:from-blue-300 dark:via-cyan-300 dark:to-indigo-300 bg-clip-text text-transparent">
-                <TextReveal text={t("إلى أول وظيفة.", "to your first job.")} delay={0.35} as="span" />
-              </span>
+            <p className="text-sm font-semibold text-brand mb-3">
+              {t("منصة توظيف فلسطينية", "Palestinian career platform")}
+            </p>
+            <h1 className="font-display text-[clamp(2.5rem,6vw,4.25rem)] font-bold text-text leading-[1.1] tracking-tight mb-6">
+              <span className="block">{t("من بيرزيت والنجاح", "From Birzeit & An-Najah")}</span>
+              <span className="block mt-1 text-brand">{t("إلى أول عقد عمل.", "to your first contract.")}</span>
             </h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.55, ease: EASE }}
-              className="text-lg text-text-secondary leading-relaxed max-w-xl mb-9"
-            >
+            <p className="text-lg text-text-secondary leading-relaxed max-w-xl mb-9">
               {t(
-                "تجربة واحدة تربط الطلبة والخريجين بالشركات والجامعات — منشورات مهنية، فرص مطابَقة بدقّة لمهاراتك، وتواصل مباشر مع أصحاب القرار.",
-                "One experience connecting students and graduates with companies and universities — professional posts, opportunities precisely matched to your skills, and direct contact with decision-makers."
+                "نقلة تربط طلبة الجامعات الفلسطينية بشركات التوظيف محلياً: فرص مطابقة، تدريب معتمد، ومتابعة من الجامعة حتى التوظيف.",
+                "Naqla connects Palestinian university students with local employers: matched roles, accredited internships, and university-to-hire follow-through."
               )}
-            </motion.p>
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.7, ease: EASE }}
-              className="flex flex-col sm:flex-row gap-3 mb-10"
-            >
-              <Magnetic>
-                <Link
-                  href="/auth/login"
-                  className="nq-btn-shimmer inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-base font-bold text-white transition-all hover:scale-[1.03] active:scale-[0.98]"
-                  style={{ background: BRAND, boxShadow: "0 14px 48px rgba(29,78,216,0.45)" }}
-                >
-                  {t("تسجيل الدخول", "Sign in")}
-                  <Arrow className="w-5 h-5" />
-                </Link>
-              </Magnetic>
-              <Magnetic strength={0.18}>
-                <Link
-                  href="/jobs"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-text border border-border bg-surface/50 hover:bg-surface-hover transition-all backdrop-blur-sm"
-                >
-                  <Search className="w-4 h-4" />
-                  {t("تصفّح الفرص", "Browse opportunities")}
-                </Link>
-              </Magnetic>
-            </motion.div>
+            <div className="flex flex-col sm:flex-row gap-3 mb-10">
+              <Link
+                href="/auth/login"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-base font-bold text-white transition-colors hover:brightness-110"
+                style={{ background: BRAND }}
+              >
+                {t("تسجيل الدخول", "Sign in")}
+                <Arrow className="w-5 h-5" />
+              </Link>
+              <Link
+                href="/jobs"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-base font-semibold text-text border border-border bg-surface hover:bg-surface-hover transition-colors"
+              >
+                <Search className="w-4 h-4" />
+                {t("تصفّح الفرص", "Browse opportunities")}
+              </Link>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.9, duration: 0.7 }}
-              className="flex flex-wrap gap-x-10 gap-y-5 pt-2 border-t border-border"
-            >
-              {stats.map((s, i) => (
-                <motion.div
-                  key={s.l}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1 + i * 0.1, ease: EASE }}
-                  className="pt-5"
-                >
+            <div className="flex flex-wrap gap-x-10 gap-y-5 pt-5 border-t border-border">
+              {stats.map((s) => (
+                <div key={s.l}>
                   <p className="text-[1.85rem] font-bold text-text tabular-nums leading-none">{s.n}</p>
                   <p className="text-text-muted text-xs mt-2">{s.l}</p>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94, rotateY: -8 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            transition={{ duration: 0.9, delay: 0.2, ease: EASE }}
-            className="relative [perspective:1200px]"
-          >
-            <Float duration={7}>
-              <TiltCard>
-                <ProductPreview />
-              </TiltCard>
-            </Float>
-          </motion.div>
+          <div className="relative">
+            <ProductPreview />
+          </div>
         </div>
       </div>
     </section>

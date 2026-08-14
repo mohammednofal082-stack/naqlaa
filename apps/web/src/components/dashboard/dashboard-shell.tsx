@@ -20,19 +20,12 @@ export function DashboardHero({
   className?: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        "nq-gradient-panel p-5 md:p-6 mb-6",
-        className
-      )}
-    >
-      {eyebrow && <p className="text-xs font-medium text-brand mb-1.5">{eyebrow}</p>}
+    <div className={cn("rounded-xl border border-border bg-surface p-5 md:p-6 mb-6", className)}>
+      {eyebrow && <p className="text-xs font-medium text-text-muted mb-1.5">{eyebrow}</p>}
       <h2 className="font-display text-lg md:text-xl font-bold text-text">{title}</h2>
       {subtitle && <p className="text-text-secondary text-sm mt-1.5 max-w-2xl leading-relaxed">{subtitle}</p>}
       {children && <div className="mt-4 flex flex-wrap gap-2">{children}</div>}
-    </motion.div>
+    </div>
   );
 }
 

@@ -12,25 +12,26 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { authUsers, DEMO_PASSWORD, useApp } from "../../contexts/app-context";
+import { DEMO_PASSWORD, DEMO_ACCOUNTS, useApp } from "../../contexts/app-context";
 import { ROLE_LABELS } from "@careerlink/shared";
 import { useI18n } from "../../i18n";
 import { colors, spacing, radius, shadow } from "../../constants/theme";
 import type { UserRole } from "@careerlink/shared";
+import { getApiBaseUrl } from "../../services/api-client";
 
 const ROLES: UserRole[] = ["student", "graduate", "company", "hr", "university", "trainer", "mentor", "admin"];
 
 export default function LoginScreen() {
-  const { login } = useApp();
+  const { login, apiEnabled } = useApp();
   const { t } = useI18n();
   const [role, setRole] = useState<UserRole>("student");
   const [email, setEmail] = useState("student@naqlah.ps");
   const [password, setPassword] = useState(DEMO_PASSWORD);
   const [error, setError] = useState("");
-  const [showDemo, setShowDemo] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const fillDemo = (r: UserRole) => {
-    const demo = authUsers.find((u) => u.roles.includes(r));
+    const demo = DEMO_ACCOUNTS.find((u) => u.role === r);
     if (demo) {
       setRole(r);
       setEmail(demo.email);
@@ -40,7 +41,9 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     setError("");
+    setBusy(true);
     const result = await login(email, password, role);
+    setBusy(false);
     if (result.error) {
       setError(result.error);
       return;
@@ -57,13 +60,19 @@ export default function LoginScreen() {
               <Ionicons name="trending-up" size={28} color={colors.surface} />
             </View>
             <Text style={styles.brand}>{t("نقلة", "Naqla")}</Text>
-            <Text style={styles.tagline}>{t("من الجامعة إلى سوق العمل", "From University to Employment")}</Text>
-            <Text style={styles.sub}>{t("8 أدوار · ويب + موبايل · مشروع تخرج ٢٠٢٦", "8 roles · Web + Mobile · Graduation Project 2026")}</Text>
+            <Text style={styles.tagline}>{t("من بيرزيت والنجاح إلى أول عقد", "From campus to your first contract")}</Text>
+            <Text style={styles.sub}>
+              {apiEnabled
+                ? t(`متصل: ${getApiBaseUrl()}`, `Connected: ${getApiBaseUrl()}`)
+                : t("EXPO_PUBLIC_API_URL غير مضبوط", "EXPO_PUBLIC_API_URL is not set")}
+            </Text>
           </View>
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>{t("تسجيل الدخول", "Sign In")}</Text>
-            <Text style={styles.cardSub}>{t("اختر دورك ثم ادخل بالحساب التجريبي", "Select your role, then sign in with a demo account")}</Text>
+            <Text style={styles.cardSub}>
+              {t("الدخول عبر حسابات قاعدة البيانات (Supabase)", "Sign in with database accounts (Supabase)")}
+            </Text>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.roleScroll}>
               {ROLES.map((r) => (
@@ -105,27 +114,23 @@ export default function LoginScreen() {
               placeholderTextColor={colors.textMuted}
             />
 
-            <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} activeOpacity={0.9}>
-              <Text style={styles.loginBtnText}>{t("دخول", "Sign in")}</Text>
+            <TouchableOpacity
+              style={[styles.loginBtn, busy && { opacity: 0.7 }]}
+              onPress={() => void handleLogin()}
+              activeOpacity={0.9}
+              disabled={busy}
+            >
+              <Text style={styles.loginBtnText}>{busy ? t("جاري الدخول…", "Signing in…") : t("دخول", "Sign in")}</Text>
               <Ionicons name="arrow-back" size={18} color={colors.surface} />
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setShowDemo(!showDemo)} style={styles.demoToggle}>
-              <Text style={styles.demoToggleText}>{t("حسابات العرض التجريبي", "Demo accounts")}</Text>
-              <Ionicons name={showDemo ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
-            </TouchableOpacity>
-
-            {showDemo &&
-              authUsers.map((u) => (
-                <TouchableOpacity
-                  key={u.id}
-                  style={styles.demoRow}
-                  onPress={() => fillDemo(u.roles[0])}
-                >
-                  <Text style={styles.demoRole}>{ROLE_LABELS[u.roles[0]]}</Text>
-                  <Text style={styles.demoEmail}>{u.email}</Text>
-                </TouchableOpacity>
-              ))}
+            <Text style={styles.demoToggleText}>{t("تعبئة سريعة لحسابات الديمو", "Quick-fill demo accounts")}</Text>
+            {DEMO_ACCOUNTS.map((u) => (
+              <TouchableOpacity key={u.email} style={styles.demoRow} onPress={() => fillDemo(u.role)}>
+                <Text style={styles.demoRole}>{ROLE_LABELS[u.role]}</Text>
+                <Text style={styles.demoEmail}>{u.email}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

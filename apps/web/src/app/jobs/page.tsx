@@ -64,17 +64,17 @@ export default function JobsPage() {
         ))}
       </FilterBar>
 
-      <div className="flex flex-wrap gap-4 mb-6">
-        <div className="relative flex-1 min-w-[250px]">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3 mb-4 sm:mb-6">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
           <Input
             placeholder={t("ابحث عن وظيفة، شركة، قطاع...", "Search for a job, company, or sector...")}
-            className="pr-10 bg-white"
+            className="pr-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Select value={workType} onChange={(e) => setWorkType(e.target.value)} className="w-40 bg-white">
+        <Select value={workType} onChange={(e) => setWorkType(e.target.value)} className="w-full sm:w-40">
           <option value="all">{t("كل الأنواع", "All types")}</option>
           <option value="remote">{t("عن بُعد", "Remote")}</option>
           <option value="hybrid">{t("هجين", "Hybrid")}</option>

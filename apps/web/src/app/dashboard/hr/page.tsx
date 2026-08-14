@@ -45,10 +45,7 @@ export default function HRDashboard() {
           user?.fullName ? `قمع التوظيف — ${user.fullName.split(" ")[0]}` : "قمع التوظيف",
           user?.fullName ? `Recruitment Funnel — ${user.fullName.split(" ")[0]}` : "Recruitment Funnel",
         )}
-        subtitle={t(
-          `دور الموارد البشرية · ${user?.email ?? ""} · مراجعة وجدولة وقرارات`,
-          `HR role · ${user?.email ?? ""} · Review, schedule, and decide`,
-        )}
+        subtitle={t("مراجعة وجدولة وقرارات", "Review, schedule, and decide")}
         showScenarios
         secondaryCta={{ href: "/dashboard/hr/pipeline", label: t("عرض القمع", "View Funnel") }}
         actions={

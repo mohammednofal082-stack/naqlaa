@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { ThemeSegmented } from "@/components/ui/theme-toggle";
 import { useProfile, useSettings, saveSettings } from "@/hooks/data";
-import { Bell, Lock, User, Shield, Palette, Loader2, AlertCircle } from "lucide-react";
+import { Bell, Lock, User, Shield, Palette, Loader2, AlertCircle, Wallet } from "lucide-react";
 import { useI18n } from "@/i18n";
 
 export default function SettingsPage() {
@@ -116,6 +116,12 @@ export default function SettingsPage() {
             </div>
             <Link href="/profile/edit">
               <Button variant="outline">{t("تعديل الملف الكامل", "Edit Full Profile")}</Button>
+            </Link>
+            <Link href="/billing" className="ms-2 inline-block">
+              <Button variant="outline">
+                <Wallet className="w-4 h-4" />
+                {t("الرسوم والفواتير", "Fees & Invoices")}
+              </Button>
             </Link>
           </div>
         </Card>

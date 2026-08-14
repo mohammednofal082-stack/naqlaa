@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Cairo, Readex_Pro } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Noto_Sans_Arabic, Source_Sans_3 } from "next/font/google";
 import { AppProvider } from "@/contexts/app-context";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SocialProvider } from "@/contexts/social-context";
@@ -8,16 +8,29 @@ import { dirForLocale } from "@/i18n/shared";
 import { getServerLocale } from "@/i18n/server";
 import "./globals.css";
 
-const cairo = Cairo({
-  subsets: ["arabic", "latin"],
-  variable: "--font-cairo",
-});
-
-const readex = Readex_Pro({
-  subsets: ["arabic", "latin"],
-  variable: "--font-readex",
+/** LinkedIn-like product UI: clean sans for Latin + Arabic. */
+const sourceSans = Source_Sans_3({
+  subsets: ["latin"],
+  variable: "--font-source",
   weight: ["400", "500", "600", "700"],
 });
+
+const notoArabic = Noto_Sans_Arabic({
+  subsets: ["arabic"],
+  variable: "--font-noto-ar",
+  weight: ["400", "500", "600", "700"],
+});
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F3F2EF" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();
@@ -55,8 +68,14 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const locale = await getServerLocale();
   return (
-    <html lang={locale} dir={dirForLocale(locale)} data-scroll-behavior="smooth" className={`${cairo.variable} ${readex.variable} h-full`} suppressHydrationWarning>
-      <body className="min-h-full antialiased bg-background text-text">
+    <html
+      lang={locale}
+      dir={dirForLocale(locale)}
+      data-scroll-behavior="smooth"
+      className={`${sourceSans.variable} ${notoArabic.variable} h-full`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-full antialiased bg-background text-text font-sans" suppressHydrationWarning>
         <LocaleProvider initialLocale={locale}>
           <ThemeProvider>
             <AppProvider>

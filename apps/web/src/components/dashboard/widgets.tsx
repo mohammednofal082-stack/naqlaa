@@ -61,7 +61,7 @@ export function StatsWidget({ compact }: { compact?: boolean }) {
   return (
     <div className={cn("grid gap-3", compact ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 lg:grid-cols-4")}>
       {stats.map((stat) => (
-        <Card key={stat.label} className="py-4 px-4 nq-stat-glow">
+        <Card key={stat.label} className="py-4 px-4">
           <p className="font-display text-2xl font-bold text-text tabular-nums">{stat.value}</p>
           <p className="text-text-muted text-xs mt-1 font-medium">{stat.label}</p>
         </Card>
@@ -137,15 +137,15 @@ export function StatCard({
   accent?: "blue" | "emerald" | "purple" | "amber" | "cyan";
 }) {
   return (
-    <Card className="py-4 nq-stat-glow">
+    <Card className="py-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-text-muted text-xs font-medium">{title}</p>
           <p className="font-display text-2xl font-bold text-text mt-1 tabular-nums truncate">{value}</p>
-          {change && <p className="text-emerald text-xs mt-1 font-semibold">{change}</p>}
+          {change && <p className="text-text-muted text-xs mt-1 font-medium">{change}</p>}
         </div>
-        <div className="w-10 h-10 shrink-0 rounded-xl bg-brand-muted border border-brand/15 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-brand" />
+        <div className="w-9 h-9 shrink-0 rounded-lg bg-surface-hover border border-border flex items-center justify-center">
+          <Icon className="w-4 h-4 text-text-secondary" />
         </div>
       </div>
     </Card>

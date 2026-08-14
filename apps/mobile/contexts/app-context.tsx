@@ -1,19 +1,26 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import {
-  authUsers,
-  DEMO_PASSWORD,
-  findAuthUserByEmail,
-  getRoleExperienceBase,
-  type UserRole,
-} from "@careerlink/shared";
+import { DEMO_PASSWORD, getRoleExperienceBase, type UserRole } from "@careerlink/shared";
 import { useI18n } from "../i18n";
 import {
   apiLogin,
   apiLogout,
+  getApiBaseUrl,
   isRemoteApiEnabled,
   loadSession,
   type MobileSession,
 } from "../services/api-client";
+
+/** Demo emails for quick fill — login always hits the API / DB. */
+export const DEMO_ACCOUNTS: { role: UserRole; email: string }[] = [
+  { role: "student", email: "student@naqlah.ps" },
+  { role: "graduate", email: "graduate@naqlah.ps" },
+  { role: "company", email: "company@jawwal.ps" },
+  { role: "hr", email: "hr@jawwal.ps" },
+  { role: "university", email: "career@birzeit.edu" },
+  { role: "trainer", email: "trainer@naqlah.ps" },
+  { role: "mentor", email: "mentor@naqlah.ps" },
+  { role: "admin", email: "admin@naqlah.ps" },
+];
 
 interface AppUser {
   id: string;
@@ -73,35 +80,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       loading,
       apiEnabled,
       login: async (email, password, selectedRole) => {
-        if (apiEnabled) {
-          try {
-            const result = await apiLogin({ email, password, role: selectedRole });
-            setUser(toAppUser(result.user));
-            return {};
-          } catch (e) {
-            return { error: e instanceof Error ? e.message : t("فشل تسجيل الدخول", "Login failed") };
-          }
+        if (!getApiBaseUrl()) {
+          return {
+            error: t(
+              "اربط التطبيق بالخادم عبر EXPO_PUBLIC_API_URL",
+              "Connect the app via EXPO_PUBLIC_API_URL"
+            ),
+          };
         }
-
-        if (password !== DEMO_PASSWORD) {
-          return { error: t("كلمة المرور غير صحيحة — أو اضبط EXPO_PUBLIC_API_URL", "Wrong password — or set EXPO_PUBLIC_API_URL") };
+        try {
+          const result = await apiLogin({ email, password, role: selectedRole });
+          setUser(toAppUser(result.user));
+          return {};
+        } catch (e) {
+          return { error: e instanceof Error ? e.message : t("فشل تسجيل الدخول", "Login failed") };
         }
-        const found = findAuthUserByEmail(email);
-        if (!found) return { error: t("البريد غير موجود", "This email does not exist") };
-        if (!found.roles.includes(selectedRole)) {
-          return { error: t("هذا الحساب لا يملك الدور المختار", "This account does not have the selected role") };
-        }
-        setUser({
-          id: found.id,
-          email: found.email,
-          fullName: found.fullName,
-          role: selectedRole,
-          organizationId: found.organizationId,
-        });
-        return {};
       },
       logout: async () => {
-        if (apiEnabled) await apiLogout();
+        await apiLogout();
         setUser(null);
       },
     }),
@@ -117,4 +113,11 @@ export function useApp() {
   return ctx;
 }
 
-export { authUsers, DEMO_PASSWORD };
+export { DEMO_PASSWORD };
+/** @deprecated use DEMO_ACCOUNTS */
+export const authUsers = DEMO_ACCOUNTS.map((a) => ({
+  email: a.email,
+  roles: [a.role] as UserRole[],
+  fullName: a.email,
+  id: a.email,
+}));

@@ -5,10 +5,11 @@ import { useI18n } from "@/i18n";
 import { getRoleExperience } from "./role-experience";
 import { RoleIdentityBanner, RoleScenarios } from "./role-ui";
 
+/** Default: no banner / scenario grid — dashboards stay content-first. */
 export function RoleWorkspace({
   children,
-  showScenarios = true,
-  showBanner = true,
+  showScenarios = false,
+  showBanner = false,
 }: {
   children: React.ReactNode;
   showScenarios?: boolean;

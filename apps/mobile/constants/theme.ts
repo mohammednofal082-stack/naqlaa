@@ -1,23 +1,24 @@
+/** LinkedIn-inspired mobile palette (matches web). */
 export const colors = {
-  navy: "#0c1222",
-  navyMid: "#1a2332",
-  navyLight: "#2d3748",
-  blue: "#1d4ed8",
-  blueLight: "#2563eb",
-  cyan: "#0891b2",
-  emerald: "#047857",
-  emeraldLight: "#10b981",
-  purple: "#6d28d9",
-  amber: "#b45309",
-  red: "#ef4444",
-  cream: "#f7f5f2",
-  creamDark: "#ebe7e1",
+  navy: "#191919",
+  navyMid: "#004182",
+  navyLight: "#378fe9",
+  blue: "#0a66c2",
+  blueLight: "#378fe9",
+  cyan: "#057642",
+  emerald: "#057642",
+  emeraldLight: "#057642",
+  purple: "#7a1fa2",
+  amber: "#915907",
+  red: "#cc1016",
+  cream: "#f3f2ef",
+  creamDark: "#e8e6e2",
   surface: "#ffffff",
-  background: "#f7f5f2",
-  border: "#e5e1da",
-  text: "#0c1222",
-  textSecondary: "#4a5568",
-  textMuted: "#94a3b8",
+  background: "#f3f2ef",
+  border: "#e0dfdc",
+  text: "#191919",
+  textSecondary: "rgba(0,0,0,0.6)",
+  textMuted: "rgba(0,0,0,0.45)",
 };
 
 export const spacing = {
@@ -29,38 +30,39 @@ export const spacing = {
 };
 
 export const radius = {
-  sm: 12,
-  md: 16,
-  lg: 20,
-  xl: 24,
+  sm: 6,
+  md: 8,
+  lg: 8,
+  xl: 12,
   full: 9999,
 };
 
 export const shadow = {
   soft: {
-    shadowColor: "#0c1222",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 0,
+    elevation: 1,
+    borderWidth: 0,
   },
   card: {
-    shadowColor: "#1d4ed8",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 0,
+    elevation: 1,
   },
   glow: {
-    shadowColor: "#1d4ed8",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowColor: "#0a66c2",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 0,
+    elevation: 1,
   },
 };
 
 export const gradients = {
-  brand: ["#1d4ed8", "#0891b2"] as const,
-  hero: ["#060a14", "#0c1222", "#1a2332"] as const,
+  brand: ["#0a66c2", "#004182"] as const,
+  hero: ["#191919", "#004182"] as const,
 };

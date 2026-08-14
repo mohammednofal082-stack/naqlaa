@@ -60,14 +60,11 @@ export default function GraduateDashboard() {
       <PageHeader
         meta={t("لوحة الخريج", "Graduate Dashboard")}
         title={t(`مرحباً، ${firstName}`, `Welcome, ${firstName}`)}
-        subtitle={t(
-          `دور الخريج · ${user?.email ?? ""} · تتبع طلباتك وفرصك بعد التخرج`,
-          `Graduate role · ${user?.email ?? ""} · Track applications after graduation`,
-        )}
+        subtitle={t("تتبع طلباتك وفرصك بعد التخرج", "Track your applications and opportunities after graduation")}
         actions={<Link href="/feed"><Button variant="outline" size="sm">{t("المنصة", "Platform")}</Button></Link>}
       />
 
-      <RoleWorkspace showScenarios showBanner={false}>
+      <RoleWorkspace showScenarios={false} showBanner={false}>
         <div className="nq-page-enter space-y-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           <StatCard title={t("طلبات نشطة", "Active Applications")} value={apps.length} icon={Briefcase} accent="blue" />

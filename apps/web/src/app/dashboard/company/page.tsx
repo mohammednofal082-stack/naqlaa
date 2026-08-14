@@ -43,10 +43,7 @@ export default function CompanyDashboard() {
           user?.fullName ? `مركز التوظيف — ${user.fullName}` : "مركز التوظيف",
           user?.fullName ? `Recruitment Center — ${user.fullName}` : "Recruitment Center",
         )}
-        subtitle={t(
-          `دور الشركة · ${user?.email ?? ""} · وظائف ومتقدمين ومقابلات`,
-          `Company role · ${user?.email ?? ""} · Jobs, applicants, and interviews`,
-        )}
+        subtitle={t("وظائف ومتقدمين ومقابلات", "Jobs, applicants, and interviews")}
         showScenarios
         secondaryCta={{ href: "/dashboard/company/applications", label: t("مراجعة المتقدمين", "Review Applicants") }}
         actions={

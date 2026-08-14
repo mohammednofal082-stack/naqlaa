@@ -5,7 +5,7 @@ import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/sidebar";
 import { PostCard } from "@/components/feed/post-card";
 import { PostComposer } from "@/components/feed/post-composer";
-import { FeedProfileCard, FeedRightRail } from "@/components/feed/feed-shell";
+import { FeedRightRail } from "@/components/feed/feed-shell";
 import { FeedHero } from "@/components/feed/feed-hero";
 import { EmptyState } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -39,9 +39,6 @@ export default function FeedPage() {
       <div className="nq-page-enter nq-feed-layout">
         <main className="min-w-0">
           <FeedHero />
-          <div className="lg:hidden mb-3">
-            <FeedProfileCard />
-          </div>
           <PostComposer />
 
           <div className="li-filter-tabs scrollbar-hide">

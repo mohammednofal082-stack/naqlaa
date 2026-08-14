@@ -62,7 +62,7 @@ export function getPostAuthor(post: FeedPost) {
       : { name: 'شركة', avatar: '', subtitle: '' };
   }
   if (post.authorType === 'university') {
-    return { name: 'جامعة بيرزيت', avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=BZ&backgroundColor=1d4ed8', subtitle: 'جامعة شريكة' };
+    return { name: 'جامعة بيرزيت', avatar: 'data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22128%22%20height%3D%22128%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2224%22%20fill%3D%22%231d4ed8%22%2F%3E%3Ctext%20x%3D%2264%22%20y%3D%2268%22%20text-anchor%3D%22middle%22%20fill%3D%22%23ffffff%22%20font-family%3D%22Segoe%20UI%2CTahoma%2CArial%2Csans-serif%22%20font-size%3D%2248%22%20font-weight%3D%22700%22%3EB%3C%2Ftext%3E%3C%2Fsvg%3E', subtitle: 'جامعة شريكة' };
   }
   const user = getUserById(post.authorId);
   return user

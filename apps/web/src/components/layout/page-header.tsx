@@ -18,15 +18,15 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 pb-6 border-b border-border",
+        "flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-4 sm:mb-6 pb-3 sm:pb-5 border-b border-border",
         className
       )}
     >
       <div className="min-w-0">
-        {meta && <p className="text-xs font-medium text-text-muted mb-1.5">{meta}</p>}
-        <h1 className="font-display text-2xl md:text-[1.75rem] font-bold text-text tracking-tight">{title}</h1>
+        {meta && <p className="text-[11px] font-semibold uppercase tracking-wide text-text-muted mb-1">{meta}</p>}
+        <h1 className="font-display text-xl sm:text-2xl font-semibold text-text tracking-tight">{title}</h1>
         {subtitle && (
-          <p className="text-text-secondary mt-2 text-sm md:text-[15px] max-w-2xl leading-relaxed">{subtitle}</p>
+          <p className="text-text-secondary mt-1 text-[13px] sm:text-sm max-w-2xl leading-snug line-clamp-2 sm:line-clamp-none">{subtitle}</p>
         )}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div>}

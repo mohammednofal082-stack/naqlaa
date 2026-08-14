@@ -10,9 +10,9 @@ export function Card({ className, hover, padding = true, children, ...props }: C
   return (
     <div
       className={cn(
-        "card transition-all duration-300",
-        padding && "p-6",
-        hover && "card-hover cursor-pointer hover:-translate-y-0.5",
+        "card transition-colors duration-150",
+        padding && "p-4 sm:p-5",
+        hover && "card-hover cursor-pointer",
         className
       )}
       {...props}

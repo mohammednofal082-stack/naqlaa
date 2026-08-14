@@ -53,10 +53,7 @@ export default function StudentDashboard() {
       <PageHeader
         meta={t("لوحة الطالب", "Student Dashboard")}
         title={t(`مرحباً، ${firstName}`, `Welcome, ${firstName}`)}
-        subtitle={t(
-          `دور الطالب · ${user?.email ?? ""} · نظرة على تقدّمك وفرصك`,
-          `Student role · ${user?.email ?? ""} · Your progress and opportunities`,
-        )}
+        subtitle={t("نظرة على تقدّمك وفرصك", "Your progress and opportunities")}
         actions={
           <Link href="/feed">
             <Button variant="outline" size="sm">{t("المنصة", "Platform")}</Button>
@@ -64,7 +61,7 @@ export default function StudentDashboard() {
         }
       />
 
-      <RoleWorkspace showScenarios showBanner={false}>
+      <RoleWorkspace showScenarios={false} showBanner={false}>
         <DashboardHero
           eyebrow={t("الخطوة التالية الموصى بها", "Recommended Next Step")}
           title={role.scenarios[0].title}

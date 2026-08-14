@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { PublicHeader } from "@/components/layout/sidebar";
-import { AmbientBackground } from "@/components/ui/ambient-background";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,14 +29,19 @@ function LoginForm() {
   const [showPass, setShowPass] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const qEmail = searchParams.get("email");
     const qRole = searchParams.get("role") as UserRole | null;
+    const qPending = searchParams.get("pending");
     if (qEmail) setEmail(qEmail);
     if (qRole && ROLES.includes(qRole)) setRole(qRole);
-  }, [searchParams]);
+    if (qPending === "1") {
+      setInfo(t("تم إنشاء حسابك — بانتظار موافقة مدير النظام قبل تسجيل الدخول", "Your account was created — waiting for admin approval before you can sign in"));
+    }
+  }, [searchParams, t]);
 
   const demoUsers = getDemoCredentials();
 
@@ -64,18 +68,23 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen page-canvas relative">
-      <AmbientBackground variant="auth" />
+    <div className="min-h-screen bg-[var(--li-bg)] relative">
       <PublicHeader />
-      <div className="pt-24 pb-12 px-4 min-h-screen flex items-center justify-center relative z-10">
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-          <Card className="p-6 sm:p-8">
+      <div className="pt-[72px] pb-10 px-3 sm:px-4 min-h-screen flex items-start sm:items-center justify-center relative z-10">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-[400px]">
+          <Card className="p-5 sm:p-7 !rounded-lg shadow-card">
             <div className="text-center mb-6">
               <Logo size="md" className="justify-center mb-4" />
               <h1 className="font-display text-2xl font-bold text-text">{t("تسجيل الدخول", "Sign in")}</h1>
               <p className="text-text-muted text-sm mt-1">{t("ادخل بحسابك للمتابعة", "Sign in with your account to continue")}</p>
             </div>
 
+            {info && !error && (
+              <div className="flex items-center gap-2 p-3 mb-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 text-sm">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {info}
+              </div>
+            )}
             {error && (
               <div className="flex items-center gap-2 p-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
                 <AlertCircle className="w-4 h-4 shrink-0" />

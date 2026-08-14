@@ -8,18 +8,11 @@ import type { RoleExperience } from "./role-experience";
 
 export function RoleIdentityBanner({ role }: { role: RoleExperience }) {
   return (
-    <div className={cn("nq-hero mb-6 bg-gradient-to-l", role.gradient)}>
+    <div className="mb-6 rounded-xl border border-border bg-surface px-4 py-3">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-medium text-text-muted">
-            {role.icon} {role.label} · {role.mantra}
-          </p>
-          <h2 className="font-display text-lg md:text-xl font-bold text-text mt-1">{role.tagline}</h2>
-          {role.primaryFocus.length > 0 && (
-            <p className="text-sm text-text-secondary mt-1.5">
-              {role.primaryFocus.slice(0, 4).join(" · ")}
-            </p>
-          )}
+          <p className="text-xs font-medium text-text-muted">{role.label}</p>
+          <h2 className="font-display text-lg font-bold text-text mt-1">{role.tagline}</h2>
         </div>
       </div>
     </div>

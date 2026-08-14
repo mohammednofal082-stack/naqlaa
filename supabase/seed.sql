@@ -7,13 +7,13 @@ insert into public.companies (id, name, industry, description, logo_url, locatio
 values
   ('a1111111-1111-1111-1111-111111111111', 'Asal Technologies', 'Technology',
    'شركة فلسطينية رائدة في تطوير البرمجيات والتدريب التقني.',
-   'https://api.dicebear.com/7.x/initials/svg?seed=Asal', 'رام الله', '201-500', true),
+   'data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22128%22%20height%3D%22128%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2224%22%20fill%3D%22%230f172a%22%2F%3E%3Ctext%20x%3D%2264%22%20y%3D%2268%22%20text-anchor%3D%22middle%22%20fill%3D%22%23ffffff%22%20font-family%3D%22Segoe%20UI%2CTahoma%2CArial%2Csans-serif%22%20font-size%3D%2248%22%20font-weight%3D%22700%22%3EA%3C%2Ftext%3E%3C%2Fsvg%3E', 'رام الله', '201-500', true),
   ('a2222222-2222-2222-2222-222222222222', 'Bank of Palestine', 'Finance',
    'فرص تدريب وتوظيف في القطاع المصرفي الفلسطيني.',
-   'https://api.dicebear.com/7.x/initials/svg?seed=BOP', 'رام الله', '1000+', true),
+   'data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22128%22%20height%3D%22128%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2224%22%20fill%3D%22%23334155%22%2F%3E%3Ctext%20x%3D%2264%22%20y%3D%2268%22%20text-anchor%3D%22middle%22%20fill%3D%22%23ffffff%22%20font-family%3D%22Segoe%20UI%2CTahoma%2CArial%2Csans-serif%22%20font-size%3D%2248%22%20font-weight%3D%22700%22%3EB%3C%2Ftext%3E%3C%2Fsvg%3E', 'رام الله', '1000+', true),
   ('a3333333-3333-3333-3333-333333333333', 'Jawwal', 'Telecom',
    'اتصالات وحلول رقمية لخريجي الجامعات الفلسطينية.',
-   'https://api.dicebear.com/7.x/initials/svg?seed=Jawwal', 'رام الله', '1000+', true)
+   'data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22128%22%20height%3D%22128%22%20viewBox%3D%220%200%20128%20128%22%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20rx%3D%2224%22%20fill%3D%22%231e3a5f%22%2F%3E%3Ctext%20x%3D%2264%22%20y%3D%2268%22%20text-anchor%3D%22middle%22%20fill%3D%22%23ffffff%22%20font-family%3D%22Segoe%20UI%2CTahoma%2CArial%2Csans-serif%22%20font-size%3D%2248%22%20font-weight%3D%22700%22%3EJ%3C%2Ftext%3E%3C%2Fsvg%3E', 'رام الله', '1000+', true)
 on conflict (id) do nothing;
 
 insert into public.jobs (id, company_id, title, description, requirements, skills, salary_min, salary_max, currency, location, work_type, experience_level, status)

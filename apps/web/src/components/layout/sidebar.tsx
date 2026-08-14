@@ -41,18 +41,22 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     <>
       <div className="px-4 py-5 border-b border-border flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <Link href={ `/dashboard/${role}`} onClick={onNavigate}>
+          <Link href={`/dashboard/${role}`} onClick={onNavigate}>
             <Logo size="sm" />
           </Link>
         </div>
-        <button
-          type="button"
-          onClick={onNavigate}
-          className="lg:hidden nq-icon-btn shrink-0 mt-0.5"
-          aria-label={t("إغلاق القائمة", "Close menu")}
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-0.5 shrink-0">
+          <LanguageSwitch className="nq-icon-btn" />
+          <ThemeModeSwitch className="nq-icon-btn" />
+          <button
+            type="button"
+            onClick={onNavigate}
+            className="lg:hidden nq-icon-btn"
+            aria-label={t("إغلاق القائمة", "Close menu")}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3 scrollbar-hide">
@@ -158,16 +162,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className={cn("min-h-screen transition-colors duration-300 nq-canvas")}>
+    <div className={cn("min-h-screen min-h-[100dvh] transition-colors duration-200 nq-canvas")}>
       <Sidebar
         mobileOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
       />
-      <main className="min-h-screen lg:mr-[18.5rem]">
-        <AppTopBar />
-        <RoleStrip />
-        <div className={cn("pb-20 lg:pb-6 shell-wide py-4 md:py-6")}>
-          {children}
+      <main className="min-h-screen min-h-[100dvh] lg:mr-[18.5rem]">
+        <div className="safe-area-pt lg:contents">
+          <AppTopBar />
+        </div>
+        <div className="hidden lg:block">
+          <RoleStrip />
+        </div>
+        <div className={cn("pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] lg:pb-6 nq-shell py-3 sm:py-4 md:py-5")}>
+          <div className="nq-mobile-stage">{children}</div>
         </div>
         <MobileNav onOpenMenu={() => setMobileOpen(true)} menuOpen={mobileOpen} />
       </main>
@@ -185,28 +193,28 @@ export function PublicHeader() {
   ];
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 h-16 border-b border-border glass">
-      <div className="shell-wide h-full flex items-center justify-between gap-4">
-        <Link href="/"><Logo size="sm" /></Link>
-        <nav className="hidden md:flex items-center gap-6">
+    <header className="fixed top-0 inset-x-0 z-50 h-[52px] border-b border-border bg-[var(--li-nav)]">
+      <div className="nq-shell h-full flex items-center justify-between gap-2">
+        <Link href="/" className="shrink-0"><Logo size="sm" /></Link>
+        <nav className="hidden md:flex items-center gap-5">
           {links.map((l) => (
-            <Link key={l.href} href={l.href} className="text-sm text-text-secondary hover:text-text transition-colors">
+            <Link key={l.href} href={l.href} className="text-sm font-semibold text-text-secondary hover:text-text transition-colors">
               {l.label}
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
-          <LanguageSwitch showLabel />
-          <ThemeModeSwitch showLabel />
-          <Link href="/auth/login" className="hidden sm:inline px-3 py-2 text-sm text-text-secondary hover:text-text">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <LanguageSwitch className="nq-icon-btn !border-transparent !bg-transparent" />
+          <ThemeModeSwitch className="nq-icon-btn !border-transparent !bg-transparent" />
+          <Link href="/auth/login" className="hidden sm:inline px-3 py-1.5 text-sm font-semibold text-text-secondary hover:text-text">
             {t("دخول", "Sign in")}
           </Link>
-          <Link href="/auth/register" className="btn-primary !py-2 !px-4 text-sm hidden sm:inline-flex">
+          <Link href="/auth/register" className="hidden sm:inline-flex btn-primary !py-1.5 !px-3.5 text-sm">
             {t("إنشاء حساب", "Create account")}
           </Link>
           <button
             type="button"
-            className="md:hidden p-2 rounded-lg border border-border"
+            className="md:hidden p-2 rounded-md hover:bg-[var(--li-nav-hover)]"
             onClick={() => setOpen(!open)}
             aria-label={t("القائمة", "Menu")}
           >
@@ -215,13 +223,13 @@ export function PublicHeader() {
         </div>
       </div>
       {open && (
-        <div className="md:hidden border-t border-border bg-background p-4 space-y-2">
+        <div className="md:hidden border-b border-border bg-[var(--li-nav)] p-3 space-y-1 shadow-elevated">
           {links.map((l) => (
-            <Link key={l.href} href={l.href} className="block py-2 text-sm text-text-secondary" onClick={() => setOpen(false)}>
+            <Link key={l.href} href={l.href} className="block py-2.5 px-2 text-sm font-semibold text-text-secondary rounded-md hover:bg-[var(--li-nav-hover)]" onClick={() => setOpen(false)}>
               {l.label}
             </Link>
           ))}
-          <Link href="/auth/login" className="block py-2 text-sm" onClick={() => setOpen(false)}>{t("دخول", "Sign in")}</Link>
+          <Link href="/auth/login" className="block py-2.5 px-2 text-sm font-semibold" onClick={() => setOpen(false)}>{t("دخول", "Sign in")}</Link>
           <Link href="/auth/register" className="btn-primary w-full justify-center mt-2" onClick={() => setOpen(false)}>{t("إنشاء حساب", "Create account")}</Link>
         </div>
       )}

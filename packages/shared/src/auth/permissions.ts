@@ -26,7 +26,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   admin: PERMISSIONS.map((p) => p.code),
 };
 
-export function hasPermission(role: UserRole, permission: string): boolean {
+export function hasPermission(role: UserRole, permission: string, overrides?: string[]): boolean {
+  if (overrides?.length) return overrides.includes(permission);
   return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
 }
 

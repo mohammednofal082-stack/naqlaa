@@ -15,30 +15,20 @@ import type {
   UniversityDashboardStats,
 } from '../types';
 
-export const universities: University[] = [
-  {
-    id: 'uni-birzeit',
-    name: 'جامعة بيرزيت',
-    city: 'بيرزيت',
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=BZ&backgroundColor=10B981',
-    website: 'https://birzeit.edu',
-    contactEmail: 'career@birzeit.edu',
-    studentsCount: 4200,
-    graduatesCount: 12800,
-    partnershipsCount: 45,
-  },
-  {
-    id: 'uni-najah',
-    name: 'جامعة النجاح الوطنية',
-    city: 'نابلس',
-    logo: 'https://api.dicebear.com/7.x/initials/svg?seed=NJ&backgroundColor=2563EB',
-    website: 'https://najah.edu',
-    contactEmail: 'career@najah.edu',
-    studentsCount: 3800,
-    graduatesCount: 10500,
-    partnershipsCount: 38,
-  },
-];
+import { PALESTINIAN_UNIVERSITIES } from '../constants/universities';
+import { initialsAvatar } from '../avatar';
+
+export const universities: University[] = PALESTINIAN_UNIVERSITIES.map((u) => ({
+  id: u.id,
+  name: u.name,
+  city: u.city,
+  logo: initialsAvatar(u.name),
+  website: `https://${u.emailDomain}.edu.ps`,
+  contactEmail: `career@${u.emailDomain}.edu`,
+  studentsCount: 0,
+  graduatesCount: 0,
+  partnershipsCount: 0,
+}));
 
 export const departments: Department[] = [
   { id: 'dept-cs', universityId: 'uni-birzeit', collegeId: 'col-eng', name: 'علوم الحاسوب', code: 'CS', degreeType: 'بكالوريوس' },

@@ -7,34 +7,118 @@ import { LanguageSwitch } from "../../components/language-switch";
 import { useApp } from "../../contexts/app-context";
 import { useI18n } from "../../i18n";
 import { colors, spacing } from "../../constants/theme";
+import { getApiBaseUrl } from "../../services/api-client";
 
 export default function MoreScreen() {
   const { user, logout, roleExperience } = useApp();
   const { t } = useI18n();
+  const apiUrl = getApiBaseUrl();
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader title={t("المزيد", "More")} subtitle={t(`${roleExperience.label} · كل موديولات نقلة`, `${roleExperience.label} · All Naqla modules`)} />
+      <ScreenHeader
+        title={t("المزيد", "More")}
+        subtitle={t(`${roleExperience.label} · كل موديولات نقلة`, `${roleExperience.label} · All Naqla modules`)}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.langRow}>
           <LanguageSwitch />
         </View>
 
+        <Text style={styles.apiHint}>
+          API: {apiUrl || t("غير مضبوط", "not set")}
+        </Text>
+
         <SectionTitle title={t("المنصة", "Platform")} />
-        <MenuRow icon="chatbubbles" label={t("الرسائل", "Messages")} subtitle={t("تواصل مع الشركات والمرشدين", "Connect with companies and mentors")} color={colors.blue} onPress={() => router.push("/(tabs)/messages")} />
-        <MenuRow icon="person" label={t("الملف الشخصي", "Profile")} subtitle={t("مهارات · تعليم · مشاريع", "Skills · Education · Projects")} color={colors.emerald} onPress={() => router.push("/(tabs)/profile")} />
-        <MenuRow icon="map" label={t("رحلتي المهنية", "My Career Journey")} subtitle={t("خطوات من الجامعة للسوق", "Steps from university to the job market")} color={colors.purple} onPress={() => router.push("/journey")} />
-        <MenuRow icon="notifications" label={t("الإشعارات", "Notifications")} subtitle={t("تحديثات الطلبات والمقابلات", "Application and interview updates")} color={colors.amber} onPress={() => router.push("/notifications")} />
+        <MenuRow
+          icon="newspaper"
+          label={t("المنصة / الفيد", "Feed")}
+          subtitle={t("منشورات من قاعدة البيانات", "Posts from the database")}
+          color={colors.blue}
+          onPress={() => router.push("/(tabs)/feed")}
+        />
+        <MenuRow
+          icon="chatbubbles"
+          label={t("الرسائل", "Messages")}
+          subtitle={t("تواصل مع الشركات والمرشدين", "Connect with companies and mentors")}
+          color={colors.blue}
+          onPress={() => router.push("/(tabs)/messages")}
+        />
+        <MenuRow
+          icon="person"
+          label={t("الملف الشخصي", "Profile")}
+          subtitle={t("مهارات · تعليم · مشاريع", "Skills · Education · Projects")}
+          color={colors.emerald}
+          onPress={() => router.push("/(tabs)/profile")}
+        />
+        <MenuRow
+          icon="document-text"
+          label={t("طلباتي", "My Applications")}
+          subtitle={t("تتبع حالة التقديم", "Track application status")}
+          color={colors.purple}
+          onPress={() => router.push("/(tabs)/applications")}
+        />
+        <MenuRow
+          icon="map"
+          label={t("رحلتي المهنية", "My Career Journey")}
+          subtitle={t("خطوات من الجامعة للسوق", "Steps from university to the job market")}
+          color={colors.purple}
+          onPress={() => router.push("/journey")}
+        />
+        <MenuRow
+          icon="notifications"
+          label={t("الإشعارات", "Notifications")}
+          subtitle={t("تحديثات الطلبات والمقابلات", "Application and interview updates")}
+          color={colors.amber}
+          onPress={() => router.push("/notifications")}
+        />
+        <MenuRow
+          icon="wallet"
+          label={t("الرسوم والفواتير", "Fees & Invoices")}
+          subtitle={t("فوترة متوافقة مع الموقع", "Billing aligned with web")}
+          color={colors.emerald}
+          onPress={() => router.push("/billing")}
+        />
 
         <SectionTitle title={t("الفرص والتعلم", "Opportunities and Learning")} />
-        <MenuRow icon="school" label={t("التدريب العملي", "Practical Training")} subtitle={t("طلبات واعتماد جامعي", "Requests and university accreditation")} color={colors.cyan} onPress={() => router.push("/internships")} />
-        <MenuRow icon="book" label={t("الكورسات", "Courses")} subtitle={t("تعلم مهارات السوق", "Learn in-demand market skills")} color={colors.purple} onPress={() => router.push("/courses")} />
-        <MenuRow icon="people" label={t("الإرشاد المهني", "Career Mentorship")} subtitle={t("احجز مع مرشد", "Book a session with a mentor")} color="#EC4899" onPress={() => router.push("/mentorship")} />
-        <MenuRow icon="calendar" label={t("الفعاليات", "Events")} subtitle={t("أيام مهنية و hackathons", "Career days and hackathons")} color={colors.amber} onPress={() => router.push("/events")} />
+        <MenuRow
+          icon="school"
+          label={t("التدريب العملي", "Practical Training")}
+          subtitle={t("طلبات واعتماد جامعي", "Requests and university accreditation")}
+          color={colors.cyan}
+          onPress={() => router.push("/internships")}
+        />
+        <MenuRow
+          icon="book"
+          label={t("الكورسات", "Courses")}
+          subtitle={t("تعلم مهارات السوق", "Learn in-demand market skills")}
+          color={colors.purple}
+          onPress={() => router.push("/courses")}
+        />
+        <MenuRow
+          icon="people"
+          label={t("الإرشاد المهني", "Career Mentorship")}
+          subtitle={t("احجز مع مرشد", "Book a session with a mentor")}
+          color="#EC4899"
+          onPress={() => router.push("/mentorship")}
+        />
+        <MenuRow
+          icon="calendar"
+          label={t("الفعاليات", "Events")}
+          subtitle={t("أيام مهنية و hackathons", "Career days and hackathons")}
+          color={colors.amber}
+          onPress={() => router.push("/events")}
+        />
 
         <SectionTitle title={t("للمناقشة", "For Discussion")} />
-        <MenuRow icon="git-network" label={t("السيناريوهات السبعة", "The Seven Scenarios")} subtitle={t("Workflows من وثيقة SRS", "Workflows from the SRS document")} color={colors.blue} onPress={() => router.push("/workflows")} />
+        <MenuRow
+          icon="git-network"
+          label={t("السيناريوهات السبعة", "The Seven Scenarios")}
+          subtitle={t("Workflows من وثيقة SRS", "Workflows from the SRS document")}
+          color={colors.blue}
+          onPress={() => router.push("/workflows")}
+        />
 
         <TouchableOpacity
           style={styles.logoutBtn}
@@ -55,6 +139,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   content: { paddingHorizontal: spacing.md },
   langRow: { flexDirection: "row", justifyContent: "flex-end", marginBottom: spacing.sm },
+  apiHint: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+    fontFamily: "monospace",
+  },
   logoutBtn: {
     marginTop: spacing.lg,
     paddingVertical: 14,

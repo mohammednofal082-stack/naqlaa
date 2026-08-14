@@ -3,21 +3,21 @@
 import Link from "next/link";
 import type { UserRole } from "@careerlink/shared";
 import { PageHeader } from "@/components/layout/page-header";
-import { RoleWorkspace } from "@/components/role/role-workspace";
-import { DashboardHero } from "@/components/dashboard/dashboard-shell";
 import { getRoleExperience } from "@/components/role/role-experience";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
 import { useApp } from "@/contexts/app-context";
-import { roleLabel } from "@/i18n/labels";
 
+/**
+ * Role dashboards: page header + one quiet next-step strip (no scenario card grid).
+ */
 export function RoleDashboardShell({
   role,
   meta,
   title,
   subtitle,
   actions,
-  showScenarios = true,
+  showScenarios = false,
   scenarioIndex = 0,
   secondaryCta,
   children,
@@ -27,6 +27,7 @@ export function RoleDashboardShell({
   title: string;
   subtitle: string;
   actions?: React.ReactNode;
+  /** @deprecated Kept for call-site compatibility; scenario grids are disabled. */
   showScenarios?: boolean;
   scenarioIndex?: number;
   secondaryCta?: { href: string; label: string };
@@ -35,29 +36,23 @@ export function RoleDashboardShell({
   const { t } = useI18n();
   const { user } = useApp();
   const exp = getRoleExperience(role, t);
-  const scenario = exp.scenarios[scenarioIndex] ?? exp.scenarios[0];
+  const scenario = showScenarios ? exp.scenarios[scenarioIndex] ?? exp.scenarios[0] : exp.scenarios[0];
   const firstName = user?.fullName?.split(" ")[0];
   const personalizedTitle = firstName
-    ? t(`${title} — مرحباً ${firstName}`, `${title} — Welcome ${firstName}`)
+    ? t(`مرحباً، ${firstName}`, `Welcome, ${firstName}`)
     : title;
-  const personalizedSubtitle = [
-    t(`الدور: ${roleLabel(role, t)}`, `Role: ${roleLabel(role, t)}`),
-    user?.email ? user.email : null,
-    subtitle,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const personalizedSubtitle = subtitle;
 
   return (
     <div className="nq-page-enter">
       <PageHeader meta={meta} title={personalizedTitle} subtitle={personalizedSubtitle} actions={actions} />
-      <RoleWorkspace showScenarios={showScenarios} showBanner={false}>
-        {scenario && (
-          <DashboardHero
-            eyebrow={t(`${exp.icon} ${exp.label} · الخطوة التالية`, `${exp.icon} ${exp.label} · Next step`)}
-            title={scenario.title}
-            subtitle={scenario.description}
-          >
+      {scenario && (
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-xs text-text-muted mb-0.5">{t("التالي", "Next")}</p>
+            <p className="text-sm font-semibold text-text truncate">{scenario.title}</p>
+          </div>
+          <div className="flex flex-wrap gap-2 shrink-0">
             <Link href={scenario.href}>
               <Button size="sm">{scenario.cta}</Button>
             </Link>
@@ -66,10 +61,10 @@ export function RoleDashboardShell({
                 <Button variant="outline" size="sm">{secondaryCta.label}</Button>
               </Link>
             )}
-          </DashboardHero>
-        )}
-        {children}
-      </RoleWorkspace>
+          </div>
+        </div>
+      )}
+      {children}
     </div>
   );
 }

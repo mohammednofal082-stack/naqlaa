@@ -66,6 +66,12 @@ export interface AuthUser {
   phone?: string;
   avatar: string;
   organizationId?: string;
+  /** Custom university name when organizationId is uni-other. */
+  universityName?: string;
+  /** Company name snapshot for pending partnership review. */
+  companyName?: string;
+  /** Per-user permission overrides (e.g. HR accounts created by a company). */
+  permissions?: string[];
   createdAt: string;
 }
 
@@ -546,6 +552,98 @@ export interface PlatformStats {
   internships: number;
   universities: number;
   courses: number;
+}
+
+/** Mock billing / fees (no real payment gateway). */
+export type InvoiceStatus = 'paid' | 'pending' | 'overdue' | 'draft' | 'void';
+export type FeeKind =
+  | 'subscription'
+  | 'job_posting'
+  | 'featured'
+  | 'course'
+  | 'certification'
+  | 'platform'
+  | 'partnership';
+export type BillingPlanId = 'free' | 'starter' | 'growth' | 'enterprise';
+export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
+export type BillingAccountType = 'platform' | 'company' | 'user';
+
+export interface BillingPlan {
+  id: BillingPlanId;
+  nameAr: string;
+  nameEn: string;
+  priceMonthly: number;
+  currency: 'USD' | 'ILS';
+  featuresAr: string[];
+  featuresEn: string[];
+  recommended?: boolean;
+}
+
+export interface InvoiceLine {
+  descriptionAr: string;
+  descriptionEn: string;
+  amount: number;
+  kind: FeeKind;
+}
+
+export interface Invoice {
+  id: string;
+  number: string;
+  accountType: BillingAccountType;
+  accountId: string;
+  accountName: string;
+  status: InvoiceStatus;
+  issuedAt: string;
+  dueAt: string;
+  paidAt?: string;
+  currency: 'USD' | 'ILS';
+  subtotal: number;
+  tax: number;
+  total: number;
+  lines: InvoiceLine[];
+}
+
+export interface Subscription {
+  id: string;
+  accountId: string;
+  accountName: string;
+  planId: BillingPlanId;
+  status: SubscriptionStatus;
+  renewsAt: string;
+  seats: number;
+}
+
+export interface FeeCatalogItem {
+  id: string;
+  kind: FeeKind;
+  nameAr: string;
+  nameEn: string;
+  amount: number;
+  currency: 'USD' | 'ILS';
+  unitAr: string;
+  unitEn: string;
+}
+
+export interface BillingMonthlyPoint {
+  month: string;
+  revenue: number;
+  fees: number;
+}
+
+export interface BillingOverview {
+  isMock: true;
+  currency: 'USD' | 'ILS';
+  mrr: number;
+  ytdRevenue: number;
+  outstanding: number;
+  paidThisMonth: number;
+  activeSubscriptions: number;
+  monthlyRevenue: BillingMonthlyPoint[];
+  plans: BillingPlan[];
+  feeCatalog: FeeCatalogItem[];
+  subscriptions: Subscription[];
+  invoices: Invoice[];
+  mySubscription?: Subscription | null;
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {

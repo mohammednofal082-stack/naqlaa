@@ -43,11 +43,10 @@ export function RoleHero({
 }) {
   const { t } = useI18n();
   return (
-    <View style={[styles.hero, { backgroundColor: accentColor + "12", borderColor: accentColor + "25" }]}>
-      <Text style={styles.heroEyebrow}>{role.icon} {role.label} · {role.mantra}</Text>
+    <View style={styles.hero}>
+      <Text style={styles.heroEyebrow}>{role.label}</Text>
       <Text style={styles.heroTitle}>{t("مرحباً،", "Hello,")} {userName}</Text>
       <Text style={styles.heroTagline}>{role.tagline}</Text>
-      <Text style={styles.heroFocus}>{role.primaryFocus.slice(0, 4).join(" · ")}</Text>
     </View>
   );
 }
@@ -139,10 +138,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.md,
     borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   heroEyebrow: { fontSize: 11, color: colors.textMuted, fontWeight: "600" },
   heroTitle: { fontSize: 24, fontWeight: "800", color: colors.navy, marginTop: 6 },
-  heroTagline: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
+  heroTagline: { fontSize: 14, color: colors.textSecondary, marginTop: 4, lineHeight: 20 },
   heroFocus: { fontSize: 11, color: colors.textMuted, marginTop: 8, lineHeight: 18 },
   journeyRow: { flexDirection: "row", gap: 12, marginBottom: spacing.sm, paddingRight: 4 },
   journeyDot: { width: 10, height: 10, borderRadius: 5, marginTop: 6 },

@@ -7,11 +7,16 @@ import { createSupabaseAdminClient, hasSupabaseAdmin } from '@/backend/supabase/
 import { useSupabaseAuth } from '@/backend/config/env';
 import type { SessionPayload } from '@/backend/auth/session';
 
+export const PENDING_ACCOUNT_MESSAGE =
+  'حسابك لسا لم تتم الموافقة عليه من مدير النظام';
+
 export interface LoginResult {
   user?: SessionPayload;
   redirect?: string;
   error?: string;
   token?: string;
+  pending?: boolean;
+  message?: string;
 }
 
 function toSession(user: {
@@ -34,9 +39,18 @@ function toSession(user: {
 }
 
 async function mockLogin(email: string, password: string, role?: UserRole): Promise<LoginResult> {
-  const user = authenticateUser(email, password);
-  if (!user) return { error: 'بيانات الدخول غير صحيحة' };
+  const attempt = authenticateUser(email, password);
+  if (!attempt.ok) {
+    if (attempt.reason === 'pending') {
+      return { error: PENDING_ACCOUNT_MESSAGE, pending: true };
+    }
+    if (attempt.reason === 'suspended') {
+      return { error: 'تم تعليق هذا الحساب' };
+    }
+    return { error: 'بيانات الدخول غير صحيحة' };
+  }
 
+  const user = attempt.user;
   // Prefer requested role when allowed; otherwise use the account's primary role
   const activeRole = (role && user.roles.includes(role) ? role : user.roles[0]) as UserRole;
   const session = toSession(user, activeRole);
@@ -88,6 +102,16 @@ async function supabaseLogin(email: string, password: string, role?: UserRole): 
     }
   }
 
+  const status = String(profile?.status ?? 'active');
+  if (status === 'pending') {
+    await supabase.auth.signOut();
+    return { error: PENDING_ACCOUNT_MESSAGE, pending: true };
+  }
+  if (status !== 'active') {
+    await supabase.auth.signOut();
+    return { error: 'تم تعليق هذا الحساب' };
+  }
+
   const roles = (profile?.roles as UserRole[]) ?? (metaRole ? [metaRole] : ['student']);
   const activeRole = (role && roles.includes(role) ? role : roles[0]) as UserRole;
 
@@ -120,15 +144,25 @@ async function ensureRoleProfile(
   userId: string,
   role: UserRole,
   fullName: string,
-  extras?: { companyName?: string; industry?: string; major?: string; organizationId?: string },
+  extras?: {
+    companyName?: string;
+    industry?: string;
+    major?: string;
+    organizationId?: string;
+    universityName?: string;
+    status?: 'pending' | 'active';
+    permissions?: string[];
+  },
 ) {
   if (!hasSupabaseAdmin()) return;
   const admin = createSupabaseAdminClient();
+  const status = extras?.status ?? (role === 'company' || role === 'university' ? 'pending' : 'active');
 
   await admin.from('profiles').update({
     full_name: fullName,
     roles: [role],
     active_role: role,
+    status,
     ...(extras?.organizationId ? { organization_id: extras.organizationId } : {}),
   }).eq('id', userId);
 
@@ -170,6 +204,15 @@ async function ensureRoleProfile(
       await admin.from('profiles').update({ organization_id: company.id }).eq('id', userId);
     }
   }
+
+  if (role === 'hr' && extras?.permissions) {
+    // permissions live in user_metadata for HR created by company
+    await admin.auth.admin.updateUserById(userId, {
+      user_metadata: { permissions: extras.permissions, role: 'hr' },
+    });
+  }
+
+  void extras?.universityName;
 }
 
 export async function registerNewUser(data: {
@@ -181,46 +224,74 @@ export async function registerNewUser(data: {
   companyName?: string;
   industry?: string;
   major?: string;
-}): Promise<{ user?: SessionPayload; error?: string; redirect?: string; token?: string }> {
+  universityName?: string;
+  status?: 'pending' | 'active';
+  permissions?: string[];
+  skipAutoLogin?: boolean;
+}): Promise<{ user?: SessionPayload; error?: string; redirect?: string; token?: string; pending?: boolean; message?: string }> {
+  const needsApproval = data.role === 'company' || data.role === 'university';
+  const status = data.status ?? (needsApproval ? 'pending' : 'active');
+
   if (useSupabaseAuth()) {
     const supabase = await createSupabaseServerClient();
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
-        data: { full_name: data.fullName, role: data.role },
+        data: {
+          full_name: data.fullName,
+          role: data.role,
+          university_name: data.universityName,
+          company_name: data.companyName,
+          permissions: data.permissions,
+        },
       },
     });
     if (error) return { error: error.message };
     if (!authData.user) return { error: 'فشل إنشاء الحساب' };
 
-    // Confirm email + set role with service role so login works immediately
     if (hasSupabaseAdmin()) {
       try {
         const admin = createSupabaseAdminClient();
         await admin.auth.admin.updateUserById(authData.user.id, {
           email_confirm: true,
-          user_metadata: { full_name: data.fullName, role: data.role },
+          user_metadata: {
+            full_name: data.fullName,
+            role: data.role,
+            university_name: data.universityName,
+            company_name: data.companyName,
+            permissions: data.permissions,
+          },
         });
         await ensureRoleProfile(authData.user.id, data.role, data.fullName, {
           companyName: data.companyName,
           industry: data.industry,
           major: data.major,
           organizationId: data.organizationId,
+          universityName: data.universityName,
+          status,
+          permissions: data.permissions,
         });
       } catch (e) {
         console.warn('register admin provisioning failed', e);
       }
     } else {
-      // Best-effort without service role (may fail under RLS / email confirm)
       await supabase.from('profiles').update({
         roles: [data.role],
         active_role: data.role,
         full_name: data.fullName,
+        status,
       }).eq('id', authData.user.id);
     }
 
-    // Auto-login with the same credentials
+    if (needsApproval || data.skipAutoLogin || status === 'pending') {
+      return {
+        pending: true,
+        message: 'تم إنشاء الحساب — بانتظار موافقة مدير النظام قبل تسجيل الدخول',
+        redirect: `/auth/login?email=${encodeURIComponent(data.email)}&role=${encodeURIComponent(data.role)}&pending=1`,
+      };
+    }
+
     const login = await supabaseLogin(data.email, data.password, data.role);
     if (login.user) {
       return {
@@ -230,14 +301,61 @@ export async function registerNewUser(data: {
       };
     }
 
-    // Account exists — send user to login with prefilled email/role
     return {
       redirect: `/auth/login?email=${encodeURIComponent(data.email)}&role=${encodeURIComponent(data.role)}`,
     };
   }
 
-  const result = registerUser(data);
+  const result = registerUser({
+    email: data.email,
+    password: data.password,
+    fullName: data.fullName,
+    role: data.role,
+    organizationId: data.organizationId,
+    universityName: data.universityName,
+    companyName: data.companyName,
+    status,
+    permissions: data.permissions,
+  });
   if (result.error || !result.user) return { error: result.error ?? 'فشل التسجيل' };
+
+  if (data.role === 'company' && result.user.organizationId) {
+    try {
+      const { initMemoryStore, memoryStore } = await import('@/backend/data/memory-store');
+      initMemoryStore();
+      if (!memoryStore.companies.some((c) => c.id === result.user!.organizationId || c.email === result.user!.email)) {
+        memoryStore.companies.unshift({
+          id: result.user.organizationId,
+          name: data.companyName || data.fullName,
+          email: result.user.email,
+          logo: result.user.avatar,
+          coverImage: '',
+          industry: data.industry || 'Technology',
+          location: 'Palestine',
+          website: '',
+          about: '',
+          employees: 0,
+          followers: 0,
+          activeJobs: 0,
+          verified: false,
+          verificationStatus: 'pending',
+          founded: new Date().getFullYear(),
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (result.user.status === 'pending' || data.skipAutoLogin) {
+    return {
+      pending: true,
+      message: needsApproval
+        ? 'تم إنشاء الحساب — بانتظار موافقة مدير النظام قبل تسجيل الدخول'
+        : 'تم إنشاء الحساب بنجاح',
+      redirect: `/auth/login?email=${encodeURIComponent(data.email)}&role=${encodeURIComponent(data.role)}${needsApproval ? '&pending=1' : ''}`,
+    };
+  }
 
   const activeRole = result.user.roles[0];
   const session = toSession(result.user, activeRole);

@@ -6,9 +6,9 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "careerlink",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "splash": {
-      "backgroundColor": "#0B1F3A"
+      "backgroundColor": "#F7F5F2"
     },
     "ios": {
       "supportsTablet": true,
@@ -18,7 +18,8 @@
       "adaptiveIcon": {
         "backgroundColor": "#0B1F3A"
       },
-      "package": "com.naqlah.app"
+      "package": "com.naqlah.app",
+      "usesCleartextTraffic": true
     },
     "plugins": [
       "expo-router",

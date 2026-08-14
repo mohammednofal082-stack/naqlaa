@@ -19,11 +19,11 @@ export function Logo({ size = "md", showText = true, className }: LogoProps) {
   const s = sizes[size];
   const { t } = useI18n();
   return (
-    <div className={cn("flex items-center gap-3", className)}>
+    <div className={cn("flex items-center gap-2.5", className)}>
       <div
         className={cn(
           s.icon,
-          "rounded-xl bg-brand flex items-center justify-center shadow-glow relative overflow-hidden nq-logo-glow group"
+          "rounded-full bg-brand flex items-center justify-center relative overflow-hidden shrink-0"
         )}
       >
         <svg viewBox="0 0 40 40" className="w-3/5 h-3/5" fill="none">
@@ -34,9 +34,9 @@ export function Logo({ size = "md", showText = true, className }: LogoProps) {
         </svg>
       </div>
       {showText && (
-        <div>
-          <span className={cn(s.text, "font-bold text-text leading-none")}>{t("نقلة", "Naqla")}</span>
-          <p className="text-[10px] text-text-muted leading-tight mt-0.5 hidden sm:block">
+        <div className="min-w-0">
+          <span className={cn(s.text, "font-semibold text-text leading-none tracking-tight")}>{t("نقلة", "Naqla")}</span>
+          <p className="text-[10px] text-text-muted leading-tight mt-0.5 hidden md:block truncate">
             {t("من الجامعة إلى سوق العمل", "From University to Employment")}
           </p>
         </div>

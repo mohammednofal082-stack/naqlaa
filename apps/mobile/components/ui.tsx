@@ -1,25 +1,35 @@
 import { View, Text, StyleSheet, TouchableOpacity, type ViewStyle } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { colors, spacing, radius, shadow } from "../constants/theme";
 
 export function ScreenHeader({
   title,
   subtitle,
+  showBack,
 }: {
   title: string;
   subtitle?: string;
+  showBack?: boolean;
 }) {
   return (
     <View style={styles.header}>
-      <Text style={styles.title}>{title}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      {showBack ? (
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} hitSlop={12}>
+          <Ionicons name="chevron-back" size={22} color={colors.navy} />
+        </TouchableOpacity>
+      ) : null}
+      <View style={{ flex: 1 }}>
+        <Text style={styles.title}>{title}</Text>
+        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      </View>
     </View>
   );
 }
 
-export function Card({ children, style, glow }: { children: React.ReactNode; style?: ViewStyle; glow?: boolean }) {
+export function Card({ children, style }: { children: React.ReactNode; style?: ViewStyle; glow?: boolean }) {
   return (
-    <View style={[styles.card, glow && styles.cardGlow, style]}>
-      <View style={styles.cardAccent} />
+    <View style={[styles.card, style]}>
       {children}
     </View>
   );
@@ -57,9 +67,20 @@ export function PrimaryButton({ label, onPress }: { label: string; onPress: () =
 
 const styles = StyleSheet.create({
   header: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 4,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
+  },
+  backBtn: {
+    marginTop: 6,
+    marginRight: 4,
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: 28,

@@ -1,15 +1,24 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useCallback, useState } from "react";
 import { StatCard } from "../../components/ui";
-import { AccentMap, JourneyStep, RoleHero, ScenarioCard, SectionTitle } from "../../components/role-ui";
+import { SectionTitle } from "../../components/role-ui";
 import { useApp } from "../../contexts/app-context";
 import { useI18n } from "../../i18n";
-import { PLATFORM_WORKFLOWS } from "@careerlink/shared";
 import type { Application, Company, Job, StudentProfile } from "@careerlink/shared";
-import { colors, spacing, radius } from "../../constants/theme";
+import { colors, spacing, radius, shadow } from "../../constants/theme";
 import { useRemoteData } from "../../hooks/use-remote-data";
+import { getApiBaseUrl } from "../../services/api-client";
 
 type JobWithCompany = Job & { company: Company; matchPercentage?: number };
 type ApplicationWithDetails = Application & { job?: Job; company?: Company };
@@ -18,237 +27,295 @@ type ProfileBundle = { user: unknown; profile: StudentProfile; skillLevels: { sk
 export default function HomeScreen() {
   const { user, roleExperience, isTalentRole, role } = useApp();
   const { t } = useI18n();
-  const { data: jobsRemote, error: jobsError } = useRemoteData<JobWithCompany[]>("jobs");
-  const { data: profileData } = useRemoteData<ProfileBundle>("profile");
-  const { data: appsData } = useRemoteData<ApplicationWithDetails[]>("applications");
+  const [refreshing, setRefreshing] = useState(false);
 
-  const jobs = (jobsRemote ?? []).slice(0, 3);
-  const apps = appsData ?? [];
-  const profileCompletion = profileData?.profile.profileCompletion ?? 0;
-  const recommendedJobs = (jobsRemote ?? []).filter((j) => (j.matchPercentage ?? 0) >= 70).length;
-  const activeApps = apps.filter((a) => a.status !== "rejected" && a.status !== "withdrawn").length;
-  const interviews = apps.filter((a) => a.status === "interview_scheduled").length;
+  const jobsQ = useRemoteData<JobWithCompany[]>("jobs");
+  const profileQ = useRemoteData<ProfileBundle>("profile");
+  const appsQ = useRemoteData<ApplicationWithDetails[]>("applications");
+  const companiesQ = useRemoteData<Company[]>("companies");
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([jobsQ.refetch(), profileQ.refetch(), appsQ.refetch(), companiesQ.refetch()]);
+    setRefreshing(false);
+  }, [jobsQ, profileQ, appsQ, companiesQ]);
 
   if (!user) return null;
 
-  const journeySteps = [
-    { label: t("إكمال الملف الشخصي", "Complete your profile"), status: "done" as const, detail: t(`${profileCompletion}% مكتمل`, `${profileCompletion}% complete`) },
-    { label: t("تحليل المهارات", "Skills analysis"), status: "done" as const, detail: t("٣ مهارات تحتاج تطوير", "Three skills require development") },
-    { label: t("التقديم على التدريب", "Apply for training"), status: "current" as const, detail: t("فرصتان مناسبتان الآن", "Two suitable opportunities available now") },
-    { label: t("المقابلة الأولى", "First interview"), status: "upcoming" as const },
-    { label: t("أول عرض وظيفي", "First job offer"), status: "upcoming" as const },
-  ];
-
-  const accent = AccentMap[roleExperience.accentKey] ?? colors.blue;
+  const jobs = jobsQ.data ?? [];
+  const apps = appsQ.data ?? [];
+  const profileCompletion = profileQ.data?.profile.profileCompletion ?? 0;
+  const recommendedJobs = jobs.filter((j) => (j.matchPercentage ?? 0) >= 70).length;
+  const activeApps = apps.filter((a) => a.status !== "rejected" && a.status !== "withdrawn").length;
+  const interviews = apps.filter((a) => a.status === "interview_scheduled").length;
+  const topJobs = [...jobs].sort((a, b) => (b.matchPercentage ?? 0) - (a.matchPercentage ?? 0)).slice(0, 3);
+  const nextApp = apps.find((a) => a.status === "interview_scheduled") ?? apps.find((a) => a.status === "under_review");
   const firstName = user.fullName.split(" ")[0];
+  const loading = jobsQ.loading || appsQ.loading || profileQ.loading;
+  const apiError = jobsQ.error || appsQ.error;
 
-  if (!isTalentRole) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.topBar}>
-            <View>
-              <Text style={styles.brand}>{t("نقلة", "Naqla")}</Text>
-              <Text style={styles.greeting}>{roleExperience.label}</Text>
-            </View>
-            <TouchableOpacity style={styles.notifBtn} onPress={() => router.push("/notifications")}>
-              <Ionicons name="notifications-outline" size={22} color={colors.navy} />
-            </TouchableOpacity>
-          </View>
-
-          <RoleHero role={roleExperience} accentColor={accent} userName={firstName} />
-
-          <SectionTitle title={t("سيناريوهاتك اليوم", "Your scenarios today")} />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.md }}>
-            {roleExperience.scenarios.map((s) => (
-              <ScenarioCard
-                key={s.title}
-                scenario={s}
-                accentColor={accent}
-                onPress={() => router.push(s.mobileRoute as never)}
-              />
-            ))}
-          </ScrollView>
-
-          <View style={styles.statsGrid}>
-            <StatCard label={t("مهام اليوم", "Tasks today")} value={role === "hr" ? 8 : 5} color={accent} />
-            <StatCard label={t("معلّق", "Pending")} value={role === "admin" ? 3 : 2} color={colors.amber} />
-            <StatCard label={t("مكتمل", "Completed")} value={12} color={colors.emerald} />
-            <StatCard label={t("طلبات", "Applications")} value={activeApps} color={colors.purple} />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.dashboardBtn, { backgroundColor: accent }]}
-            onPress={() => router.push(`/dashboard/${role}` as never)}
-          >
-            <Ionicons name="speedometer" size={20} color={colors.surface} />
-            <Text style={styles.dashboardBtnText}>{t(`لوحة ${roleExperience.label} — عرض كامل`, `${roleExperience.label} dashboard — full view`)}</Text>
-          </TouchableOpacity>
-
-          <View style={{ height: 32 }} />
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
+  const primaryCta = isTalentRole
+    ? { href: "/(tabs)/jobs", label: t("تصفّح الفرص", "Browse jobs"), icon: "briefcase" as const }
+    : role === "company" || role === "hr"
+      ? { href: "/(tabs)/more", label: t("لوحة الشركة", "Company tools"), icon: "business" as const }
+      : { href: `/dashboard/${role}` as const, label: t("لوحة التحكم", "Dashboard"), icon: "speedometer" as const };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={colors.blue} />}
+      >
         <View style={styles.topBar}>
           <View>
             <Text style={styles.brand}>{t("نقلة", "Naqla")}</Text>
-            <Text style={styles.greeting}>{t("أهلاً", "Welcome")} {firstName}</Text>
+            <Text style={styles.greeting}>
+              {t("أهلاً", "Hi")} {firstName}
+              <Text style={styles.roleDot}> · {roleExperience.label}</Text>
+            </Text>
           </View>
-          <TouchableOpacity style={styles.notifBtn} onPress={() => router.push("/notifications")}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => router.push("/notifications")}>
             <Ionicons name="notifications-outline" size={22} color={colors.navy} />
-            <View style={styles.notifDot} />
           </TouchableOpacity>
         </View>
 
-        <RoleHero role={roleExperience} accentColor={accent} userName={firstName} />
-
-        <SectionTitle title={t("ابدأ من هنا", "Start here")} />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.md }}>
-          {roleExperience.scenarios.map((s) => (
-            <ScenarioCard
-              key={s.title}
-              scenario={s}
-              accentColor={accent}
-              onPress={() => router.push(s.mobileRoute as never)}
-            />
-          ))}
-        </ScrollView>
-
-        <View style={styles.statsGrid}>
-          <StatCard label={t("وظائف مقترحة", "Recommended jobs")} value={recommendedJobs} color={colors.blue} />
-          <StatCard label={t("طلبات", "Applications")} value={activeApps} color={colors.emerald} />
-          <StatCard label={t("مقابلات", "Interviews")} value={interviews} color={colors.purple} />
-          <StatCard label={t("اكتمال الملف", "Profile")} value={`${profileCompletion}%`} color={colors.amber} />
-        </View>
-
-        <View style={styles.sectionPad}>
-          <Text style={styles.sectionTitleInline}>{t("مسارك الحالي", "Your current path")}</Text>
-          {journeySteps.map((step) => (
-            <JourneyStep key={step.label} {...step} />
-          ))}
-        </View>
-
-        <SectionTitle title={t("وظائف مقترحة", "Recommended jobs")} />
-        {jobsError ? (
-          <Text style={styles.errorText}>{t("تعذر تحميل الوظائف", "Could not load jobs")}</Text>
-        ) : null}
-        {jobs.map((job) => (
-          <TouchableOpacity key={job.id} style={styles.jobCard} onPress={() => router.push(`/job/${job.id}` as never)}>
-            <View style={styles.jobRow}>
-              <View style={styles.jobLogo}>
-                <Text style={styles.jobLogoText}>{job.company.name[0]}</Text>
-              </View>
-              <View style={styles.jobInfo}>
-                <Text style={styles.jobTitle}>{job.title}</Text>
-                <Text style={styles.company}>{job.company.name}</Text>
-              </View>
-              {job.matchPercentage ? <Text style={styles.matchText}>{job.matchPercentage}%</Text> : null}
-            </View>
-          </TouchableOpacity>
-        ))}
-
-        <TouchableOpacity style={styles.workflowBanner} onPress={() => router.push("/workflows" as never)}>
-          <Ionicons name="git-network-outline" size={22} color={colors.blue} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.workflowTitle}>{t("سبعة سيناريوهات كاملة", "Seven complete scenarios")}</Text>
-            <Text style={styles.workflowSub}>{t(`${PLATFORM_WORKFLOWS.length} مسار عمل من وثيقة المتطلبات`, `${PLATFORM_WORKFLOWS.length} workflows from the SRS document`)}</Text>
+        {!getApiBaseUrl() ? (
+          <View style={styles.bannerWarn}>
+            <Text style={styles.bannerWarnText}>
+              {t("اضبط EXPO_PUBLIC_API_URL لربط التطبيق بقاعدة البيانات", "Set EXPO_PUBLIC_API_URL to connect the app to the database")}
+            </Text>
           </View>
-          <Ionicons name="chevron-back" size={16} color={colors.textMuted} />
-        </TouchableOpacity>
+        ) : null}
 
-        <View style={{ height: 32 }} />
+        <View style={styles.nextCard}>
+          <Text style={styles.nextEyebrow}>{t("خطوتك التالية", "Your next step")}</Text>
+          <Text style={styles.nextTitle}>
+            {nextApp?.job?.title
+              ? t(`تابع طلب: ${nextApp.job.title}`, `Follow up: ${nextApp.job.title}`)
+              : profileCompletion < 80
+                ? t("أكمل ملفك لرفع نسبة التطابق", "Complete your profile to improve match rate")
+                : t("استكشف فرص مطابقة لمهاراتك", "Explore roles matched to your skills")}
+          </Text>
+          <TouchableOpacity
+            style={styles.nextBtn}
+            onPress={() =>
+              router.push(
+                (nextApp
+                  ? "/(tabs)/applications"
+                  : profileCompletion < 80
+                    ? "/(tabs)/profile"
+                    : primaryCta.href) as never
+              )
+            }
+          >
+            <Text style={styles.nextBtnText}>
+              {nextApp
+                ? t("عرض طلباتي", "View applications")
+                : profileCompletion < 80
+                  ? t("إكمال الملف", "Complete profile")
+                  : primaryCta.label}
+            </Text>
+            <Ionicons name="arrow-back" size={16} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        {loading && !refreshing ? (
+          <ActivityIndicator color={colors.blue} style={{ marginVertical: 28 }} />
+        ) : apiError ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{apiError}</Text>
+            <TouchableOpacity onPress={() => void onRefresh()}>
+              <Text style={styles.retry}>{t("إعادة المحاولة", "Retry")}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <View style={styles.statsGrid}>
+              {isTalentRole ? (
+                <>
+                  <StatCard label={t("تطابق ≥70%", "Match ≥70%")} value={recommendedJobs} color={colors.blue} />
+                  <StatCard label={t("طلبات نشطة", "Active apps")} value={activeApps} color={colors.navy} />
+                  <StatCard label={t("مقابلات", "Interviews")} value={interviews} color={colors.emerald} />
+                  <StatCard label={t("اكتمال الملف", "Profile")} value={`${profileCompletion}%`} color={colors.blue} />
+                </>
+              ) : (
+                <>
+                  <StatCard label={t("الوظائف", "Jobs")} value={jobs.length} color={colors.blue} />
+                  <StatCard label={t("التقديمات", "Applications")} value={apps.length} color={colors.navy} />
+                  <StatCard label={t("الشركات", "Companies")} value={(companiesQ.data ?? []).length} color={colors.emerald} />
+                  <StatCard label={t("مقابلات", "Interviews")} value={interviews} color={colors.blue} />
+                </>
+              )}
+            </View>
+
+            {isTalentRole ? (
+              <>
+                <SectionTitle title={t("أفضل الفرص لك", "Top matches for you")} />
+                {topJobs.length === 0 ? (
+                  <Text style={styles.empty}>{t("لا وظائف من قاعدة البيانات بعد", "No jobs from the database yet")}</Text>
+                ) : (
+                  topJobs.map((job) => (
+                    <TouchableOpacity
+                      key={job.id}
+                      style={styles.jobRow}
+                      onPress={() => router.push(`/job/${job.id}` as never)}
+                      activeOpacity={0.85}
+                    >
+                      <View style={styles.jobLogo}>
+                        <Text style={styles.jobLogoText}>{(job.company?.name ?? "?").slice(0, 1)}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.jobTitle} numberOfLines={1}>{job.title}</Text>
+                        <Text style={styles.jobMeta} numberOfLines={1}>
+                          {job.company?.name}
+                          {job.matchPercentage != null ? ` · ${job.matchPercentage}%` : ""}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-back" size={16} color={colors.textMuted} />
+                    </TouchableOpacity>
+                  ))
+                )}
+              </>
+            ) : null}
+
+            <View style={styles.quickRow}>
+              <QuickChip icon="newspaper-outline" label={t("الفيد", "Feed")} onPress={() => router.push("/(tabs)/feed")} />
+              <QuickChip icon="briefcase-outline" label={t("فرص", "Jobs")} onPress={() => router.push("/(tabs)/jobs")} />
+              <QuickChip icon="document-text-outline" label={t("طلباتي", "Apps")} onPress={() => router.push("/(tabs)/applications")} />
+              <QuickChip icon="compass-outline" label={t("أدوات", "Tools")} onPress={() => router.push("/(tabs)/ai")} />
+            </View>
+          </>
+        )}
+
+        <View style={{ height: 28 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+function QuickChip({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity style={styles.chip} onPress={onPress} activeOpacity={0.85}>
+      <Ionicons name={icon} size={18} color={colors.blue} />
+      <Text style={styles.chipText}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.cream },
+  container: { flex: 1, backgroundColor: colors.background },
   topBar: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
   },
-  brand: { fontSize: 13, fontWeight: "800", color: colors.blue },
-  greeting: { fontSize: 22, fontWeight: "800", color: colors.navy, marginTop: 2 },
-  notifBtn: {
-    padding: 10,
+  brand: { fontSize: 22, fontWeight: "800", color: colors.navy, letterSpacing: -0.4 },
+  greeting: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
+  roleDot: { color: colors.textMuted },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  notifDot: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.emerald,
+  bannerWarn: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    padding: 12,
+    borderRadius: radius.md,
+    backgroundColor: "#FEF3C7",
+    borderWidth: 1,
+    borderColor: "#F59E0B44",
   },
+  bannerWarnText: { color: colors.amber, fontSize: 12, fontWeight: "600" },
+  nextCard: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.navy,
+    ...shadow.card,
+  },
+  nextEyebrow: { color: "rgba(255,255,255,0.65)", fontSize: 11, fontWeight: "600", marginBottom: 6 },
+  nextTitle: { color: "#fff", fontSize: 17, fontWeight: "700", lineHeight: 24, marginBottom: 14 },
+  nextBtn: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: colors.blue,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: radius.sm,
+  },
+  nextBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: 10,
     paddingHorizontal: spacing.md,
-    gap: spacing.sm,
     marginBottom: spacing.md,
   },
-  sectionPad: { paddingHorizontal: spacing.md, marginBottom: spacing.md },
-  sectionTitleInline: { fontSize: 17, fontWeight: "800", color: colors.navy, marginBottom: spacing.sm },
-  errorText: { marginHorizontal: spacing.md, marginBottom: spacing.sm, color: colors.red, fontSize: 13 },
-  jobCard: {
+  jobRow: {
     marginHorizontal: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: radius.md,
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  jobRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  jobLogo: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: colors.creamDark,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  jobLogoText: { fontSize: 18, fontWeight: "800", color: colors.blue },
-  jobInfo: { flex: 1 },
-  jobTitle: { fontSize: 15, fontWeight: "700", color: colors.navy },
-  company: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
-  matchText: { fontSize: 13, fontWeight: "700", color: colors.emerald },
-  workflowBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.sm,
-    backgroundColor: "#EFF6FF",
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
+    ...shadow.soft,
   },
-  workflowTitle: { fontSize: 14, fontWeight: "800", color: colors.navy },
-  workflowSub: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  dashboardBtn: {
-    flexDirection: "row",
+  jobLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: colors.blue,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    marginHorizontal: spacing.md,
-    paddingVertical: 14,
-    borderRadius: radius.full,
   },
-  dashboardBtnText: { color: colors.surface, fontWeight: "800", fontSize: 15 },
+  jobLogoText: { color: "#fff", fontWeight: "800" },
+  jobTitle: { fontWeight: "700", color: colors.text, fontSize: 14 },
+  jobMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  empty: { textAlign: "center", color: colors.textMuted, marginVertical: 16, paddingHorizontal: spacing.md },
+  errorBox: { alignItems: "center", padding: 24 },
+  errorText: { color: colors.red, textAlign: "center", marginBottom: 8 },
+  retry: { color: colors.blue, fontWeight: "700" },
+  quickRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.md,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chipText: { fontSize: 12, fontWeight: "600", color: colors.text },
 });

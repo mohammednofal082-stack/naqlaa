@@ -57,7 +57,7 @@ export default function CompaniesPage() {
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
         <Input
           placeholder={t("ابحث عن شركة أو قطاع...", "Search for a company or sector...")}
-          className="pr-10 bg-white"
+          className="pr-10"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

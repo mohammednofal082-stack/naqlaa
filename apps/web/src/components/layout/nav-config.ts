@@ -24,6 +24,8 @@ import {
   Target,
   Lightbulb,
   BarChart3,
+  Wallet,
+  Handshake,
 } from "lucide-react";
 
 export type TFn = (ar: string, en: string) => string;
@@ -51,6 +53,7 @@ function buildRoleNavGroups(t: TFn): Record<UserRole, NavGroup[]> {
   const sharedAccount: NavItem[] = [
     { href: "/messages", label: t("الرسائل", "Messages"), icon: MessageSquare },
     { href: "/notifications", label: t("الإشعارات", "Notifications"), icon: Bell },
+    { href: "/billing", label: t("الرسوم والفواتير", "Fees & Invoices"), icon: Wallet },
     { href: "/settings", label: t("الإعدادات", "Settings"), icon: Settings },
   ];
 
@@ -156,6 +159,7 @@ function buildRoleNavGroups(t: TFn): Record<UserRole, NavGroup[]> {
           { href: "/feed", label: t("المنصة", "Feed"), icon: LayoutGrid },
           { href: "/dashboard/company", label: t("نظرة عامة", "Overview"), icon: LayoutDashboard },
           { href: "/dashboard/company/profile", label: t("ملف الشركة", "Company Profile"), icon: Building2 },
+          { href: "/dashboard/company/hr", label: t("حسابات الموارد البشرية", "HR Accounts"), icon: Users },
         ],
       },
       {
@@ -172,6 +176,7 @@ function buildRoleNavGroups(t: TFn): Record<UserRole, NavGroup[]> {
         items: [
           { href: "/dashboard/company/partnerships", label: t("الشراكات", "Partnerships"), icon: Users },
           { href: "/dashboard/company/reports", label: t("التقارير", "Reports"), icon: ClipboardList },
+          { href: "/dashboard/company/billing", label: t("الفوترة والرسوم", "Billing & Fees"), icon: Wallet },
           { href: "/market", label: t("تحليل سوق العمل", "Job Market Analysis"), icon: BarChart3 },
         ],
       },
@@ -255,12 +260,14 @@ function buildRoleNavGroups(t: TFn): Record<UserRole, NavGroup[]> {
         label: t("الإدارة", "Administration"),
         items: [
           { href: "/dashboard/admin", label: t("لوحة الإدارة", "Admin Dashboard"), icon: LayoutDashboard },
+          { href: "/dashboard/admin/partnerships", label: t("الشراكات الجديدة", "New Partnerships"), icon: Handshake },
           { href: "/dashboard/admin/users", label: t("المستخدمين", "Users"), icon: Users },
           { href: "/dashboard/admin/companies", label: t("الشركات", "Companies"), icon: Building2 },
           { href: "/dashboard/admin/moderation", label: t("الإشراف", "Moderation"), icon: Settings },
           { href: "/dashboard/admin/verification", label: t("التحقق", "Verification"), icon: ClipboardList },
           { href: "/dashboard/admin/skills", label: t("المهارات", "Skills"), icon: Target },
           { href: "/dashboard/admin/reports", label: t("التقارير", "Reports"), icon: FileText },
+          { href: "/dashboard/admin/billing", label: t("الفوترة والرسوم", "Billing & Fees"), icon: Wallet },
           { href: "/market", label: t("تحليل سوق العمل", "Job Market Analysis"), icon: BarChart3 },
           { href: "/dashboard/admin/security", label: t("الأمان", "Security"), icon: Bell },
           { href: "/dashboard/admin/logs", label: t("السجلات", "Logs"), icon: ClipboardList },
