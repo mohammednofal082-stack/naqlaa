@@ -9,7 +9,15 @@ export interface PalestinianUniversity {
 
 export const OTHER_UNIVERSITY_ID = 'uni-other';
 
-/** All recognized Palestinian universities for student/graduate registration. */
+/**
+ * Palestinian universities shown in student/graduate registration.
+ *
+ * Source: Palestinian Ministry of Education and Higher Education,
+ * "Palestinian Universities and Colleges" directory:
+ * https://www.mohe.pna.ps/Higher-Education/Institutions/Universities
+ *
+ * University colleges are intentionally excluded from this selector.
+ */
 export const PALESTINIAN_UNIVERSITIES: PalestinianUniversity[] = [
   { id: 'uni-birzeit', name: 'Birzeit University', city: 'Birzeit', emailDomain: 'birzeit' },
   { id: 'uni-najah', name: 'An-Najah National University', city: 'Nablus', emailDomain: 'an-najah' },
@@ -23,14 +31,6 @@ export const PALESTINIAN_UNIVERSITIES: PalestinianUniversity[] = [
   { id: 'uni-alazhar-gaza', name: 'Al-Azhar University - Gaza', city: 'Gaza', emailDomain: 'al-azhar-gaza' },
   { id: 'uni-alaqsa', name: 'Al-Aqsa University', city: 'Gaza', emailDomain: 'al-aqsa' },
   { id: 'uni-kadoorie', name: 'Palestine Technical University - Kadoorie', city: 'Tulkarm', emailDomain: 'kadoorie' },
-  { id: 'uni-palestine', name: 'University of Palestine', city: 'Gaza', emailDomain: 'palestine' },
-  { id: 'uni-istiqlal', name: 'Al-Istiqlal University', city: 'Jericho', emailDomain: 'al-istiqlal' },
-  { id: 'uni-ahliya', name: 'Palestine Ahliya University', city: 'Bethlehem', emailDomain: 'palestine-ahliya' },
-  { id: 'uni-dar-alkalima', name: 'Dar Al-Kalima University', city: 'Bethlehem', emailDomain: 'dar-al-kalima' },
-  { id: 'uni-israa', name: 'Israa University', city: 'Gaza', emailDomain: 'israa' },
-  { id: 'uni-gaza', name: 'Gaza University', city: 'Gaza', emailDomain: 'gaza' },
-  { id: 'uni-ummah', name: 'University of the Holy Quran and Islamic Sciences', city: 'Gaza', emailDomain: 'ummah' },
-  { id: 'uni-palestine-tech-gaza', name: 'University College of Applied Sciences', city: 'Gaza', emailDomain: 'ucas' },
 ];
 
 /** Strip "university" / "college" words and slugify for `.stu` email hosts. */

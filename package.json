@@ -11,6 +11,8 @@
     "build:web": "npm run build --workspace=@careerlink/web",
     "pdf:handoff": "node docs/generate-handoff-pdf.mjs",
     "seed:demo-users": "node scripts/seed-demo-users.mjs",
+    "seed:official-universities": "node scripts/seed-official-universities.mjs",
+    "seed:demo-database": "node scripts/seed-demo-database.mjs",
     "defense:check": "node scripts/defense-ready-check.mjs",
     "defense:buckets": "node scripts/ensure-storage-buckets.mjs"
   },
