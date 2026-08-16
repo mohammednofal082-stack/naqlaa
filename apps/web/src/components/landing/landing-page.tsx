@@ -144,9 +144,14 @@ function HeroSection() {
             <p className="text-sm font-semibold text-brand mb-3">
               {t("منصة توظيف فلسطينية", "Palestinian career platform")}
             </p>
-            <h1 className="font-display text-[clamp(2.5rem,6vw,4.25rem)] font-bold text-text leading-[1.1] tracking-tight mb-6">
-              <span className="block">{t("من بيرزيت والنجاح", "From Birzeit & An-Najah")}</span>
-              <span className="block mt-1 text-brand">{t("إلى أول عقد عمل.", "to your first contract.")}</span>
+            <h1 className="font-display text-[clamp(2.25rem,5.5vw,3.75rem)] font-bold text-text leading-[1.15] tracking-tight mb-6">
+              <span className="block">{t("من مقعد الجامعة إلى أول فرصة…", "From your university seat to your first opportunity…")}</span>
+              <span className="block mt-2 text-brand text-[clamp(1.35rem,3.2vw,2.15rem)] font-semibold leading-snug">
+                {t(
+                  "نقلة تصنع الطريق بين موهبتك والمكان الذي يستحقها.",
+                  "Naqla builds the path between your talent and the place that deserves it.",
+                )}
+              </span>
             </h1>
 
             <p className="text-lg text-text-secondary leading-relaxed max-w-xl mb-9">

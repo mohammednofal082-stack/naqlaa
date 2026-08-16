@@ -60,7 +60,7 @@ export default function LoginScreen() {
               <Ionicons name="trending-up" size={28} color={colors.surface} />
             </View>
             <Text style={styles.brand}>{t("نقلة", "Naqla")}</Text>
-            <Text style={styles.tagline}>{t("من بيرزيت والنجاح إلى أول عقد", "From campus to your first contract")}</Text>
+            <Text style={styles.tagline}>{t("من مقعد الجامعة إلى أول فرصة…", "From campus to your first opportunity…")}</Text>
             <Text style={styles.sub}>
               {apiEnabled
                 ? t(`متصل: ${getApiBaseUrl()}`, `Connected: ${getApiBaseUrl()}`)
