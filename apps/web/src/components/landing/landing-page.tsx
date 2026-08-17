@@ -249,9 +249,11 @@ function ProductPreview() {
 
         <div className="p-3 sm:p-4 space-y-3">
           <div className="flex gap-2">
-            <div className="flex-1 h-9 rounded-lg bg-surface-hover border border-border flex items-center px-3 text-xs text-text-muted">
-              <Search className="w-3.5 h-3.5 me-2 opacity-60" />
-              {t("ابحث عن وظائف، شركات، منشورات…", "Search jobs, companies, posts…")}
+            <div className="min-w-0 flex-1 h-9 rounded-lg bg-surface-hover border border-border flex items-center px-3 text-xs text-text-muted overflow-hidden">
+              <Search className="w-3.5 h-3.5 me-2 shrink-0 opacity-60" />
+              <span className="truncate">
+                {t("ابحث عن وظائف، شركات، منشورات…", "Search jobs, companies, posts…")}
+              </span>
             </div>
             <div className="hidden min-[380px]:flex w-9 h-9 rounded-lg bg-surface-hover border border-border items-center justify-center text-text-secondary">
               <Bell className="w-4 h-4" />
