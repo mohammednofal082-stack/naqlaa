@@ -56,8 +56,8 @@ function LandingNav() {
       transition={{ duration: 0.7, ease: EASE }}
       className="fixed top-0 inset-x-0 z-50 border-b border-border/70 bg-background/70 backdrop-blur-2xl backdrop-saturate-150"
     >
-      <div className="shell-wide h-16 flex items-center justify-between gap-4">
-        <Link href="/" aria-label="نقلة">
+      <div className="shell-wide h-16 flex items-center justify-between gap-2 sm:gap-4">
+        <Link href="/" aria-label="نقلة" className="shrink-0">
           <Logo size="sm" />
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm text-text-secondary">
@@ -82,12 +82,12 @@ function LandingNav() {
           </Link>
           <Link
             href="/auth/register"
-            className="inline-flex px-3 sm:px-4 py-2 sm:py-2.5 text-sm font-semibold rounded-xl text-white transition-colors hover:brightness-110 whitespace-nowrap"
+            className="hidden min-[440px]:inline-flex px-3 sm:px-4 py-2 sm:py-2.5 text-sm font-semibold rounded-xl text-white transition-colors hover:brightness-110 whitespace-nowrap"
             style={{ background: BRAND }}
           >
             {t("إنشاء حساب", "Create account")}
           </Link>
-          <button type="button" className="md:hidden p-2 text-text-secondary" onClick={() => setOpen(!open)} aria-label={t("القائمة", "Menu")}>
+          <button type="button" className="md:hidden shrink-0 p-2 text-text-secondary" onClick={() => setOpen(!open)} aria-label={t("القائمة", "Menu")}>
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
@@ -138,13 +138,13 @@ function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/90 to-background" />
       </div>
 
-      <div className="shell-wide relative z-10 py-16 lg:py-20">
-        <div className="grid lg:grid-cols-[1.08fr_0.92fr] gap-12 lg:gap-16 items-center">
-          <div>
+      <div className="shell-wide relative z-10 py-10 sm:py-16 lg:py-20">
+        <div className="grid lg:grid-cols-[1.08fr_0.92fr] gap-9 sm:gap-12 lg:gap-16 items-center">
+          <div className="min-w-0">
             <p className="text-sm font-semibold text-brand mb-3">
               {t("منصة توظيف فلسطينية", "Palestinian career platform")}
             </p>
-            <h1 className="font-display text-[clamp(2.25rem,5.5vw,3.75rem)] font-bold text-text leading-[1.15] tracking-tight mb-6">
+            <h1 className="font-display text-[clamp(2rem,5.5vw,3.75rem)] font-bold text-text leading-[1.15] tracking-tight mb-5 sm:mb-6 [overflow-wrap:anywhere]">
               <span className="block">{t("من مقعد الجامعة إلى أول فرصة…", "From your university seat to your first opportunity…")}</span>
               <span className="block mt-2 text-brand text-[clamp(1.35rem,3.2vw,2.15rem)] font-semibold leading-snug">
                 {t(
@@ -154,7 +154,7 @@ function HeroSection() {
               </span>
             </h1>
 
-            <p className="text-lg text-text-secondary leading-relaxed max-w-xl mb-9">
+            <p className="text-base sm:text-lg text-text-secondary leading-relaxed max-w-xl mb-7 sm:mb-9">
               {t(
                 "نقلة تربط طلبة الجامعات الفلسطينية بشركات التوظيف محلياً: فرص مطابقة، تدريب معتمد، ومتابعة من الجامعة حتى التوظيف.",
                 "Naqla connects Palestinian university students with local employers: matched roles, accredited internships, and university-to-hire follow-through."
@@ -179,17 +179,17 @@ function HeroSection() {
               </Link>
             </div>
 
-            <div className="flex flex-wrap gap-x-10 gap-y-5 pt-5 border-t border-border">
+            <div className="grid grid-cols-3 gap-3 sm:flex sm:flex-wrap sm:gap-x-10 sm:gap-y-5 pt-5 border-t border-border">
               {stats.map((s) => (
-                <div key={s.l}>
-                  <p className="text-[1.85rem] font-bold text-text tabular-nums leading-none">{s.n}</p>
-                  <p className="text-text-muted text-xs mt-2">{s.l}</p>
+                <div key={s.l} className="min-w-0">
+                  <p className="text-2xl sm:text-[1.85rem] font-bold text-text tabular-nums leading-none">{s.n}</p>
+                  <p className="text-text-muted text-[11px] sm:text-xs mt-2 leading-snug">{s.l}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative min-w-0">
             <ProductPreview />
           </div>
         </div>
@@ -239,7 +239,7 @@ function ProductPreview() {
   return (
     <div className="relative">
       <div className="absolute -inset-5 rounded-[32px] bg-blue-500/15 blur-3xl pointer-events-none" aria-hidden />
-      <div className="relative rounded-2xl border border-border bg-surface shadow-[0_40px_100px_rgba(12,18,34,0.18)] dark:shadow-[0_50px_120px_rgba(0,0,0,0.65)] overflow-hidden ring-1 ring-black/[0.03] dark:ring-white/10 nq-shine-border">
+      <div className="relative max-w-xl mx-auto rounded-2xl border border-border bg-surface shadow-[0_40px_100px_rgba(12,18,34,0.18)] dark:shadow-[0_50px_120px_rgba(0,0,0,0.65)] overflow-hidden ring-1 ring-black/[0.03] dark:ring-white/10 nq-shine-border">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface-hover/60">
           <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
           <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
@@ -247,13 +247,13 @@ function ProductPreview() {
           <span className="flex-1 text-center text-[11px] text-text-muted font-mono">naqlah.ps/feed</span>
         </div>
 
-        <div className="p-4 space-y-3">
+        <div className="p-3 sm:p-4 space-y-3">
           <div className="flex gap-2">
             <div className="flex-1 h-9 rounded-lg bg-surface-hover border border-border flex items-center px-3 text-xs text-text-muted">
               <Search className="w-3.5 h-3.5 me-2 opacity-60" />
               {t("ابحث عن وظائف، شركات، منشورات…", "Search jobs, companies, posts…")}
             </div>
-            <div className="w-9 h-9 rounded-lg bg-surface-hover border border-border flex items-center justify-center text-text-secondary">
+            <div className="hidden min-[380px]:flex w-9 h-9 rounded-lg bg-surface-hover border border-border items-center justify-center text-text-secondary">
               <Bell className="w-4 h-4" />
             </div>
             <div className="w-9 h-9 rounded-lg bg-brand/10 border border-brand/25 flex items-center justify-center text-brand">
@@ -269,7 +269,7 @@ function ProductPreview() {
               <p className="text-sm font-semibold text-text truncate">{t("محمد نوفل", "Mohammed Nofal")}</p>
               <p className="text-[11px] text-text-muted truncate">{t("طالب هندسة حاسوب · جامعة النجاح الوطنية", "Computer Engineering Student · An-Najah National University")}</p>
             </div>
-            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+            <span className="hidden min-[440px]:inline-flex text-[10px] font-medium text-emerald-600 dark:text-emerald-400 items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> {t("متصل", "Online")}
             </span>
           </div>
