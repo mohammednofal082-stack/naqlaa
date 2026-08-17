@@ -3,9 +3,23 @@ import { cookies } from 'next/headers';
 import type { UserRole } from '@careerlink/shared';
 
 const COOKIE_NAME = 'naqlah_session';
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'naqlah-dev-secret-change-in-production-2025'
-);
+const WEAK_SECRETS = new Set([
+  'naqlah-dev-secret-change-in-production-2025',
+  'change-me',
+  'secret',
+]);
+
+function resolveJwtSecret(): Uint8Array {
+  const raw = process.env.JWT_SECRET?.trim() || '';
+  if (process.env.NODE_ENV === 'production') {
+    if (!raw || WEAK_SECRETS.has(raw) || raw.length < 32) {
+      throw new Error('JWT_SECRET must be a strong random value (min 32 chars) in production');
+    }
+  }
+  return new TextEncoder().encode(raw || 'naqlah-dev-secret-change-in-production-2025');
+}
+
+const SECRET = resolveJwtSecret();
 
 export interface SessionPayload {
   userId: string;
@@ -54,7 +68,7 @@ export async function setSessionCookie(token: string) {
 
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  cookieStore.delete({ name: COOKIE_NAME, path: '/' });
 }
 
 export { COOKIE_NAME };

@@ -4,9 +4,13 @@ import { envConfig, useSupabaseData } from '@/backend/config/env';
 import { getCurrentUser } from '@/backend/auth/provider';
 
 const CORS_HEADERS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
+  // The web app is same-origin. Native Expo requests do not use browser CORS,
+  // so a wildcard would only expose bearer-token API responses to arbitrary
+  // browser origins.
+  'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  Vary: 'Origin',
 };
 
 export function corsOptions() {

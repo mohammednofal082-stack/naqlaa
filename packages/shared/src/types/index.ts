@@ -433,10 +433,12 @@ export interface InternshipRequest {
   universityId: string;
   companyId: string;
   jobId: string;
+  internshipId?: string;
   supervisorId?: string;
   status: InternshipStatus;
   startDate: string;
   endDate: string;
+  createdAt?: string;
 }
 
 export interface WeeklyReport {

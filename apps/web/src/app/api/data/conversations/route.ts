@@ -2,7 +2,10 @@ import { NextRequest } from 'next/server';
 import { dataResponse, mutationResponse, getRepo, requireAuth } from '@/backend/data/api';
 
 export async function GET() {
-  return dataResponse(() => getRepo().getConversations());
+  return dataResponse(async () => {
+    const user = await requireAuth();
+    return getRepo().getConversations(user.userId);
+  });
 }
 
 export async function POST(req: NextRequest) {

@@ -3,8 +3,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { buildPlatformWorkflows } from "@careerlink/shared";
-import { useI18n } from "../../i18n";
-import { colors, spacing, radius } from "../../constants/theme";
+import { useI18n } from "../i18n";
+import { colors, spacing, radius } from "../constants/theme";
 
 export default function WorkflowsScreen() {
   const { t, isRTL } = useI18n();

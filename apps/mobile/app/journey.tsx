@@ -18,7 +18,7 @@ export default function JourneyScreen() {
 
   const completion = profileData?.profile.profileCompletion ?? 0;
   const appCount = (apps ?? []).length;
-  const interviews = (apps ?? []).filter((a) => a.status === "interview").length;
+  const interviews = (apps ?? []).filter((a) => a.status === "interview_scheduled").length;
 
   const steps = [
     {

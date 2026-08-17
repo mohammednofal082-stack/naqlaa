@@ -1,5 +1,6 @@
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { Card, colors, spacing, radius } from "../../components/ui";
 import type { StudentProfile, User } from "@careerlink/shared";
 import { useApp } from "../../contexts/app-context";
@@ -36,6 +37,9 @@ export default function ProfileScreen() {
             <>
               <Text style={styles.headline}>{profile?.headline ?? ""}</Text>
               <Text style={styles.meta}>{[profile?.major, profile?.location].filter(Boolean).join(" · ")}</Text>
+              <TouchableOpacity style={styles.editBtn} onPress={() => router.push("/profile-edit")}>
+                <Text style={styles.editBtnText}>{t("تعديل الملف", "Edit profile")}</Text>
+              </TouchableOpacity>
             </>
           )}
         </View>
@@ -113,6 +117,8 @@ const styles = StyleSheet.create({
   name: { fontSize: 22, fontWeight: "800", color: colors.navy },
   headline: { fontSize: 14, color: colors.textSecondary, marginTop: 4, textAlign: "center" },
   meta: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
+  editBtn: { marginTop: 12, backgroundColor: colors.blue, borderRadius: radius.full, paddingHorizontal: 16, paddingVertical: 10 },
+  editBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
   progressCard: { margin: spacing.md },
   progressHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
   progressLabel: { fontSize: 14, fontWeight: "700", color: colors.navy },

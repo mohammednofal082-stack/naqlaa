@@ -1,11 +1,24 @@
-import { Tabs } from "expo-router";
+import { Tabs, Redirect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { View, ActivityIndicator } from "react-native";
 import { colors } from "../../constants/theme";
 import { useI18n } from "../../i18n";
+import { useApp } from "../../contexts/app-context";
 
 /** Student-first shell: Home · Feed · Jobs · Chat · More */
 export default function TabLayout() {
   const { t } = useI18n();
+  const { user, loading } = useApp();
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.cream }}>
+        <ActivityIndicator color={colors.blue} />
+      </View>
+    );
+  }
+  if (!user) return <Redirect href="/auth/login" />;
+
   return (
     <Tabs
       screenOptions={{

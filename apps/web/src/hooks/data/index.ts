@@ -93,6 +93,40 @@ export const usePartnerships = () => useDataApi<Partnership[]>("partnerships");
 export const useAssessments = () => useDataApi<Assessment[]>("assessments");
 export const useInternshipRequests = () => useDataApi<InternshipRequest[]>("internship-requests");
 export const useWeeklyReports = () => useDataApi<WeeklyReport[]>("weekly-reports");
+export interface UniversityTraineeReport {
+  internshipId: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  companyName: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  reportsCount: number;
+  latestReport: {
+    weekNumber: number;
+    title: string;
+    tasksDone: string;
+    skillsUsed: string[];
+    challenges: string;
+    status: string;
+    submittedAt: string;
+  } | null;
+  averageScore: number | null;
+  evaluations: {
+    role: string;
+    score: number | null;
+    comments: string;
+    approved: boolean | null;
+    createdAt: string;
+  }[];
+}
+export interface UniversityTraineeReportsResponse {
+  universityName: string;
+  trainees: UniversityTraineeReport[];
+}
+export const useUniversityTraineeReports = () =>
+  useDataApi<UniversityTraineeReportsResponse>("university-trainee-reports");
 export const useConversations = () => useDataApi<Conversation[]>("conversations");
 export const useMarketAnalysis = () => useDataApi<JobMarketAnalysis>("market-analysis");
 
@@ -250,7 +284,7 @@ export async function saveSettings(input: Partial<UserSettings>) {
 }
 
 export async function verifyEntity(input: {
-  entityType: "company" | "mentor" | "trainer";
+  entityType: "company" | "mentor" | "trainer" | "university";
   entityId: string;
   status: "approved" | "rejected";
 }) {

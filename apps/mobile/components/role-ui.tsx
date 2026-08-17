@@ -103,6 +103,15 @@ export function SectionTitle({ title }: { title: string }) {
   return <Text style={styles.sectionTitle}>{title}</Text>;
 }
 
+export function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <View style={[styles.statCard, { borderColor: color + "35" }]}>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
 export const AccentMap: Record<string, string> = {
   blue: colors.blue,
   emerald: colors.emerald,
@@ -132,6 +141,9 @@ const styles = StyleSheet.create({
   scenarioDesc: { fontSize: 12, color: colors.textSecondary, lineHeight: 18, marginBottom: 10, minHeight: 36 },
   scenarioCta: { flexDirection: "row", alignItems: "center", gap: 4 },
   scenarioCtaText: { fontSize: 12, fontWeight: "700" },
+  statCard: { width: "47%", backgroundColor: colors.surface, borderWidth: 1, borderRadius: radius.lg, padding: spacing.sm },
+  statValue: { fontSize: 22, fontWeight: "800" },
+  statLabel: { fontSize: 12, color: colors.textSecondary, marginTop: 3 },
   hero: {
     marginHorizontal: spacing.md,
     marginBottom: spacing.md,

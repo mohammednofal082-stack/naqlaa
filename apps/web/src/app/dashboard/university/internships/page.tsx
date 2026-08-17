@@ -199,7 +199,7 @@ export default function UniversityInternshipsPage() {
                       variant="outline"
                       onClick={async () => {
                         try {
-                          await fetch("/api/data/internship-evaluations", {
+                          const res = await fetch("/api/data/internship-evaluations", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
@@ -210,10 +210,12 @@ export default function UniversityInternshipsPage() {
                               approved: true,
                             }),
                           });
+                          const json = await res.json();
+                          if (!res.ok) throw new Error(json.error || "FAILED");
                           setError("");
                           alert(t("تم اعتماد التدريب", "Internship approved"));
-                        } catch {
-                          setError(t("فشل الاعتماد", "Approval failed"));
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : t("فشل الاعتماد", "Approval failed"));
                         }
                       }}
                     >
@@ -223,7 +225,7 @@ export default function UniversityInternshipsPage() {
                       size="sm"
                       onClick={async () => {
                         try {
-                          await fetch("/api/data/internship-evaluations", {
+                          const res = await fetch("/api/data/internship-evaluations", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
@@ -234,9 +236,11 @@ export default function UniversityInternshipsPage() {
                               approved: true,
                             }),
                           });
+                          const json = await res.json();
+                          if (!res.ok) throw new Error(json.error || "FAILED");
                           alert(t("تم حفظ تقييم الشركة", "Company evaluation saved"));
-                        } catch {
-                          setError(t("فشل التقييم", "Evaluation failed"));
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : t("فشل التقييم", "Evaluation failed"));
                         }
                       }}
                     >

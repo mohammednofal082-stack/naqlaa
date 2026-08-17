@@ -94,6 +94,7 @@ export interface UpdateProfileInput {
   headline?: string;
   about?: string;
   location?: string;
+  major?: string;
   skills?: string[];
   education?: StudentProfile['education'];
   projects?: StudentProfile['projects'];
@@ -141,7 +142,7 @@ export interface CreatePartnershipInput {
 }
 
 export interface VerifyEntityInput {
-  entityType: 'company' | 'mentor' | 'trainer';
+  entityType: 'company' | 'mentor' | 'trainer' | 'university';
   entityId: string;
   status: 'approved' | 'rejected';
 }
@@ -168,7 +169,7 @@ export interface DataRepositories {
   getMentorshipSessions(userId?: string): Promise<MentorshipSession[]>;
   getConversations(userId?: string): Promise<Conversation[]>;
   createConversation(otherUserId: string): Promise<Conversation>;
-  getMessages(conversationId: string): Promise<Message[]>;
+  getMessages(conversationId: string, userId?: string): Promise<Message[]>;
   getSavedJobs(userId?: string): Promise<JobWithCompany[]>;
   getSavedCompanies(userId?: string): Promise<Company[]>;
   getSettings(): Promise<UserSettings>;

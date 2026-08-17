@@ -44,7 +44,6 @@ export const shadow = {
     shadowOpacity: 0.08,
     shadowRadius: 0,
     elevation: 1,
-    borderWidth: 0,
   },
   card: {
     shadowColor: "#000",

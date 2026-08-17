@@ -102,6 +102,7 @@ export const mockRepositories: DataRepositories = {
     if (input.headline != null) memoryStore.studentProfile.headline = input.headline;
     if (input.about != null) memoryStore.studentProfile.about = input.about;
     if (input.location != null) memoryStore.studentProfile.location = input.location;
+    if (input.major != null) memoryStore.studentProfile.major = input.major;
     if (input.skills != null) memoryStore.studentProfile.skills = input.skills;
     if (input.education != null) memoryStore.studentProfile.education = input.education;
     if (input.projects != null) memoryStore.studentProfile.projects = input.projects;
@@ -224,11 +225,13 @@ export const mockRepositories: DataRepositories = {
     return conv;
   },
 
-  async getMessages(conversationId) {
+  async getMessages(conversationId, userId) {
     ensureInit();
+    const uid = userId ?? memoryStore.currentUserId;
+    const conv = memoryStore.conversations.find((c) => c.id === conversationId);
+    if (!conv) return [];
+    if (!conv.participantIds.includes(uid)) throw new Error('FORBIDDEN');
     return memoryStore.messages.filter((m) => {
-      const conv = memoryStore.conversations.find((c) => c.id === conversationId);
-      if (!conv) return false;
       return conv.participantIds.includes(m.senderId) || conv.participantIds.includes(m.receiverId);
     });
   },
@@ -615,6 +618,10 @@ export const mockRepositories: DataRepositories = {
         c.verified = input.status === 'approved';
         c.verificationStatus = input.status === 'approved' ? 'approved' : 'rejected';
       }
+    }
+    if (input.entityType === 'university') {
+      const { setUserStatus } = await import('@/backend/auth/store');
+      setUserStatus(input.entityId, input.status === 'approved' ? 'active' : 'suspended');
     }
     pushAudit(`verify_${input.status}`, input.entityType, input.entityId);
     return { success: true };

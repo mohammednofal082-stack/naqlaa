@@ -212,7 +212,7 @@ function buildRoleNavGroups(t: TFn): Record<UserRole, NavGroup[]> {
           { href: "/dashboard/university/internships", label: t("التدريب", "Internships"), icon: GraduationCap },
           { href: "/dashboard/university/events", label: t("الفعاليات", "Events"), icon: Calendar },
           { href: "/dashboard/university/partnerships", label: t("الشراكات", "Partnerships"), icon: Briefcase },
-          { href: "/dashboard/university/reports", label: t("التقارير", "Reports"), icon: ClipboardList },
+          { href: "/dashboard/university/reports", label: t("تقارير المتدربين", "Trainee Reports"), icon: ClipboardList },
         ],
       },
       {

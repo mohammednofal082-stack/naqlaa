@@ -3,18 +3,31 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { getRoleExperienceBase, ROLE_LABELS, type UserRole } from "@careerlink/shared";
-import { AccentMap, ScenarioCard, StatCard } from "../components/role-ui";
-import { useApp } from "../contexts/app-context";
-import { useI18n } from "../i18n";
-import { colors, spacing, radius } from "../constants/theme";
-
-const VALID_ROLES: UserRole[] = ["company", "hr", "university", "trainer", "mentor", "admin", "graduate"];
+import { AccentMap, ScenarioCard, StatCard } from "../../components/role-ui";
+import { useApp } from "../../contexts/app-context";
+import { useI18n } from "../../i18n";
+import { colors, spacing, radius } from "../../constants/theme";
 
 export default function RoleDashboardScreen() {
   const { role: roleParam } = useLocalSearchParams<{ role: string }>();
   const { user } = useApp();
   const { t } = useI18n();
-  const role = (VALID_ROLES.includes(roleParam as UserRole) ? roleParam : user?.role ?? "company") as UserRole;
+  const role = (user?.role ?? "student") as UserRole;
+  if (roleParam && roleParam !== role) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.replace("/(tabs)" as never)} style={styles.backBtn}>
+            <Ionicons name="arrow-forward" size={22} color={colors.navy} />
+          </TouchableOpacity>
+          <View>
+            <Text style={styles.headerTitle}>{t("غير مصرح", "Unauthorized")}</Text>
+            <Text style={styles.headerSub}>{t("لا يمكنك فتح لوحة دور آخر.", "You cannot open another role dashboard.")}</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
   const exp = getRoleExperienceBase(role);
   const accent = AccentMap[exp.accentKey] ?? colors.blue;
 

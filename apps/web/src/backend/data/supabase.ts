@@ -288,6 +288,7 @@ export const supabaseRepositories: DataRepositories = {
   async getCourses() {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
     const { data, error } = await supabase
       .from('courses')
       .select('*')
@@ -295,7 +296,26 @@ export const supabaseRepositories: DataRepositories = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data ?? []).map(mapCourse);
+
+    let enrollmentByCourse = new Map<string, number>();
+    if (user?.id) {
+      const { data: enrollments } = await supabase
+        .from('course_enrollments')
+        .select('course_id, progress')
+        .eq('student_id', user.id);
+      enrollmentByCourse = new Map(
+        (enrollments ?? []).map((row) => [String(row.course_id), Number(row.progress ?? 0)]),
+      );
+    }
+
+    return (data ?? []).map((row) =>
+      mapCourse({
+        ...row,
+        progress: enrollmentByCourse.has(String(row.id))
+          ? enrollmentByCourse.get(String(row.id))
+          : undefined,
+      }),
+    );
   },
 
   async getFeedPosts() {
@@ -453,6 +473,7 @@ export const supabaseRepositories: DataRepositories = {
     if (input.headline !== undefined) patch.headline = input.headline;
     if (input.about !== undefined) patch.about = input.about;
     if (input.location !== undefined) patch.location = input.location;
+    if (input.major !== undefined) patch.major = input.major;
     if (input.skills !== undefined) patch.skills = input.skills;
     if (input.education !== undefined) patch.education = input.education;
     if (input.projects !== undefined) patch.projects = input.projects;
@@ -640,9 +661,22 @@ export const supabaseRepositories: DataRepositories = {
     };
   },
 
-  async getMessages(conversationId) {
+  async getMessages(conversationId, userId) {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const uid = userId ?? user?.id;
+    if (!uid) throw new Error('UNAUTHORIZED');
+
+    const { data: conversation, error: convError } = await supabase
+      .from('conversations')
+      .select('participant_ids')
+      .eq('id', conversationId)
+      .maybeSingle();
+    if (convError) throw convError;
+    const participants = (conversation?.participant_ids as string[] | null)?.map(String) ?? [];
+    if (!participants.includes(uid)) throw new Error('FORBIDDEN');
+
     const { data, error } = await supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at');
     if (error) throw error;
     return (data ?? []).map((row) => ({
@@ -700,11 +734,13 @@ export const supabaseRepositories: DataRepositories = {
       studentId: String(row.student_id),
       universityId: String(row.university_id),
       companyId: String(row.company_id),
-      jobId: String(row.job_id ?? row.internship_id ?? ''),
+      jobId: String(row.job_id ?? ''),
+      internshipId: row.internship_id ? String(row.internship_id) : undefined,
       supervisorId: row.supervisor_id ? String(row.supervisor_id) : undefined,
       status: row.status as import('@careerlink/shared').InternshipStatus,
       startDate: String(row.start_date ?? ''),
       endDate: String(row.end_date ?? ''),
+      createdAt: String(row.created_at ?? ''),
     }));
   },
 
@@ -943,8 +979,20 @@ export const supabaseRepositories: DataRepositories = {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('UNAUTHORIZED');
     const { data: prev } = await supabase.from('applications').select('*').eq('id', id).maybeSingle();
     if (!prev) throw new Error('NOT_FOUND');
+
+    const { data: actor } = await supabase
+      .from('profiles')
+      .select('organization_id, active_role')
+      .eq('id', user.id)
+      .maybeSingle();
+    const isAdmin = String(actor?.active_role ?? '') === 'admin';
+    const orgId = actor?.organization_id ? String(actor.organization_id) : '';
+    if (!isAdmin && (!orgId || String(prev.company_id) !== orgId)) {
+      throw new Error('FORBIDDEN');
+    }
 
     const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
     if (extras?.interviewDate) patch.interview_date = extras.interviewDate;
@@ -1016,6 +1064,28 @@ export const supabaseRepositories: DataRepositories = {
   async updateJob(id, input) {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('UNAUTHORIZED');
+
+    const { data: existing, error: existingError } = await supabase
+      .from('jobs')
+      .select('id, company_id')
+      .eq('id', id)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    if (!existing) throw new Error('NOT_FOUND');
+
+    const { data: actor } = await supabase
+      .from('profiles')
+      .select('organization_id, active_role')
+      .eq('id', user.id)
+      .maybeSingle();
+    const isAdmin = String(actor?.active_role ?? '') === 'admin';
+    const orgId = actor?.organization_id ? String(actor.organization_id) : '';
+    if (!isAdmin && (!orgId || String(existing.company_id) !== orgId)) {
+      throw new Error('FORBIDDEN');
+    }
+
     const patch: Record<string, unknown> = {};
     if (input.status != null) patch.status = input.status;
     if (input.title != null) patch.title = input.title;
@@ -1177,14 +1247,28 @@ export const supabaseRepositories: DataRepositories = {
     if (error || !data) throw new Error('NOT_FOUND');
     let qrCode: string | undefined;
     if (user) {
-      const { data: reg, error: regError } = await supabase.from('event_registrations').upsert({
-        event_id: eventId,
-        user_id: user.id,
-      }, { onConflict: 'event_id,user_id' }).select('qr_code').single();
-      if (regError) throw regError;
-      qrCode = String(reg.qr_code);
+      const { data: existing } = await supabase
+        .from('event_registrations')
+        .select('qr_code')
+        .eq('event_id', eventId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existing?.qr_code) {
+        qrCode = String(existing.qr_code);
+      } else {
+        const { data: reg, error: regError } = await supabase.from('event_registrations').insert({
+          event_id: eventId,
+          user_id: user.id,
+        }).select('qr_code').single();
+        if (regError) throw regError;
+        qrCode = String(reg.qr_code);
+        await supabase
+          .from('events')
+          .update({ registered_count: Number(data.registered_count ?? 0) + 1 })
+          .eq('id', eventId);
+      }
     }
-    await supabase.from('events').update({ registered_count: Number(data.registered_count ?? 0) + 1 }).eq('id', eventId);
     const event = (await this.getEvents()).find((e) => e.id === eventId)!;
     return { ...event, qrCode: qrCode ?? event.qrCode };
   },
@@ -1301,9 +1385,28 @@ export const supabaseRepositories: DataRepositories = {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
     if (input.entityType === 'company') {
-      await supabase.from('companies').update({
-        verified: input.status === 'approved',
-      }).eq('id', input.entityId);
+      const { data: company, error } = await supabase
+        .from('companies')
+        .update({ verified: input.status === 'approved' })
+        .eq('id', input.entityId)
+        .select('id, owner_id')
+        .single();
+      if (error) throw error;
+      if (company?.owner_id) {
+        await supabase
+          .from('profiles')
+          .update({
+            status: input.status === 'approved' ? 'active' : 'suspended',
+            organization_id: company.id,
+          })
+          .eq('id', company.owner_id);
+      }
+    }
+    if (input.entityType === 'university') {
+      await supabase
+        .from('profiles')
+        .update({ status: input.status === 'approved' ? 'active' : 'suspended' })
+        .eq('id', input.entityId);
     }
     await supabase.from('audit_logs').insert({
       action: `verify_${input.status}`,

@@ -39,6 +39,9 @@ function toSession(user: {
 }
 
 async function mockLogin(email: string, password: string, role?: UserRole): Promise<LoginResult> {
+  if (process.env.NODE_ENV === 'production') {
+    return { error: 'MOCK_AUTH_DISABLED' };
+  }
   const attempt = authenticateUser(email, password);
   if (!attempt.ok) {
     if (attempt.reason === 'pending') {
@@ -125,8 +128,11 @@ async function supabaseLogin(email: string, password: string, role?: UserRole): 
     organizationId: profile?.organization_id ? String(profile.organization_id) : undefined,
   };
 
-  const token = await createSession(session);
-  await setSessionCookie(token);
+  const appToken = await createSession(session);
+  await setSessionCookie(appToken);
+  // Prefer the Supabase access token for native clients so repository methods
+  // that call auth.getUser() work without browser cookies.
+  const token = data.session?.access_token || appToken;
 
   return {
     user: session,
@@ -163,7 +169,10 @@ async function ensureRoleProfile(
     roles: [role],
     active_role: role,
     status,
-    ...(extras?.organizationId ? { organization_id: extras.organizationId } : {}),
+    // Student/graduate university ids are selector ids (e.g. `uni-birzeit`),
+    // while profiles.organization_id is a UUID reserved for an actual company
+    // or university portal record.
+    ...(role === 'university' && extras?.organizationId ? { organization_id: extras.organizationId } : {}),
   }).eq('id', userId);
 
   if (role === 'student' || role === 'graduate') {
@@ -174,6 +183,7 @@ async function ensureRoleProfile(
       location: 'Palestine',
       skills: [],
       major: extras?.major ?? '',
+      university_id: extras?.organizationId ?? null,
     }, { onConflict: 'user_id' });
   }
 
@@ -372,52 +382,91 @@ export async function registerNewUser(data: {
 export async function logoutUser(): Promise<void> {
   if (useSupabaseAuth()) {
     const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
     await supabase.auth.signOut();
+    // Revoke server-side sessions for the user when possible (covers mobile bearer tokens).
+    if (user && hasSupabaseAdmin()) {
+      try {
+        const admin = createSupabaseAdminClient();
+        // Scope 'global' invalidates refresh tokens / sessions for mobile + web.
+        await admin.auth.admin.signOut(user.id, 'global');
+      } catch {
+        // Best-effort revocation; cookie/local clear still proceeds.
+      }
+    }
   }
   await clearSessionCookie();
 }
 
 export async function getCurrentUser(): Promise<SessionPayload | null> {
-  try {
-    const { headers } = await import('next/headers');
-    const h = await headers();
-    const auth = h.get('authorization');
-    if (auth?.startsWith('Bearer ')) {
-      const token = auth.slice(7);
-      const { verifySession } = await import('@/backend/auth/session');
-      const payload = await verifySession(token);
-      if (payload) return payload;
-    }
-  } catch {
-    // ignore outside request context
-  }
-
   if (useSupabaseAuth()) {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      const { getSession } = await import('@/backend/auth/session');
-      return getSession();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      if (!profile || String(profile.status) !== 'active') return null;
+      const roles = (profile.roles as UserRole[]) ?? ['student'];
+      return {
+        userId: user.id,
+        email: user.email ?? '',
+        fullName: String(profile.full_name),
+        role: (profile.active_role as UserRole) ?? roles[0],
+        roles,
+        avatar: String(profile.avatar_url ?? ''),
+        organizationId: profile.organization_id ? String(profile.organization_id) : undefined,
+      };
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    // Fallback: cookie-bound custom app JWT (browser) — re-check live profile status.
+    try {
+      const { headers } = await import('next/headers');
+      const h = await headers();
+      const auth = h.get('authorization');
+      if (auth?.startsWith('Bearer ')) {
+        const { verifySession } = await import('@/backend/auth/session');
+        const payload = await verifySession(auth.slice(7));
+        if (payload) {
+          const { createSupabaseAdminClient, hasSupabaseAdmin } = await import('@/backend/supabase/admin');
+          if (hasSupabaseAdmin()) {
+            const admin = createSupabaseAdminClient();
+            const { data: profile } = await admin.from('profiles').select('*').eq('id', payload.userId).single();
+            if (!profile || String(profile.status) !== 'active') return null;
+            return {
+              ...payload,
+              role: (profile.active_role as UserRole) ?? payload.role,
+              roles: (profile.roles as UserRole[]) ?? payload.roles,
+              organizationId: profile.organization_id ? String(profile.organization_id) : undefined,
+            };
+          }
+          return payload;
+        }
+      }
+    } catch {
+      // ignore
+    }
 
-    if (!profile) return null;
-    const roles = (profile.roles as UserRole[]) ?? ['student'];
-
-    return {
-      userId: user.id,
-      email: user.email ?? '',
-      fullName: String(profile.full_name),
-      role: (profile.active_role as UserRole) ?? roles[0],
-      roles,
-      avatar: String(profile.avatar_url ?? ''),
-      organizationId: profile.organization_id ? String(profile.organization_id) : undefined,
-    };
+    const { getSession } = await import('@/backend/auth/session');
+    const cookieSession = await getSession();
+    if (!cookieSession) return null;
+    const { createSupabaseAdminClient, hasSupabaseAdmin } = await import('@/backend/supabase/admin');
+    if (hasSupabaseAdmin()) {
+      const admin = createSupabaseAdminClient();
+      const { data: profile } = await admin.from('profiles').select('status, active_role, roles, organization_id, avatar_url, full_name').eq('id', cookieSession.userId).single();
+      if (!profile || String(profile.status) !== 'active') return null;
+      return {
+        ...cookieSession,
+        fullName: String(profile.full_name ?? cookieSession.fullName),
+        role: (profile.active_role as UserRole) ?? cookieSession.role,
+        roles: (profile.roles as UserRole[]) ?? cookieSession.roles,
+        avatar: String(profile.avatar_url ?? cookieSession.avatar),
+        organizationId: profile.organization_id ? String(profile.organization_id) : undefined,
+      };
+    }
+    return cookieSession;
   }
 
   const { getSession } = await import('@/backend/auth/session');

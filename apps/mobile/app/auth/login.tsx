@@ -124,6 +124,10 @@ export default function LoginScreen() {
               <Ionicons name="arrow-back" size={18} color={colors.surface} />
             </TouchableOpacity>
 
+            <TouchableOpacity style={styles.registerLink} onPress={() => router.push("/auth/register")}>
+              <Text style={styles.registerLinkText}>{t("ليس لديك حساب؟ أنشئ حساب طالب أو خريج", "New here? Create a student or graduate account")}</Text>
+            </TouchableOpacity>
+
             <Text style={styles.demoToggleText}>{t("تعبئة سريعة لحسابات الديمو", "Quick-fill demo accounts")}</Text>
             {DEMO_ACCOUNTS.map((u) => (
               <TouchableOpacity key={u.email} style={styles.demoRow} onPress={() => fillDemo(u.role)}>
@@ -215,6 +219,8 @@ const styles = StyleSheet.create({
     ...shadow.glow,
   },
   loginBtnText: { color: colors.surface, fontWeight: "800", fontSize: 16 },
+  registerLink: { alignItems: "center", paddingVertical: 14 },
+  registerLinkText: { color: colors.blue, fontWeight: "700", fontSize: 13 },
   demoToggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: spacing.md, paddingVertical: 8 },
   demoToggleText: { fontSize: 13, color: colors.textMuted },
   demoRow: {

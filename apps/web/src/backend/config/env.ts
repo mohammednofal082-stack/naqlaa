@@ -14,11 +14,17 @@ export function isSupabaseConfigured(): boolean {
 
 /** Always use Supabase when keys are present. Mock is only for incomplete local setup. */
 function resolveDataProvider(): DataProvider {
+  if (process.env.NODE_ENV === 'production' && !isSupabaseConfigured()) {
+    throw new Error('SUPABASE_REQUIRED_IN_PRODUCTION');
+  }
   if (isSupabaseConfigured()) return 'supabase';
   return 'mock';
 }
 
 function resolveAuthProvider(): AuthProvider {
+  if (process.env.NODE_ENV === 'production' && !isSupabaseConfigured()) {
+    throw new Error('SUPABASE_REQUIRED_IN_PRODUCTION');
+  }
   if (isSupabaseConfigured()) return 'supabase';
   return 'mock';
 }

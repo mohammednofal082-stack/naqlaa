@@ -12,7 +12,7 @@ export default function MessagesScreen() {
   const { user } = useApp();
   const { data: conversations, loading, error } = useRemoteData<Conversation[]>("conversations");
   const { data: users } = useRemoteData<User[]>("users");
-  const myId = user?.userId;
+  const myId = user?.id;
 
   return (
     <SafeAreaView style={styles.container}>

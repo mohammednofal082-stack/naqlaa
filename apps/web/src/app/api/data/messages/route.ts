@@ -2,11 +2,14 @@ import { NextRequest } from 'next/server';
 import { dataResponse, mutationResponse, getRepo, requireAuth } from '@/backend/data/api';
 
 export async function GET(req: NextRequest) {
-  const conversationId = req.nextUrl.searchParams.get('conversationId');
-  if (!conversationId) {
-    return dataResponse(() => getRepo().getConversations());
-  }
-  return dataResponse(() => getRepo().getMessages(conversationId));
+  return dataResponse(async () => {
+    const user = await requireAuth();
+    const conversationId = req.nextUrl.searchParams.get('conversationId');
+    if (!conversationId) {
+      return getRepo().getConversations(user.userId);
+    }
+    return getRepo().getMessages(conversationId, user.userId);
+  });
 }
 
 export async function POST(req: NextRequest) {
