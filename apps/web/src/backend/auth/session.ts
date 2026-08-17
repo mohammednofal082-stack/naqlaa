@@ -19,8 +19,6 @@ function resolveJwtSecret(): Uint8Array {
   return new TextEncoder().encode(raw || 'naqlah-dev-secret-change-in-production-2025');
 }
 
-const SECRET = resolveJwtSecret();
-
 export interface SessionPayload {
   userId: string;
   email: string;
@@ -32,16 +30,20 @@ export interface SessionPayload {
 }
 
 export async function createSession(payload: SessionPayload): Promise<string> {
+  const secret = resolveJwtSecret();
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
-    .sign(SECRET);
+    .sign(secret);
 }
 
 export async function verifySession(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    // Deliberately resolve lazily: route modules are loaded at build time, while
+    // the secret is only required when an actual session is created or checked.
+    const secret = resolveJwtSecret();
+    const { payload } = await jwtVerify(token, secret);
     return payload as unknown as SessionPayload;
   } catch {
     return null;
