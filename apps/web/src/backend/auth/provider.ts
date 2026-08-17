@@ -215,6 +215,19 @@ async function ensureRoleProfile(
     }
   }
 
+  if (role === 'university' && extras?.universityName) {
+    const portalCode = `portal-${userId.replace(/-/g, '').slice(0, 12)}`;
+    const { data: university } = await admin.from('universities').insert({
+      name: extras.universityName,
+      name_en: extras.universityName,
+      code: portalCode,
+      city: 'Palestine',
+    }).select('id').single();
+    if (university?.id) {
+      await admin.from('profiles').update({ organization_id: university.id }).eq('id', userId);
+    }
+  }
+
   if (role === 'hr' && extras?.permissions) {
     // permissions live in user_metadata for HR created by company
     await admin.auth.admin.updateUserById(userId, {

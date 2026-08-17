@@ -96,9 +96,34 @@ export async function POST(req: NextRequest) {
       const admin = createSupabaseAdminClient();
       const { data: profile } = await admin.from('profiles').select('*').eq('id', userId).single();
       if (!profile) throw new Error('NOT_FOUND');
-      await admin.from('profiles').update({ status: nextStatus }).eq('id', userId);
-      if (action === 'approve' && profile.organization_id) {
-        await admin.from('companies').update({ verified: true }).eq('id', profile.organization_id);
+      const roles = (profile.roles as string[]) ?? [];
+      let organizationId = profile.organization_id ? String(profile.organization_id) : undefined;
+
+      if (action === 'approve' && roles.includes('university') && !organizationId) {
+        const { data: authUser } = await admin.auth.admin.getUserById(userId);
+        const uniName = String(
+          authUser.user?.user_metadata?.university_name
+          ?? authUser.user?.user_metadata?.full_name
+          ?? profile.full_name
+          ?? 'University',
+        );
+        const { data: uni } = await admin.from('universities').insert({
+          name: uniName,
+          name_en: uniName,
+          code: `portal-${userId.replace(/-/g, '').slice(0, 12)}`,
+          city: 'Palestine',
+        }).select('id').single();
+        if (uni?.id) organizationId = String(uni.id);
+      }
+
+      const profilePatch: Record<string, unknown> = { status: nextStatus };
+      if (organizationId && !profile.organization_id) {
+        profilePatch.organization_id = organizationId;
+      }
+      await admin.from('profiles').update(profilePatch).eq('id', userId);
+
+      if (action === 'approve' && roles.includes('company') && organizationId) {
+        await admin.from('companies').update({ verified: true }).eq('id', organizationId);
       }
       return { success: true, status: nextStatus };
     }

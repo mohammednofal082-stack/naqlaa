@@ -496,20 +496,40 @@ export const supabaseRepositories: DataRepositories = {
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.from('events').select('*').eq('status', 'published');
     if (error) throw error;
-    return (data ?? []).map((row) => ({
-      id: String(row.id),
-      organizerType: 'university' as const,
-      organizerId: String(row.organizer_id ?? ''),
-      title: String(row.title),
-      type: 'career_day' as const,
-      description: String(row.description ?? ''),
-      startAt: String(row.event_date),
-      endAt: String(row.event_date),
-      location: String(row.location ?? ''),
-      status: row.status as import('@careerlink/shared').EventStatus,
-      registrationsCount: Number(row.registered_count ?? 0),
-      qrCode: `NAQLAH-${String(row.id).slice(0, 8).toUpperCase()}`,
-    }));
+
+    const eventIds = (data ?? []).map((row) => String(row.id));
+    const registrationCounts = new Map<string, number>();
+    if (eventIds.length > 0) {
+      const { data: registrations, error: regError } = await supabase
+        .from('event_registrations')
+        .select('event_id')
+        .in('event_id', eventIds);
+      if (regError) throw regError;
+      for (const row of registrations ?? []) {
+        const eventId = String(row.event_id);
+        registrationCounts.set(eventId, (registrationCounts.get(eventId) ?? 0) + 1);
+      }
+    }
+
+    return (data ?? []).map((row) => {
+      const id = String(row.id);
+      const liveCount = registrationCounts.get(id);
+      const storedCount = Number(row.registered_count ?? 0);
+      return {
+        id,
+        organizerType: 'university' as const,
+        organizerId: String(row.organizer_id ?? ''),
+        title: String(row.title),
+        type: 'career_day' as const,
+        description: String(row.description ?? ''),
+        startAt: String(row.event_date),
+        endAt: String(row.event_date),
+        location: String(row.location ?? ''),
+        status: row.status as import('@careerlink/shared').EventStatus,
+        registrationsCount: liveCount ?? storedCount,
+        qrCode: `NAQLAH-${id.slice(0, 8).toUpperCase()}`,
+      };
+    });
   },
 
   async getMentors() {
@@ -1263,9 +1283,13 @@ export const supabaseRepositories: DataRepositories = {
         }).select('qr_code').single();
         if (regError) throw regError;
         qrCode = String(reg.qr_code);
+        const { count } = await supabase
+          .from('event_registrations')
+          .select('id', { count: 'exact', head: true })
+          .eq('event_id', eventId);
         await supabase
           .from('events')
-          .update({ registered_count: Number(data.registered_count ?? 0) + 1 })
+          .update({ registered_count: count ?? 0 })
           .eq('id', eventId);
       }
     }

@@ -14,7 +14,8 @@
     "seed:official-universities": "node scripts/seed-official-universities.mjs",
     "seed:demo-database": "node scripts/seed-demo-database.mjs",
     "defense:check": "node scripts/defense-ready-check.mjs",
-    "defense:buckets": "node scripts/ensure-storage-buckets.mjs"
+    "defense:buckets": "node scripts/ensure-storage-buckets.mjs",
+    "sync:event-counts": "node scripts/sync-event-counts.mjs"
   },
   "devDependencies": {
     "pdfkit": "^0.19.1"

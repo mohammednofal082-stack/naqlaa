@@ -141,6 +141,56 @@ export async function PATCH(req: NextRequest) {
     const userId = String(body.userId || '');
     if (!userId) throw new Error('MISSING_USER');
 
+    if (useSupabaseAuth() && hasSupabaseAdmin()) {
+      const admin = createSupabaseAdminClient();
+      const { data: target, error } = await admin
+        .from('profiles')
+        .select('id, full_name, email, roles, status, organization_id, avatar_url, created_at')
+        .eq('id', userId)
+        .maybeSingle();
+      if (error) throw error;
+      const roles = (target?.roles as string[] | undefined) ?? [];
+      if (!target || !roles.includes('hr')) throw new Error('NOT_FOUND');
+      if (session.role === 'company' && String(target.organization_id ?? '') !== session.organizationId) {
+        throw new Error('FORBIDDEN');
+      }
+
+      if (body.permissions) {
+        const permissions = sanitizePermissions(body.permissions);
+        await admin.auth.admin.updateUserById(userId, {
+          user_metadata: { permissions, role: 'hr' },
+        });
+        return {
+          account: {
+            id: target.id,
+            email: String(target.email ?? ''),
+            fullName: String(target.full_name ?? ''),
+            status: String(target.status ?? 'active'),
+            avatar: String(target.avatar_url ?? ''),
+            permissions,
+            createdAt: String(target.created_at ?? '').slice(0, 10),
+          },
+        };
+      }
+
+      if (body.status === 'suspended' || body.status === 'active') {
+        await admin.from('profiles').update({ status: body.status }).eq('id', userId);
+        return {
+          account: {
+            id: target.id,
+            email: String(target.email ?? ''),
+            fullName: String(target.full_name ?? ''),
+            status: body.status,
+            avatar: String(target.avatar_url ?? ''),
+            permissions: ROLE_PERMISSIONS.hr,
+            createdAt: String(target.created_at ?? '').slice(0, 10),
+          },
+        };
+      }
+
+      throw new Error('NO_CHANGES');
+    }
+
     const target = getUserById(userId);
     if (!target || !target.roles.includes('hr')) throw new Error('NOT_FOUND');
     if (session.role === 'company' && target.organizationId !== session.organizationId) {
