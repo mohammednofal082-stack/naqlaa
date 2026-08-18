@@ -68,7 +68,7 @@ const AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password'];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  let res = NextResponse.next();
+  const res = NextResponse.next();
 
   if (req.method === 'OPTIONS' && pathname.startsWith('/api/')) {
     return new NextResponse(null, {

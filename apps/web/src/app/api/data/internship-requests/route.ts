@@ -1,5 +1,8 @@
-import { dataResponse, getRepo } from '@/backend/data/api';
+import { dataResponse, getRepo, requireAuth } from '@/backend/data/api';
 
 export async function GET() {
-  return dataResponse(() => getRepo().getInternshipRequests());
+  return dataResponse(async () => {
+    await requireAuth();
+    return getRepo().getInternshipRequests();
+  });
 }

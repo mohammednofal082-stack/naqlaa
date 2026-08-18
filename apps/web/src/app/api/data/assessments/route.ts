@@ -4,6 +4,7 @@ import { requireAnyRole } from '@/backend/auth/rbac';
 
 export async function GET(req: NextRequest) {
   return dataResponse(async () => {
+    await requireAnyRole('hr', 'company', 'admin');
     const id = req.nextUrl.searchParams.get('id');
     const all = await getRepo().getAssessments();
     if (!id) return all;

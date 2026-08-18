@@ -71,7 +71,11 @@ export async function POST(req: NextRequest) {
     if (!orgId) throw new Error('COMPANY_ORG_REQUIRED');
 
     // Only active company accounts can create HR
-    if (!useSupabaseAuth()) {
+    if (useSupabaseAuth() && hasSupabaseAdmin()) {
+      const admin = createSupabaseAdminClient();
+      const { data: owner } = await admin.from('profiles').select('status').eq('id', session.userId).maybeSingle();
+      if (owner && String(owner.status) !== 'active') throw new Error('COMPANY_NOT_APPROVED');
+    } else if (!useSupabaseAuth()) {
       const owner = getUserById(session.userId);
       if (owner && owner.status !== 'active') throw new Error('COMPANY_NOT_APPROVED');
     }

@@ -2,7 +2,10 @@ import { NextRequest } from 'next/server';
 import { dataResponse, mutationResponse, getRepo, requireAuth } from '@/backend/data/api';
 
 export async function GET() {
-  return dataResponse(() => getRepo().getWeeklyReports());
+  return dataResponse(async () => {
+    await requireAuth();
+    return getRepo().getWeeklyReports();
+  });
 }
 
 export async function POST(req: NextRequest) {

@@ -3,7 +3,10 @@ import { dataResponse, mutationResponse, getRepo } from '@/backend/data/api';
 import { requireAnyRole } from '@/backend/auth/rbac';
 
 export async function GET() {
-  return dataResponse(() => getRepo().getTalentPools());
+  return dataResponse(async () => {
+    await requireAnyRole('company', 'hr', 'admin');
+    return getRepo().getTalentPools();
+  });
 }
 
 export async function POST(req: NextRequest) {

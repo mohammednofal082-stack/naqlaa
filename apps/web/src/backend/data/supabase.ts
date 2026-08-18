@@ -19,6 +19,21 @@ function assertSupabase() {
   }
 }
 
+async function requireSupabaseActor(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('UNAUTHORIZED');
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('active_role, organization_id')
+    .eq('id', user.id)
+    .maybeSingle();
+  return {
+    userId: user.id,
+    role: String(profile?.active_role ?? 'student'),
+    organizationId: profile?.organization_id ? String(profile.organization_id) : undefined,
+  };
+}
+
 function mapAssessmentRow(row: Record<string, unknown>) {
   return {
     id: String(row.id),
@@ -722,7 +737,18 @@ export const supabaseRepositories: DataRepositories = {
   },
 
   async getSavedCompanies() {
-    return [];
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from('company_follows')
+      .select('company_id')
+      .eq('user_id', user.id);
+    if (error) throw error;
+    const ids = (data ?? []).map((r) => String(r.company_id));
+    const companies = await this.getCompanies();
+    return companies.filter((c) => ids.includes(c.id));
   },
 
   async getSettings() {
@@ -744,10 +770,23 @@ export const supabaseRepositories: DataRepositories = {
   async getInternshipRequests() {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
+    const actor = await requireSupabaseActor(supabase);
+    let query = supabase
       .from('internship_requests')
       .select('*')
       .order('created_at', { ascending: false });
+    if (actor.role === 'student' || actor.role === 'graduate') {
+      query = query.eq('student_id', actor.userId);
+    } else if (actor.role === 'company' || actor.role === 'hr') {
+      if (!actor.organizationId) return [];
+      query = query.eq('company_id', actor.organizationId);
+    } else if (actor.role === 'university') {
+      if (!actor.organizationId) return [];
+      query = query.eq('university_id', actor.organizationId);
+    } else if (actor.role !== 'admin') {
+      return [];
+    }
+    const { data, error } = await query;
     if (error) throw error;
     return (data ?? []).map((row) => ({
       id: String(row.id),
@@ -766,10 +805,14 @@ export const supabaseRepositories: DataRepositories = {
 
   async getWeeklyReports() {
     assertSupabase();
+    const requests = await this.getInternshipRequests();
+    const requestIds = requests.map((r) => r.id);
+    if (requestIds.length === 0) return [];
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase
       .from('weekly_reports')
       .select('*')
+      .in('internship_request_id', requestIds)
       .order('submitted_at', { ascending: false });
     if (error) throw error;
     return (data ?? []).map((row) => ({
@@ -802,10 +845,18 @@ export const supabaseRepositories: DataRepositories = {
   async getTalentPools() {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
+    const actor = await requireSupabaseActor(supabase);
+    let query = supabase
       .from('talent_pools')
       .select('*, talent_pool_members(user_id)')
       .order('created_at', { ascending: false });
+    if (actor.role === 'company' || actor.role === 'hr') {
+      if (!actor.organizationId) return [];
+      query = query.eq('company_id', actor.organizationId);
+    } else if (actor.role !== 'admin') {
+      return [];
+    }
+    const { data, error } = await query;
     if (error) throw error;
     return (data ?? []).map((row) => {
       const members = (row.talent_pool_members as { user_id: string }[] | null) ?? [];
@@ -823,10 +874,21 @@ export const supabaseRepositories: DataRepositories = {
   async getPartnerships() {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
+    const actor = await requireSupabaseActor(supabase);
+    let query = supabase
       .from('partnerships')
       .select('*')
       .order('created_at', { ascending: false });
+    if (actor.role === 'company' || actor.role === 'hr') {
+      if (!actor.organizationId) return [];
+      query = query.eq('company_id', actor.organizationId);
+    } else if (actor.role === 'university') {
+      if (!actor.organizationId) return [];
+      query = query.eq('university_id', actor.organizationId);
+    } else if (actor.role !== 'admin') {
+      return [];
+    }
+    const { data, error } = await query;
     if (error) throw error;
     return (data ?? []).map((row) => ({
       id: String(row.id),
@@ -841,10 +903,24 @@ export const supabaseRepositories: DataRepositories = {
   async getAssessments() {
     assertSupabase();
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
+    const actor = await requireSupabaseActor(supabase);
+    let query = supabase
       .from('assessments')
       .select('*')
       .order('created_at', { ascending: false });
+    if (actor.role === 'company' || actor.role === 'hr') {
+      if (!actor.organizationId) return [];
+      const { data: jobs } = await supabase
+        .from('jobs')
+        .select('id')
+        .eq('company_id', actor.organizationId);
+      const jobIds = (jobs ?? []).map((j) => String(j.id));
+      if (jobIds.length === 0) return [];
+      query = query.in('job_id', jobIds);
+    } else if (actor.role !== 'admin') {
+      return [];
+    }
+    const { data, error } = await query;
     if (error) throw error;
     return (data ?? []).map((row) => mapAssessmentRow(row));
   },
@@ -896,6 +972,8 @@ export const supabaseRepositories: DataRepositories = {
   },
 
   async search(query) {
+    const supabase = await createSupabaseServerClient();
+    const actor = await requireSupabaseActor(supabase);
     const q = query.trim().toLowerCase();
     const jobs = (await this.getJobs()).filter(
       (j) =>
@@ -906,10 +984,15 @@ export const supabaseRepositories: DataRepositories = {
     const companies = (await this.getCompanies()).filter(
       (c) => c.name.toLowerCase().includes(q) || c.industry.toLowerCase().includes(q)
     );
-    const people = (await this.getUsers()).filter((u) => {
-      const hay = `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase();
-      return hay.includes(q);
-    });
+    const people = (await this.getUsers())
+      .filter((u) => {
+        const hay = `${u.firstName} ${u.lastName}`.toLowerCase();
+        return hay.includes(q);
+      })
+      .map((u) => ({
+        ...u,
+        email: actor.role === 'admin' ? u.email : '',
+      }));
     const posts = (await this.getFeedPosts()).filter(
       (p) =>
         p.content.toLowerCase().includes(q) ||
@@ -1237,7 +1320,17 @@ export const supabaseRepositories: DataRepositories = {
     await supabase.from('saved_jobs').delete().eq('user_id', user.id).eq('job_id', jobId);
   },
 
-  async saveCompany(_companyId) { return; },
+  async saveCompany(companyId) {
+    assertSupabase();
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('UNAUTHORIZED');
+    const { error } = await supabase.from('company_follows').upsert({
+      user_id: user.id,
+      company_id: companyId,
+    });
+    if (error) throw error;
+  },
 
   async updateSettings(settings) {
     assertSupabase();
